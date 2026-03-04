@@ -251,12 +251,8 @@ export default function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        let mods = await FB.getModules();
-        if (!mods) {
-          await FB.setModules(INITIAL_MODULES);
-          mods = INITIAL_MODULES;
-        }
-        setModules(mods);
+        const mods = await FB.getModules();
+        setModules(mods || INITIAL_MODULES);
       } catch (e) {
         setModules(INITIAL_MODULES);
       }
@@ -270,10 +266,11 @@ export default function App() {
 
   const refreshModules = async () => {
     const mods = await FB.getModules();
-    setModules(mods || INITIAL_MODULES);
+    const result = mods || INITIAL_MODULES;
+    setModules(result);
     if (currentLesson) {
-      const updated = (mods || INITIAL_MODULES).flatMap(m => m.lessons).find(l => l.id === currentLesson.id);
-      if (updated) setCurrentLesson(updated);
+      const updated = result.flatMap(m => m.lessons).find(l => l.id === currentLesson.id);
+      if (updated) setCurrentLesson({...updated});
     }
   };
 
