@@ -425,6 +425,9 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
 // ══════════════════════════════════════════
 // LESSON PAGE
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// LESSON PAGE — FIXED (materials load from Firebase directly)
+// ══════════════════════════════════════════
 function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refreshModules, modules }) {
   const [tab, setTab] = useState("materials");
   const [addType, setAddType] = useState("link");
@@ -432,6 +435,14 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
   const [addTitle, setAddTitle] = useState("");
   const [myProgress, setMyProgress] = useState({});
   const [saving, setSaving] = useState(false);
+  const [materials, setMaterials] = useState(lesson.materials || []);
+
+  // Load materials directly from Firebase every time lesson opens
+  useEffect(() => {
+    FB.getLessonMaterials(lesson.id).then(mats => {
+      setMaterials(mats || []);
+    });
+  }, [lesson.id]);
 
   useEffect(() => { FB.getProgress(session.email).then(setMyProgress); }, [session.email]);
 
@@ -442,11 +453,16 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     setSaving(true);
     try {
       const current = await FB.getLessonMaterials(lesson.id);
-      const updated = [...current, { type: addType, url: addUrl, title: addTitle, id: Date.now() }];
+      const newMat = { type: addType, url: addUrl, title: addTitle, id: Date.now() };
+      const updated = [...(current || []), newMat];
       await FB.setLessonMaterials(lesson.id, updated);
-      await refreshModules();
-      setAddUrl(""); setAddTitle("");
-    } catch(e) { console.error("Save error:", e); }
+      setMaterials(updated);
+      setAddUrl("");
+      setAddTitle("");
+    } catch(e) {
+      console.error("Save error:", e);
+      alert("Failed to save: " + e.message);
+    }
     setSaving(false);
   };
 
@@ -454,10 +470,13 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     setSaving(true);
     try {
       const current = await FB.getLessonMaterials(lesson.id);
-      const updated = current.filter(m => m.id !== mid);
+      const updated = (current || []).filter(m => m.id !== mid);
       await FB.setLessonMaterials(lesson.id, updated);
-      await refreshModules();
-    } catch(e) { console.error("Delete error:", e); }
+      setMaterials(updated);
+    } catch(e) {
+      console.error("Delete error:", e);
+      alert("Failed to delete: " + e.message);
+    }
     setSaving(false);
   };
 
@@ -498,17 +517,18 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
                 <input placeholder={addType==="video"?"YouTube URL":"URL (https://...)"} value={addUrl} onChange={e=>setAddUrl(e.target.value)}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer" }}>
+                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
                   {saving ? "Saving..." : "Add"}
                 </button>
               </div>
             )}
-            {(lesson.materials||[]).length === 0 ? (
+
+            {materials.length === 0 ? (
               <div style={{ textAlign:"center", padding:40, color:"#94a3b8", background:"white", borderRadius:14, border:"2px dashed #e2e8f0" }}>
                 {isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}
               </div>
             ) : (
-              (lesson.materials||[]).map(mat => (
+              materials.map(mat => (
                 <div key={mat.id} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, border:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                     <div style={{ fontSize:28 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</div>
@@ -519,7 +539,7 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
                     <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding:"7px 14px", borderRadius:8, background:"#e8f0fe", color:"#1a73e8", textDecoration:"none", fontSize:13, fontWeight:600 }}>Open</a>
                     {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ padding:"7px 10px", borderRadius:8, border:"none", background:"#fce8e6", color:"#dc2626", cursor:"pointer" }}>🗑</button>}
                   </div>
-                  {mat.type==="video" && mat.url.includes("youtube") && (
+                  {mat.type==="video" && mat.url && mat.url.includes("youtube") && (
                     <div style={{ marginTop:12, borderRadius:10, overflow:"hidden" }}>
                       <iframe width="100%" height="250" title="Lesson video"
                         src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
@@ -564,7 +584,6 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     </div>
   );
 }
-
 // ══════════════════════════════════════════
 // QUIZ PAGE
 // ══════════════════════════════════════════
