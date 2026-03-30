@@ -134,456 +134,375 @@ const saveSession = (s) => localStorage.setItem("lms_session", JSON.stringify(s)
 // ─── TAG COLORS ───
 const TC = { Intro:"#6b7280",Vocab:"#8b5cf6",Grammar:"#0891b2",Listening:"#16a34a",Reading:"#ca8a04",Writing:"#dc2626",Speaking:"#9333ea",Mock:"#ea580c",Final:"#1d4ed8" };
 
-// ─── INITIAL MODULES ───
+/// ─── UPDATED INITIAL_MODULES ───
+// Replace the existing INITIAL_MODULES constant in src/App.js with this block.
+// Covers 24 lessons + 5 Mock Tests across 5 modules, matching the screenshot structure.
+
 const INITIAL_MODULES = [
+  // ──────────────────────────────────────────────
+  // MODULE 1: LISTENING & READING FOUNDATIONS
+  // ──────────────────────────────────────────────
   {
-    id: 1, title: "MODULE 1: FOUNDATION", color: "#4285F4", bg: "#e8f0fe",
+    id: 1, title: "MODULE 1: LISTENING & READING FOUNDATIONS", color: "#0891b2", bg: "#e0f7fa",
     lessons: [
-      { id: "1-1", n: 1, title: "IELTS Overview & Diagnostic Test", tag: "Intro", materials: [],
+      {
+        id: "1-1", n: 1,
+        title: "Listening — MCQ & Matching Information | Present Simple vs Present Continuous",
+        tag: "Listening", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "What does IELTS stand for?", options: ["International English Language Testing System","International English Learning Test System","International Exam for Language Testing Skills","None of the above"], answer: 0, points: 10 },
-          { type: "tf", q: "IELTS Academic and General Training are exactly the same.", answer: false, points: 10 },
-          { type: "fitb", q: "The IELTS exam has ___ main sections.", answer: "4", points: 10 },
-          { type: "match", q: "Match the skill to its time limit", pairs: [["Listening","30 min"],["Reading","60 min"],["Writing","60 min"],["Speaking","15 min"]], points: 20 },
+          { type: "mc", q: "In IELTS Listening, 'Multiple Choice' questions test your ability to:", options: ["Copy exactly what you hear","Identify the correct answer from three options","Write a full sentence","Spell words correctly"], answer: 1, points: 10 },
+          { type: "mc", q: "Which sentence uses Present Continuous correctly?", options: ["She study every night.","She is studying right now.","She studys at the moment.","She study at the moment."], answer: 1, points: 10 },
+          { type: "tf", q: "Present Simple is used for habits and routines.", answer: true, points: 10 },
+          { type: "fitb", q: "Water _______ at 100°C. (boil)", answer: "boils", points: 10 },
+          { type: "fitb", q: "Listen carefully — in matching tasks you match a speaker to a _______.", answer: "topic", points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Write 150 words: Why do you want to get IELTS 6.0? What will it change in your life?" }
+        assignment: { type: "writing", prompt: "Write 8 sentences about your daily routine using Present Simple, and 5 sentences about what is happening right now using Present Continuous." }
       },
-      { id: "1-2", n: 2, title: "Academic Vocabulary Builder I", tag: "Vocab", materials: [],
+      {
+        id: "1-2", n: 2,
+        title: "Reading — True/False/Not Given, MCQ, Short Answer | Articles",
+        tag: "Reading", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "Which word is a synonym for 'analyse'?", options: ["Examine","Ignore","Create","Delete"], answer: 0, points: 10 },
-          { type: "fitb", q: "The study _______ that exercise improves memory. (indicate)", answer: "indicates", points: 10 },
-          { type: "tf", q: "'Significant' means 'very small or unimportant'.", answer: false, points: 10 },
-          { type: "mc", q: "Choose the correct collocation:", options: ["Do a concept","Make a concept","Establish a concept","Take a concept"], answer: 2, points: 10 },
+          { type: "mc", q: "What does 'Not Given' mean in IELTS Reading?", options: ["The statement is false","The text does not mention it","The statement is true","The writer disagrees"], answer: 1, points: 10 },
+          { type: "mc", q: "Choose the correct article: '_____ Eiffel Tower is in Paris.'", options: ["A","An","The","No article"], answer: 2, points: 10 },
+          { type: "tf", q: "'False' and 'Not Given' mean exactly the same thing.", answer: false, points: 10 },
+          { type: "fitb", q: "In Short Answer questions, you must not exceed the _______ word limit given.", answer: "specified", points: 10 },
+          { type: "mc", q: "Which article is used before an uncountable noun used in general?", options: ["A","An","The","No article"], answer: 3, points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Write 5 sentences using these AWL words: analyse, concept, significant, establish, indicate." }
+        assignment: { type: "writing", prompt: "Read any English news article. Write 5 True/False/Not Given statements about it (with answers) and use 'a', 'an', 'the' correctly in 6 example sentences." }
       },
-      { id: "1-3", n: 3, title: "Grammar — Tenses & Passive Voice", tag: "Grammar", materials: [],
+      {
+        id: "1-3", n: 3,
+        title: "Writing Task 1 — Line Graph | Past Simple vs Past Continuous",
+        tag: "Writing", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "Which sentence uses passive voice correctly?", options: ["The results showed an increase.","An increase was showed by results.","An increase was shown in the results.","The results are show an increase."], answer: 2, points: 10 },
-          { type: "fitb", q: "The data ___ (collect) in 2020.", answer: "was collected", points: 15 },
-          { type: "tf", q: "Passive voice is commonly used in IELTS Writing Task 1.", answer: true, points: 10 },
+          { type: "mc", q: "A line graph Task 1 MUST include:", options: ["Your opinion","An overview of the main trends","A conclusion recommending action","Personal experience"], answer: 1, points: 10 },
+          { type: "mc", q: "Which sentence is Past Continuous?", options: ["She visited London.","She was visiting London when it started raining.","She visits London often.","She has visited London."], answer: 1, points: 10 },
+          { type: "tf", q: "You should write at least 150 words for Task 1.", answer: true, points: 10 },
+          { type: "fitb", q: "The Past Simple is used for a _______ completed action in the past.", answer: "finished", points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Rewrite these 5 sentences in passive voice:\n1. Scientists discovered the vaccine.\n2. The government introduced new policies.\n3. Researchers conducted the experiment.\n4. The company launched the product.\n5. Teachers assessed the students." }
+        assignment: { type: "essay", prompt: "IELTS Writing Task 1: The line graph below shows the percentage of people using the internet in three countries (UK, Kazakhstan, Japan) from 2000 to 2020.\nUK: 25% → 96%, Kazakhstan: 2% → 79%, Japan: 30% → 93%.\nSummarise the main features and make comparisons where relevant. Write at least 150 words.\nAlso write 4 original sentences using Past Simple and Past Continuous together." }
+      },
+      {
+        id: "1-4", n: 4,
+        title: "Writing Task 2 — Advantages/Disadvantages Essay | Grammar Review",
+        tag: "Writing", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "An Advantages/Disadvantages essay typically has:", options: ["Only advantages","Only disadvantages","Both, with a clear structure","Your personal story"], answer: 2, points: 10 },
+          { type: "fitb", q: "Task 2 requires a minimum of _______ words.", answer: "250", points: 10 },
+          { type: "tf", q: "You must state your opinion in an Advantages/Disadvantages essay.", answer: false, points: 10 },
+          { type: "mc", q: "Which linker introduces a disadvantage?", options: ["Furthermore","In addition","However","Similarly"], answer: 2, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "IELTS Writing Task 2: Some people think that the advantages of living in a big city outweigh the disadvantages. To what extent do you agree or disagree?\nWrite at least 250 words with an introduction, two body paragraphs (advantages & disadvantages), and a conclusion." }
+      },
+      {
+        id: "1-5", n: 5,
+        title: "Speaking Part 1 — Fluency | Comparative and Superlative",
+        tag: "Speaking", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "What is the superlative form of 'good'?", options: ["Gooder","More good","The best","Better"], answer: 2, points: 10 },
+          { type: "mc", q: "In Speaking Part 1, answers should be:", options: ["One word","10+ sentences","2–4 sentences with a reason","Read from notes"], answer: 2, points: 10 },
+          { type: "tf", q: "You can ask the examiner to repeat a question in Part 1.", answer: true, points: 10 },
+          { type: "fitb", q: "Kazakhstan is _______ (large) country in Central Asia.", answer: "the largest", points: 10 },
+        ]},
+        assignment: { type: "speaking", prompt: "Record yourself (2–3 min) answering:\n1. Describe your hometown. Is it bigger or smaller than the capital?\n2. What is the most interesting place you have ever visited? Why was it better than other places?\n3. Compare studying alone vs studying in a group.\n\nPaste a recording link or write your answers (min. 150 words)." }
+      },
+      {
+        id: "mock-1", n: null,
+        title: "MOCK TEST 1",
+        tag: "Mock", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which of these is a correct use of the Present Continuous?", options: ["I am go to school.","She is knowing the answer.","They are playing football now.","He is having a car."], answer: 2, points: 10 },
+          { type: "mc", q: "What does 'Not Given' mean in IELTS Reading T/F/NG?", options: ["False","Cannot be determined from the text","True but implied","The question is wrong"], answer: 1, points: 10 },
+          { type: "tf", q: "The superlative of 'bad' is 'baddest'.", answer: false, points: 10 },
+          { type: "fitb", q: "The minimum word count for Writing Task 1 is ___.", answer: "150", points: 10 },
+          { type: "match", q: "Match the task to its minimum word count", pairs: [["Task 1","150 words"],["Task 2","250 words"]], points: 20 },
+          { type: "mc", q: "Which sentence uses Past Continuous correctly?", options: ["She was study when I called.","She were studying when I called.","She was studying when I called.","She studying when I called."], answer: 2, points: 10 },
+          { type: "fitb", q: "In Advantages/Disadvantages essays, both sides must be _______ fairly.", answer: "discussed", points: 10 },
+          { type: "tf", q: "In IELTS Listening, you hear the recording only once.", answer: true, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "MOCK ESSAY — Task 2: Some people believe that technology is making people less social. Others argue it helps them connect better. Discuss both views and give your own opinion. Write at least 250 words." }
       },
     ]
   },
+
+  // ──────────────────────────────────────────────
+  // MODULE 2: LISTENING ADVANCED & WRITING
+  // ──────────────────────────────────────────────
   {
-    id: 2, title: "MODULE 2: LISTENING", color: "#34A853", bg: "#e6f4ea",
+    id: 2, title: "MODULE 2: LISTENING ADVANCED & WRITING", color: "#16a34a", bg: "#e6f4ea",
     lessons: [
-      { id: "2-1", n: 4, title: "Listening — Sections 1 & 2", tag: "Listening", materials: [],
+      {
+        id: "2-1", n: 6,
+        title: "Listening — Maps & Plans Labelling | Present Perfect vs Past Simple",
+        tag: "Listening", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "In IELTS Listening Section 1, you typically hear:", options: ["A university lecture","An everyday social conversation","A discussion between 4 people","A radio programme"], answer: 1, points: 10 },
-          { type: "tf", q: "Spelling mistakes in Listening answers will cost you marks.", answer: true, points: 10 },
-          { type: "fitb", q: "You should read the questions _______ the recording starts.", answer: "before", points: 10 },
+          { type: "mc", q: "In Map Labelling tasks, labels must:", options: ["Be inferred","Come directly from the audio","Be guessed from context","Be written in capitals only"], answer: 1, points: 10 },
+          { type: "mc", q: "Which sentence uses Present Perfect correctly?", options: ["I have went to Paris.","I went to Paris last year.","I have never been to Paris.","I been to Paris."], answer: 2, points: 10 },
+          { type: "tf", q: "Present Perfect is used with specific past time expressions like 'yesterday'.", answer: false, points: 10 },
+          { type: "fitb", q: "Map labelling tasks require you to follow directions and label a _______ or building plan.", answer: "map", points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Listen to any English podcast for 10 minutes. Write a 5-sentence summary of what you heard." }
+        assignment: { type: "writing", prompt: "Write 6 sentences using Present Perfect and 6 using Past Simple. Explain the difference between these two tenses in your own words (3–4 sentences). Example topic: your learning journey." }
       },
-      { id: "2-2", n: 5, title: "Listening — Sections 3 & 4", tag: "Listening", materials: [],
+      {
+        id: "2-2", n: 7,
+        title: "Reading — Matching Headings, Locating Information, Summary Completion | Passive Voice",
+        tag: "Reading", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "Section 4 of IELTS Listening is:", options: ["A conversation between students","A monologue on an academic subject","A job interview","A social conversation"], answer: 1, points: 10 },
-          { type: "tf", q: "You hear the recording twice in IELTS Listening.", answer: false, points: 10 },
-          { type: "mc", q: "What is a 'distractor' in listening?", options: ["Background noise","An answer that seems correct but isn't","A type of question","A speaker's accent"], answer: 1, points: 10 },
+          { type: "mc", q: "In 'Matching Headings', you match headings to:", options: ["Individual sentences","Whole paragraphs","Keywords","Titles"], answer: 1, points: 10 },
+          { type: "mc", q: "Which sentence is in the Passive Voice?", options: ["Scientists discovered penicillin.","Penicillin was discovered by scientists.","Scientists have discovered penicillin.","Scientists are discovering penicillin."], answer: 1, points: 10 },
+          { type: "tf", q: "In Summary Completion, answers must come from the passage.", answer: true, points: 10 },
+          { type: "fitb", q: "Passive voice is formed with 'be' + past _______.", answer: "participle", points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Watch a BBC documentary clip (min. 5 min). Answer: What was the main topic? List 3 key facts you heard." }
+        assignment: { type: "writing", prompt: "Rewrite these 6 sentences in the Passive Voice:\n1. The government introduced new tax laws.\n2. Researchers conducted three experiments.\n3. Engineers designed the new bridge.\n4. The company launched its product in 2022.\n5. Teachers assessed all students fairly.\n6. Scientists are studying climate change globally." }
+      },
+      {
+        id: "2-3", n: 8,
+        title: "Writing Task 1 — Bar Chart & Pie Chart | Grammar Review",
+        tag: "Writing", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "When describing a pie chart, what is most important to highlight?", options: ["Every percentage","The largest and smallest segments","Your opinion","Future predictions"], answer: 1, points: 10 },
+          { type: "tf", q: "You should always compare figures in Task 1 descriptions.", answer: true, points: 10 },
+          { type: "fitb", q: "The phrase 'account for' is used to describe a _______ of a total.", answer: "proportion", points: 10 },
+          { type: "mc", q: "Which phrase is best for describing a large bar chart category?", options: ["It was small","The majority of…","Slightly more than…","Roughly less than…"], answer: 1, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "IELTS Writing Task 1: The pie chart shows the distribution of household spending in Kazakhstan in 2023: Food 35%, Housing 25%, Transport 15%, Education 12%, Entertainment 8%, Other 5%.\nWrite a 150-word report summarising the main features and making comparisons." }
+      },
+      {
+        id: "mock-2", n: null,
+        title: "MOCK TEST 2",
+        tag: "Mock", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which correctly uses Present Perfect?", options: ["She has went home.","She went home already.","She has already gone home.","She is gone home."], answer: 2, points: 10 },
+          { type: "mc", q: "Matching Headings tasks require you to match headings to:", options: ["Sentences","Words","Paragraphs","Authors"], answer: 2, points: 10 },
+          { type: "tf", q: "Passive voice is common in IELTS academic writing.", answer: true, points: 10 },
+          { type: "fitb", q: "In Map Labelling, answers must come from the _______ recording.", answer: "audio", points: 10 },
+          { type: "match", q: "Match the listening section to its typical task type", pairs: [["Section 1","Everyday social conversation"],["Section 2","A talk or speech"],["Section 3","Academic discussion"],["Section 4","University lecture"]], points: 20 },
+          { type: "mc", q: "Which sentence best describes the largest pie segment?", options: ["It was quite small","Food accounted for the largest share at 35%","Food was normal","The smallest was food"], answer: 1, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "MOCK TASK 1: The bar chart shows the number of tourists visiting five cities (London, Paris, Dubai, Tokyo, Almaty) in 2023. London: 20M, Paris: 18M, Dubai: 15M, Tokyo: 12M, Almaty: 3M.\nSummarise the main features and make comparisons. Write at least 150 words." }
       },
     ]
   },
+
+  // ──────────────────────────────────────────────
+  // MODULE 3: WRITING TASKS & CONDITIONALS
+  // ──────────────────────────────────────────────
   {
-    id: 3, title: "MODULE 3: READING", color: "#FBBC04", bg: "#fff8e1",
+    id: 3, title: "MODULE 3: WRITING TASKS & CONDITIONALS", color: "#ca8a04", bg: "#fff8e1",
     lessons: [
-      { id: "3-1", n: 7, title: "Reading — True/False/Not Given", tag: "Reading", materials: [],
+      {
+        id: "3-1", n: 9,
+        title: "Writing Task 2 — Cause/Problem Solution Essay | Cohesive Devices",
+        tag: "Writing", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "What does 'Not Given' mean in IELTS Reading?", options: ["The statement is wrong","The information is not in the text","The statement is correct","The question is invalid"], answer: 1, points: 10 },
-          { type: "tf", q: "'False' and 'Not Given' mean the same thing.", answer: false, points: 10 },
-          { type: "fitb", q: "_______ means reading quickly to get the general idea.", answer: "Skimming", points: 10 },
+          { type: "mc", q: "In a Problem-Solution essay, the typical structure is:", options: ["Problem only","Solution only","Problem → Cause → Solution → Conclusion","Introduction → Opinion → Example"], answer: 2, points: 10 },
+          { type: "mc", q: "Which is a cohesive device that introduces a result?", options: ["Although","However","Therefore","Despite"], answer: 2, points: 10 },
+          { type: "tf", q: "Cohesive devices help ideas flow logically from one sentence to the next.", answer: true, points: 10 },
+          { type: "fitb", q: "'Furthermore' and 'Moreover' are used to _______ a point.", answer: "add", points: 10 },
         ]},
-        assignment: { type: "writing", prompt: "Read any news article in English. Write: 1) Main idea. 2) Three supporting details. 3) One thing NOT mentioned." }
+        assignment: { type: "essay", prompt: "IELTS Writing Task 2: In many cities, traffic congestion is a serious problem. What are the causes of this problem and what measures could be taken to solve it?\nWrite at least 250 words. Use at least 6 different cohesive devices." }
+      },
+      {
+        id: "3-2", n: 10,
+        title: "Speaking Part 2 — Long Turn | Past Perfect",
+        tag: "Speaking", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "How long is the Speaking Part 2 long turn?", options: ["30 seconds","1–2 minutes","5 minutes","10 minutes"], answer: 1, points: 10 },
+          { type: "mc", q: "Which sentence uses Past Perfect correctly?", options: ["She had finished dinner before he arrived.","She finished dinner before he was arrived.","She had finish dinner before he arrived.","She has finished dinner before he arrived."], answer: 0, points: 10 },
+          { type: "tf", q: "You get 1 minute to prepare your notes in Part 2.", answer: true, points: 10 },
+          { type: "fitb", q: "Past Perfect = had + past _______.", answer: "participle", points: 10 },
+        ]},
+        assignment: { type: "speaking", prompt: "Prepare and record a 1–2 minute Part 2 talk on the following cue card:\n\n'Describe a memorable journey you have taken.'\nYou should say:\n- Where you went\n- When and why you went\n- What happened during the journey\n- And explain why it was memorable\n\nUse Past Perfect at least twice in your answer. Paste a link or write your answer." }
+      },
+      {
+        id: "3-3", n: 11,
+        title: "Listening — Table/Form/Note Completion | Prepositions",
+        tag: "Listening", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "In Form Completion tasks, how should you write proper nouns?", options: ["Lowercase only","Exactly as you hear them","In block capitals always","Abbreviated"], answer: 1, points: 10 },
+          { type: "mc", q: "Choose the correct preposition: 'She arrived _____ Monday morning.'", options: ["in","at","on","by"], answer: 2, points: 10 },
+          { type: "tf", q: "Spelling errors in Listening answers cost marks.", answer: true, points: 10 },
+          { type: "match", q: "Match the preposition to its use", pairs: [["in","months and years"],["on","days and dates"],["at","specific times"]], points: 20 },
+        ]},
+        assignment: { type: "writing", prompt: "Complete these sentences with the correct preposition (in/on/at/by/for/since):\n1. I have been studying IELTS _______ six months.\n2. The exam starts _______ 9:00 AM.\n3. She was born _______ March.\n4. The results will be ready _______ Monday.\n5. He has lived here _______ 2020.\nThen write 5 more original sentences using prepositions of time correctly." }
+      },
+      {
+        id: "mock-3", n: null,
+        title: "MOCK TEST 3",
+        tag: "Mock", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which cohesive device shows contrast?", options: ["Furthermore","Therefore","Nevertheless","In addition"], answer: 2, points: 10 },
+          { type: "mc", q: "Speaking Part 2 cue card preparation time is:", options: ["30 seconds","1 minute","2 minutes","No preparation allowed"], answer: 1, points: 10 },
+          { type: "tf", q: "Past Perfect describes an action completed before another past action.", answer: true, points: 10 },
+          { type: "fitb", q: "In Form Completion, you must spell answers _______ as heard.", answer: "correctly", points: 10 },
+          { type: "mc", q: "Which preposition is correct: 'I'll meet you _____ the café.'", options: ["in","at","on","by"], answer: 1, points: 10 },
+          { type: "fitb", q: "A Problem-Solution essay must include both the _______ and a proposed fix.", answer: "problem", points: 10 },
+          { type: "match", q: "Match the essay type to its structure", pairs: [["Opinion essay","State view + 2 body paragraphs"],["Problem-Solution","Problem + Cause + Solution"],["Advantages/Disadvantages","Both sides + optional opinion"],["Discussion","Both views + your stance"]], points: 20 },
+        ]},
+        assignment: { type: "essay", prompt: "MOCK TASK 2: Many young people today are choosing to live alone rather than with their families. Discuss the advantages and disadvantages of this trend. Write at least 250 words." }
       },
     ]
   },
+
+  // ──────────────────────────────────────────────
+  // MODULE 4: READING SKILLS & CONDITIONALS
+  // ──────────────────────────────────────────────
   {
-    id: 4, title: "MODULE 4: WRITING", color: "#EA4335", bg: "#fce8e6",
+    id: 4, title: "MODULE 4: READING SKILLS & CONDITIONALS", color: "#9334E6", bg: "#f3e8ff",
     lessons: [
-      { id: "4-1", n: 11, title: "Writing Task 1 — Graphs & Charts", tag: "Writing", materials: [],
+      {
+        id: "4-1", n: 12,
+        title: "Reading — Matching Information, Choosing Title, Sentence Completion | Grammar Review",
+        tag: "Reading", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "What MUST you include in every Task 1 response?", options: ["Your opinion","An overview of main trends","Exact figures for every data point","A conclusion paragraph"], answer: 1, points: 10 },
-          { type: "fitb", q: "The minimum word count for Task 1 is ___ words.", answer: "150", points: 10 },
-          { type: "tf", q: "You should describe every single number in a graph.", answer: false, points: 10 },
+          { type: "mc", q: "In 'Matching Information', you match specific information to:", options: ["Headings","Paragraphs","Writers","Dates"], answer: 1, points: 10 },
+          { type: "mc", q: "What is the best strategy for 'Choosing the Title'?", options: ["Pick the title with the most keywords","Choose the title that covers the whole passage","Pick the longest title","Choose the first title"], answer: 1, points: 10 },
+          { type: "tf", q: "Sentence Completion answers must fit grammatically in the gap.", answer: true, points: 10 },
+          { type: "fitb", q: "In Choosing the Title, you must find the title that reflects the _______ theme.", answer: "main", points: 10 },
         ]},
-        assignment: { type: "essay", prompt: "IELTS Writing Task 1: The graph shows internet access in three countries 2000-2020. UK: 25%→95%, Kazakhstan: 5%→79%, Japan: 30%→92%. Summarise the main features and make comparisons. Write at least 150 words." }
+        assignment: { type: "writing", prompt: "Read any two-paragraph English text (news, Wikipedia). Write:\n1. A suitable title for the whole text\n2. One sentence summarising each paragraph\n3. Three Sentence Completion questions (with answers) based on the text" }
       },
-      { id: "4-2", n: 14, title: "Writing Task 2 — Opinion Essay", tag: "Writing", materials: [],
+      {
+        id: "4-2", n: 13,
+        title: "Writing Task 1 — Tables | Zero and 1st Conditionals",
+        tag: "Writing", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "How many paragraphs should a standard Task 2 essay have?", options: ["2","3","4","5"], answer: 2, points: 10 },
-          { type: "fitb", q: "The minimum word count for Task 2 is ___ words.", answer: "250", points: 10 },
-          { type: "tf", q: "In an opinion essay, you must clearly state your position.", answer: true, points: 10 },
+          { type: "mc", q: "Zero Conditional is used for:", options: ["Impossible situations","Scientific facts and general truths","Future plans","Past habits"], answer: 1, points: 10 },
+          { type: "mc", q: "Which is a 1st Conditional sentence?", options: ["If I were you, I would study.","If it rains, I will stay home.","If he had studied, he would have passed.","If water reaches 100°C, it boils."], answer: 1, points: 10 },
+          { type: "tf", q: "In a table Task 1, you should describe every single number.", answer: false, points: 10 },
+          { type: "fitb", q: "In Zero Conditional: If + present simple, + present _______.", answer: "simple", points: 10 },
         ]},
-        assignment: { type: "essay", prompt: "IELTS Writing Task 2: Some people believe technology has made our lives more complicated. Others think it has made life easier. Discuss both views and give your own opinion. Write at least 250 words." }
+        assignment: { type: "essay", prompt: "IELTS Writing Task 1: The table shows the number of students enrolled in four faculties at a university in 2020 and 2023.\nEngineering: 1,200 → 1,450 | Business: 2,000 → 1,800 | Arts: 900 → 1,100 | Science: 1,500 → 1,750\nSummarise the main features and make comparisons. Write at least 150 words.\nAlso write 4 Zero Conditional and 4 First Conditional sentences on any IELTS topic." }
+      },
+      {
+        id: "4-3", n: 14,
+        title: "Writing Task 2 — Discussion Essay | 2nd and 3rd Conditionals",
+        tag: "Writing", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "A Discussion Essay asks you to:", options: ["Give only your opinion","Discuss both sides and give your view","Describe a problem","Explain a process"], answer: 1, points: 10 },
+          { type: "mc", q: "Which is a correct 2nd Conditional?", options: ["If I study hard, I will pass.","If I studied harder, I would pass.","If I had studied, I would have passed.","If I study, I passed."], answer: 1, points: 10 },
+          { type: "tf", q: "3rd Conditional refers to an unreal situation in the past.", answer: true, points: 10 },
+          { type: "fitb", q: "2nd Conditional = If + past simple, + would + _______ infinitive.", answer: "bare", points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "IELTS Writing Task 2: Some people believe that social media has had a positive impact on society, while others think the negative effects outweigh the benefits. Discuss both views and give your own opinion.\nWrite at least 250 words. Include at least one 2nd or 3rd Conditional sentence in your essay." }
+      },
+      {
+        id: "mock-4", n: null,
+        title: "MOCK TEST 4",
+        tag: "Mock", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which conditional describes an unreal present situation?", options: ["Zero","First","Second","Third"], answer: 2, points: 10 },
+          { type: "tf", q: "In Matching Information tasks, you must always read every paragraph.", answer: true, points: 10 },
+          { type: "fitb", q: "In Choosing the Title, choose the title that covers the _______ of the text.", answer: "whole", points: 10 },
+          { type: "mc", q: "Which sentence is a 3rd Conditional?", options: ["If I study, I will pass.","If I studied, I would pass.","If I had studied, I would have passed.","If I study, I pass."], answer: 2, points: 10 },
+          { type: "match", q: "Match the conditional to its meaning", pairs: [["Zero","General truths"],["First","Real future"],["Second","Unreal present"],["Third","Unreal past"]], points: 20 },
+          { type: "mc", q: "In a Table Task 1, the most important information to describe is:", options: ["Every number","The most significant trends and differences","Your opinion","Future predictions"], answer: 1, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "MOCK TASK 2: Some people believe that governments should invest more money in public transport, while others think that money is better spent on roads for private vehicles. Discuss both views and give your opinion. Write at least 250 words." }
       },
     ]
   },
+
+  // ──────────────────────────────────────────────
+  // MODULE 5: ADVANCED SKILLS & FINAL PREP
+  // ──────────────────────────────────────────────
   {
-    id: 5, title: "MODULE 5: SPEAKING", color: "#9334E6", bg: "#f3e8ff",
+    id: 5, title: "MODULE 5: ADVANCED SKILLS & FINAL PREP", color: "#EA4335", bg: "#fce8e6",
     lessons: [
-      { id: "5-1", n: 18, title: "Speaking Part 1 — Fluency", tag: "Speaking", materials: [],
+      {
+        id: "5-1", n: 15,
+        title: "Speaking Part 2 & 3 | Other Expressions in Conditionals",
+        tag: "Speaking", materials: [],
         quiz: { questions: [
-          { type: "mc", q: "How long should Part 1 answers typically be?", options: ["One word","One sentence","2-4 sentences","A full minute"], answer: 2, points: 10 },
-          { type: "tf", q: "It's okay to ask the examiner to repeat a question.", answer: true, points: 10 },
-          { type: "fitb", q: "AREA stands for Answer, Reason, Example, ______.", answer: "Add", points: 10 },
+          { type: "mc", q: "Which expression can replace 'if' in a conditional?", options: ["Because","Although","Unless","Despite"], answer: 2, points: 10 },
+          { type: "mc", q: "Speaking Part 3 involves:", options: ["A prepared monologue","A short personal answer","Abstract discussion with the examiner","Describing a picture"], answer: 2, points: 10 },
+          { type: "tf", q: "'Unless' means 'if not'.", answer: true, points: 10 },
+          { type: "fitb", q: "'Provided that', 'as long as', and 'supposing' are all alternatives to _______.", answer: "if", points: 10 },
         ]},
-        assignment: { type: "speaking", prompt: "Record yourself answering:\n1. Describe your hometown.\n2. What do you like to do in your free time?\n3. Do you prefer studying alone or with others?\n\nPaste a link to your recording, or write your answers." }
+        assignment: { type: "speaking", prompt: "Record yourself answering these Part 3 questions (2–3 minutes total):\n1. How do you think technology will change education in the future?\n2. What would happen if schools did not teach languages?\n3. Supposing you could redesign the education system — what changes would you make?\n\nUse at least 3 conditional expressions (unless, provided that, as long as, supposing). Paste a link or write your response." }
+      },
+      {
+        id: "5-2", n: 16,
+        title: "Listening — Flow Chart & Diagram Labelling | Grammar Review",
+        tag: "Listening", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "In Flow Chart Completion, answers typically describe:", options: ["Opinions","Steps in a process","Maps","Prices"], answer: 1, points: 10 },
+          { type: "tf", q: "Diagram Labelling requires you to identify parts of an object from the audio.", answer: true, points: 10 },
+          { type: "fitb", q: "In Flow Chart tasks, answers usually follow a _______ order.", answer: "sequential", points: 10 },
+          { type: "mc", q: "Which grammar structure is often used to describe a process?", options: ["Present Perfect","Passive Voice","Future Continuous","Past Perfect"], answer: 1, points: 10 },
+        ]},
+        assignment: { type: "writing", prompt: "Describe a simple process you know well (e.g. making tea, recycling paper, filtering water) in 8–10 steps using Passive Voice and sequencing words (First, Then, After that, Finally)." }
+      },
+      {
+        id: "5-3", n: 17,
+        title: "Reading — Diagram Completion | Future Perfect",
+        tag: "Reading", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which sentence uses Future Perfect correctly?", options: ["By 2030, the population will reach 10 billion.","By 2030, the population will have reached 10 billion.","By 2030, the population reaches 10 billion.","By 2030, the population would reach 10 billion."], answer: 1, points: 10 },
+          { type: "mc", q: "In Diagram Completion, labels usually require:", options: ["Long sentences","Single words or short phrases","Paragraphs","Numbers only"], answer: 1, points: 10 },
+          { type: "tf", q: "Future Perfect is formed with 'will + have + past participle'.", answer: true, points: 10 },
+          { type: "fitb", q: "Future Perfect expresses an action completed _______ a future time.", answer: "before", points: 10 },
+        ]},
+        assignment: { type: "writing", prompt: "Write 6 Future Perfect sentences about what you will have achieved by the time you take your IELTS exam. Example: 'By test day, I will have practised writing for 60 hours.'\nThen find any scientific diagram online and write 5 labels for its parts." }
+      },
+      {
+        id: "5-4", n: 18,
+        title: "Writing Task 1 — Process Diagrams | Direct and Indirect Speech",
+        tag: "Writing", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "When describing a process diagram, you should:", options: ["Give your opinion","Describe each stage in order","Focus only on the beginning","Compare two processes"], answer: 1, points: 10 },
+          { type: "mc", q: "Which is correct Indirect Speech?", options: ["She said 'I am tired.'","She said she was tired.","She said she is tired.","She told 'I am tired.'"], answer: 1, points: 10 },
+          { type: "tf", q: "In Direct Speech, the exact words are written inside quotation marks.", answer: true, points: 10 },
+          { type: "fitb", q: "In Indirect Speech, the present simple usually shifts to past _______.", answer: "simple", points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "IELTS Writing Task 1: The diagram below shows how paper is recycled.\nStages: Collection → Sorting → Pulping → Cleaning → Drying → Rolling → New paper products.\nDescribe the process using Passive Voice. Write at least 150 words.\nAlso rewrite 5 direct speech sentences as indirect speech." }
+      },
+      {
+        id: "5-5", n: 19,
+        title: "Writing Task 2 — Double Question Essay | Commas",
+        tag: "Writing", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "A Double Question Task 2 essay requires you to:", options: ["Answer only one question","Answer both questions separately","Give a general overview","Describe a diagram"], answer: 1, points: 10 },
+          { type: "mc", q: "When is a comma NOT needed?", options: ["After an introductory clause","Between two short independent clauses without a conjunction","Before 'but' in a compound sentence","In a list of three items"], answer: 1, points: 10 },
+          { type: "tf", q: "Each question in a Double Question essay should have its own paragraph.", answer: true, points: 10 },
+          { type: "fitb", q: "Use a comma after introductory words like 'However,' '_______,' and 'Therefore,'.", answer: "Furthermore", points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "IELTS Writing Task 2: Why do some people choose to learn a new language as an adult? What difficulties might they face?\nAnswer both questions clearly in separate body paragraphs. Write at least 250 words. Pay careful attention to comma usage throughout." }
+      },
+      {
+        id: "5-6", n: 20,
+        title: "Speaking Part 3 — Abstract Topics | Grammar Review",
+        tag: "Speaking", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Speaking Part 3 tests your ability to:", options: ["Memorise answers","Discuss abstract ideas fluently","Describe pictures","Read aloud"], answer: 1, points: 10 },
+          { type: "tf", q: "Speculating and giving opinions is important in Part 3.", answer: true, points: 10 },
+          { type: "fitb", q: "Phrases like 'It seems to me that' and 'I would argue that' show your _______ clearly.", answer: "opinion", points: 10 },
+          { type: "mc", q: "Which phrase is best for expressing uncertainty?", options: ["I am absolutely sure that","I have no idea","I suppose it could be argued that","I refuse to answer"], answer: 2, points: 10 },
+        ]},
+        assignment: { type: "speaking", prompt: "Record yourself answering these Part 3 questions (3–4 minutes):\n1. Do you think governments should make learning a foreign language compulsory at school?\n2. How has globalisation changed the importance of learning English?\n3. What do you think the world will look like linguistically in 50 years?\n\nAim for Band 6–7 language: range of tenses, conditionals, cohesive devices. Paste link or write response." }
+      },
+      {
+        id: "mock-5", n: null,
+        title: "MOCK TEST 5 — FULL REVIEW",
+        tag: "Mock", materials: [],
+        quiz: { questions: [
+          { type: "mc", q: "Which sentence is grammatically correct?", options: ["She said she is happy.","She said she was happy.","She told she was happy.","She says she were happy."], answer: 1, points: 10 },
+          { type: "mc", q: "Future Perfect is used to describe:", options: ["An action happening now","An action completed before a future point","A past habit","An ongoing action"], answer: 1, points: 10 },
+          { type: "tf", q: "In a Double Question essay, you must address both questions.", answer: true, points: 10 },
+          { type: "mc", q: "Which task type describes a step-by-step process?", options: ["Bar Chart","Pie Chart","Process Diagram","Line Graph"], answer: 2, points: 10 },
+          { type: "match", q: "Match the listening task to its description", pairs: [["Flow Chart","Steps in a process"],["Diagram Labelling","Parts of an object"],["Map Labelling","Directions and locations"],["Form Completion","Personal or factual data"]], points: 20 },
+          { type: "fitb", q: "'Unless' = 'if _______'.", answer: "not", points: 10 },
+          { type: "mc", q: "In Speaking Part 3, the examiner asks questions that are:", options: ["Personal and simple","Abstract and topic-based","About your family","Read from a cue card"], answer: 1, points: 10 },
+          { type: "tf", q: "Comma usage can affect your Writing score in IELTS.", answer: true, points: 10 },
+          { type: "fitb", q: "In Process Diagram Task 1, stages are usually described using _______ voice.", answer: "passive", points: 10 },
+          { type: "mc", q: "Which phrase would you use to speculate in Speaking Part 3?", options: ["I definitely know that","I would imagine that","I have no clue","That is wrong"], answer: 1, points: 10 },
+        ]},
+        assignment: { type: "essay", prompt: "FINAL MOCK TASK 2: As technology develops, many traditional skills are being lost. Some people think it is important to preserve these skills, while others believe we should focus on modern skills instead. Discuss both views and give your own opinion.\nWrite at least 250 words. This is your final practice — aim for Band 6.0+." }
       },
     ]
   },
 ];
-
-// ══════════════════════════════════════════
-// MAIN APP
-// ══════════════════════════════════════════
-export default function App() {
-  const [session, setSession] = useState(getSession);
-  const [page, setPage] = useState("course");
-  const [currentLesson, setCurrentLesson] = useState(null);
-  const [modules, setModules] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Load modules from Firebase on start
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const mods = await FB.getModules();
-        setModules(mods || INITIAL_MODULES);
-      } catch (e) {
-        setModules(INITIAL_MODULES);
-      }
-      setLoading(false);
-    };
-    load();
-  }, []);
-
-  const login = (s) => { saveSession(s); setSession(s); };
-  const logout = () => { saveSession(null); setSession(null); setPage("course"); };
-
-  const refreshModules = async () => {
-    const mods = await FB.getModules();
-    const result = mods || INITIAL_MODULES;
-    setModules(result);
-    if (currentLesson) {
-      const updated = result.flatMap(m => m.lessons).find(l => l.id === currentLesson.id);
-      if (updated) setCurrentLesson({...updated});
-    }
-  };
-
-  if (loading) return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#1a73e8,#9334E6)", fontFamily:"sans-serif" }}>
-      <div style={{ color:"white", textAlign:"center" }}>
-        <div style={{ fontSize:48, marginBottom:16 }}>🎯</div>
-        <div style={{ fontSize:18, fontWeight:700 }}>Loading IELTS LMS...</div>
-      </div>
-    </div>
-  );
-
-  if (!session) return <Login login={login} />;
-
-  const isAdmin = session.email === ADMIN_EMAIL;
-
-  if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} />;
-  if (page === "leaderboard") return <Leaderboard session={session} setPage={setPage} />;
-  if (page === "dashboard") return <Dashboard session={session} setPage={setPage} modules={modules} />;
-  if (page === "lesson" && currentLesson) return <LessonPage lesson={currentLesson} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} refreshModules={refreshModules} modules={modules} />;
-  if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} />;
-  if (page === "assignment" && currentLesson) return <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
-
-  return <CoursePage session={session} logout={logout} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
-}
-
-// ══════════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════════
-function Login({ login }) {
-  const [email, setEmail] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const go = async () => {
-    const e = email.trim().toLowerCase();
-    if (!e) { setErr("Enter your email"); return; }
-    setLoading(true);
-    if (e === ADMIN_EMAIL) { login({ email: e, role: "admin", name: "Teacher Dana" }); return; }
-    try {
-      const student = await FB.getStudent(e);
-      if (!student) { setErr("❌ No access. Ask your teacher to add your email."); setLoading(false); return; }
-      if (student.status === "revoked") { setErr("❌ Your access has been revoked. Contact your teacher."); setLoading(false); return; }
-      await FB.updateStudent(e, { lastLogin: new Date().toISOString() });
-      login({ email: e, role: "student", name: student.name });
-    } catch(err) {
-      setErr("Connection error. Please try again."); setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1a73e8,#9334E6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderRadius:20, padding:44, width:380, boxShadow:"0 8px 40px rgba(0,0,0,0.2)" }}>
-        <div style={{ textAlign:"center", marginBottom:30 }}>
-          <div style={{ fontSize:48, marginBottom:10 }}>🎯</div>
-          <h2 style={{ margin:0, color:"#1e293b", fontSize:24 }}>IELTS 6.0 Course</h2>
-          <p style={{ color:"#64748b", margin:"8px 0 0", fontSize:14 }}>Enter your email to access</p>
-        </div>
-        <input type="email" placeholder="your@email.com" value={email}
-          onChange={e => { setEmail(e.target.value); setErr(""); }}
-          onKeyDown={e => e.key === "Enter" && go()}
-          style={{ width:"100%", padding:"13px 16px", borderRadius:12, border:"2px solid #e2e8f0", fontSize:15, boxSizing:"border-box" }} />
-        {err && <p style={{ color:"#dc2626", fontSize:13, margin:"8px 0 0" }}>{err}</p>}
-        <button onClick={go} disabled={loading} style={{ width:"100%", marginTop:16, padding:14, borderRadius:12, border:"none", background:"linear-gradient(135deg,#1a73e8,#9334E6)", color:"white", fontSize:15, fontWeight:700, cursor:"pointer", opacity: loading ? 0.7 : 1 }}>
-          {loading ? "Checking..." : "Enter →"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════
-// NAV
-// ══════════════════════════════════════════
-function Nav({ session, logout, setPage, isAdmin, pts }) {
-  return (
-    <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"10px 20px", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", position:"sticky", top:0, zIndex:100 }}>
-      <div style={{ fontWeight:800, fontSize:16, color:"#1a73e8", cursor:"pointer" }} onClick={() => setPage("course")}>🎯 IELTS 6.0</div>
-      <div style={{ flex:1 }} />
-      <button onClick={() => setPage("course")} style={nb("#e8f0fe","#1a73e8")}>📚 Course</button>
-      <button onClick={() => setPage("dashboard")} style={nb("#f3e8ff","#9334E6")}>📊 Progress</button>
-      <button onClick={() => setPage("leaderboard")} style={nb("#fff8e1","#ca8a04")}>🏆 Board</button>
-      {isAdmin && <button onClick={() => setPage("admin")} style={nb("#fce8e6","#dc2626")}>👑 Admin</button>}
-      <div style={{ background:"#e6f4ea", borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700, color:"#16a34a" }}>⭐ {pts} pts</div>
-      <button onClick={logout} style={{ padding:"5px 12px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", cursor:"pointer", fontSize:12, color:"#64748b" }}>Logout</button>
-    </div>
-  );
-}
-const nb = (bg,c) => ({ padding:"6px 12px", borderRadius:20, border:"none", background:bg, color:c, cursor:"pointer", fontSize:12, fontWeight:600 });
-
-// ══════════════════════════════════════════
-// COURSE PAGE
-// ══════════════════════════════════════════
-function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modules }) {
-  const [myProgress, setMyProgress] = useState({});
-
-  useEffect(() => {
-    FB.getProgress(session.email).then(setMyProgress);
-  }, [session.email]);
-
-  const totalPts = Object.values(myProgress).reduce((s,v) => s+(v.points||0), 0);
-  const allLessons = (modules||[]).flatMap(m => m.lessons);
-  const done = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
-
-  return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
-      <div style={{ maxWidth:780, margin:"0 auto", padding:20 }}>
-        <div style={{ background:"linear-gradient(135deg,#1a73e8,#9334E6)", borderRadius:16, padding:"24px 28px", color:"white", marginBottom:24 }}>
-          <h2 style={{ margin:0, fontSize:22 }}>Welcome back, {session.name}! 👋</h2>
-          <p style={{ margin:"8px 0 16px", opacity:0.9 }}>B1 → IELTS 6.0 · {allLessons.length} lessons</p>
-          <div style={{ display:"flex", gap:24 }}>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:12, opacity:0.8 }}>Points</div></div>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:12, opacity:0.8 }}>Done</div></div>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:12, opacity:0.8 }}>Progress</div></div>
-          </div>
-          <div style={{ marginTop:12, background:"rgba(255,255,255,0.2)", borderRadius:8, height:10 }}>
-            <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"white", height:10, borderRadius:8 }} />
-          </div>
-        </div>
-
-        {(modules||[]).map(m => (
-          <div key={m.id} style={{ marginBottom:20 }}>
-            <div style={{ background:m.color, borderRadius:"12px 12px 0 0", padding:"12px 20px", color:"white", fontWeight:700, fontSize:14 }}>{m.title}</div>
-            {m.lessons.map(l => {
-              const lp = myProgress[l.id] || {};
-              return (
-                <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                  style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 18px", background:"white", borderBottom:"1px solid #f1f5f9", cursor:"pointer" }}>
-                  <div style={{ width:36, height:36, borderRadius:"50%", background: lp.quizDone ? "#16a34a" : m.color, color:"white", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, flexShrink:0 }}>
-                    {lp.quizDone ? "✓" : l.n}
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:600, fontSize:14, color:"#1e293b" }}>{l.title}</div>
-                    <div style={{ fontSize:12, color:"#94a3b8", marginTop:2 }}>
-                      {(l.materials||[]).length} materials · {l.quiz.questions.length} questions
-                      {lp.points ? ` · ⭐ ${lp.points} pts` : ""}
-                    </div>
-                  </div>
-                  <span style={{ fontSize:11, padding:"3px 10px", borderRadius:10, background:TC[l.tag]||"#94a3b8", color:"white", fontWeight:600 }}>{l.tag}</span>
-                  <span style={{ color:"#94a3b8" }}>›</span>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════
-// LESSON PAGE
-// ══════════════════════════════════════════
-// ══════════════════════════════════════════
-// LESSON PAGE — FIXED (materials load from Firebase directly)
-// ══════════════════════════════════════════
-function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refreshModules, modules }) {
-  const [tab, setTab] = useState("materials");
-  const [addType, setAddType] = useState("link");
-  const [addUrl, setAddUrl] = useState("");
-  const [addTitle, setAddTitle] = useState("");
-  const [myProgress, setMyProgress] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [materials, setMaterials] = useState(lesson.materials || []);
-
-  // Load materials directly from Firebase every time lesson opens
-  useEffect(() => {
-    FB.getLessonMaterials(lesson.id).then(mats => {
-      setMaterials(mats || []);
-    });
-  }, [lesson.id]);
-
-  useEffect(() => { FB.getProgress(session.email).then(setMyProgress); }, [session.email]);
-
-  const lp = myProgress[lesson.id] || {};
-
-  const saveMaterial = async () => {
-    if (!addUrl || !addTitle) return;
-    setSaving(true);
-    try {
-      const current = await FB.getLessonMaterials(lesson.id);
-      const newMat = { type: addType, url: addUrl, title: addTitle, id: Date.now() };
-      const updated = [...(current || []), newMat];
-      await FB.setLessonMaterials(lesson.id, updated);
-      setMaterials(updated);
-      setAddUrl("");
-      setAddTitle("");
-    } catch(e) {
-      console.error("Save error:", e);
-      alert("Failed to save: " + e.message);
-    }
-    setSaving(false);
-  };
-
-  const deleteMaterial = async (mid) => {
-    setSaving(true);
-    try {
-      const current = await FB.getLessonMaterials(lesson.id);
-      const updated = (current || []).filter(m => m.id !== mid);
-      await FB.setLessonMaterials(lesson.id, updated);
-      setMaterials(updated);
-    } catch(e) {
-      console.error("Delete error:", e);
-      alert("Failed to delete: " + e.message);
-    }
-    setSaving(false);
-  };
-
-  return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => setPage("course")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>← Back</button>
-        <div style={{ flex:1 }}>
-          <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>Lesson {lesson.n}: {lesson.title}</div>
-          <div style={{ fontSize:12, color:"#94a3b8" }}>{lp.points ? `⭐ ${lp.points} pts earned` : "Not completed yet"}</div>
-        </div>
-        <span style={{ fontSize:11, padding:"4px 12px", borderRadius:10, background:TC[lesson.tag]||"#94a3b8", color:"white", fontWeight:600 }}>{lesson.tag}</span>
-      </div>
-
-      <div style={{ maxWidth:760, margin:"0 auto", padding:20 }}>
-        <div style={{ display:"flex", gap:4, marginBottom:20, background:"white", borderRadius:12, padding:6, border:"1px solid #e2e8f0" }}>
-          {["materials","quiz","assignment"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ flex:1, padding:"9px", borderRadius:9, border:"none", cursor:"pointer", fontWeight:600, fontSize:13, background:tab===t?"#1a73e8":"transparent", color:tab===t?"white":"#64748b" }}>
-              {t==="materials"?"📎 Materials":t==="quiz"?"📝 Quiz":"✍️ Assignment"}
-            </button>
-          ))}
-        </div>
-
-        {/* MATERIALS */}
-        {tab==="materials" && (
-          <div>
-            {isAdmin && (
-              <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e2e8f0" }}>
-                <div style={{ fontWeight:700, marginBottom:12 }}>➕ Add Material</div>
-                <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-                  {["link","video","presentation","pdf"].map(t => (
-                    <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#1a73e8":"#e2e8f0", color:addType===t?"white":"#475569" }}>
-                      {t==="link"?"🔗 Link":t==="video"?"🎬 Video":t==="presentation"?"📊 Slides":"📄 PDF"}
-                    </button>
-                  ))}
-                </div>
-                <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <input placeholder={addType==="video"?"YouTube URL":"URL (https://...)"} value={addUrl} onChange={e=>setAddUrl(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
-                  {saving ? "Saving..." : "Add"}
-                </button>
-              </div>
-            )}
-
-            {materials.length === 0 ? (
-              <div style={{ textAlign:"center", padding:40, color:"#94a3b8", background:"white", borderRadius:14, border:"2px dashed #e2e8f0" }}>
-                {isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}
-              </div>
-            ) : (
-              materials.map(mat => (
-                <div key={mat.id} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, border:"1px solid #e2e8f0" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                    <div style={{ fontSize:28 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:600, color:"#1e293b" }}>{mat.title}</div>
-                      <div style={{ fontSize:12, color:"#94a3b8" }}>{mat.type}</div>
-                    </div>
-                    <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding:"7px 14px", borderRadius:8, background:"#e8f0fe", color:"#1a73e8", textDecoration:"none", fontSize:13, fontWeight:600 }}>Open</a>
-                    {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ padding:"7px 10px", borderRadius:8, border:"none", background:"#fce8e6", color:"#dc2626", cursor:"pointer" }}>🗑</button>}
-                  </div>
-                  {mat.type==="video" && mat.url && mat.url.includes("youtube") && (
-                    <div style={{ marginTop:12, borderRadius:10, overflow:"hidden" }}>
-                      <iframe width="100%" height="250" title="Lesson video"
-                        src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
-                        frameBorder="0" allowFullScreen style={{ borderRadius:10, display:"block" }} />
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* QUIZ */}
-        {tab==="quiz" && (
-          <div>
-            <div style={{ background:"linear-gradient(135deg,#1a73e8,#0891b2)", borderRadius:14, padding:20, color:"white", marginBottom:16 }}>
-              <div style={{ fontSize:18, fontWeight:700 }}>📝 Quiz — {lesson.title}</div>
-              <div style={{ fontSize:13, opacity:0.9, marginTop:4 }}>{lesson.quiz.questions.length} questions · {lesson.quiz.questions.reduce((s,q)=>s+(q.points||10),0)} total points</div>
-              {lp.quizDone && <div style={{ marginTop:8, background:"rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 12px", fontSize:13 }}>✅ You scored {lp.quizScore}/{lesson.quiz.questions.reduce((s,q)=>s+(q.points||10),0)} pts</div>}
-            </div>
-            <button onClick={() => setPage("quiz")} style={{ width:"100%", padding:16, borderRadius:12, border:"none", background:lp.quizDone?"#e2e8f0":"linear-gradient(135deg,#1a73e8,#9334E6)", color:lp.quizDone?"#64748b":"white", fontWeight:700, fontSize:16, cursor:"pointer" }}>
-              {lp.quizDone?"🔁 Retake Quiz":"🚀 Start Quiz"}
-            </button>
-          </div>
-        )}
-
-        {/* ASSIGNMENT */}
-        {tab==="assignment" && (
-          <div>
-            <div style={{ background:"linear-gradient(135deg,#EA4335,#FBBC04)", borderRadius:14, padding:20, color:"white", marginBottom:16 }}>
-              <div style={{ fontSize:18, fontWeight:700 }}>✍️ Assignment</div>
-              <div style={{ fontSize:13, opacity:0.9, marginTop:4 }}>
-                {lesson.assignment.type==="essay"?"IELTS Essay — AI checks and scores your work":lesson.assignment.type==="speaking"?"Speaking Task — Record and submit":"Writing Task"}
-              </div>
-            </div>
-            <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:16, borderRadius:12, border:"none", background:"linear-gradient(135deg,#EA4335,#FBBC04)", color:"white", fontWeight:700, fontSize:16, cursor:"pointer" }}>
-              {lesson.assignment.type==="essay"?"✍️ Write Essay + Get AI Feedback":lesson.assignment.type==="speaking"?"🎤 Submit Speaking":"📝 Submit Assignment"}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 // ══════════════════════════════════════════
 // QUIZ PAGE
 // ══════════════════════════════════════════
