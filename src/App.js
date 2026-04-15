@@ -970,7 +970,7 @@ function Login({ login }) {
       <div style={{ background:"white", borderRadius:20, padding:44, width:380, boxShadow:"0 8px 40px rgba(0,0,0,0.2)" }}>
         <div style={{ textAlign:"center", marginBottom:30 }}>
           <div style={{ fontSize:48, marginBottom:10 }}>🎯</div>
-          <h2 style={{ margin:0, color:"#1e293b", fontSize:24 }}>IELTS 6.0 Course</h2>
+          <h2 style={{ margin:0, color:"#1e293b", fontSize:24 }}>IELTS 8.0 Course</h2>
           <p style={{ color:"#64748b", margin:"8px 0 0", fontSize:14 }}>Enter your email to access</p>
         </div>
         <input type="email" placeholder="your@email.com" value={email}
