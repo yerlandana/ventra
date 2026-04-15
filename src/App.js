@@ -994,7 +994,7 @@ const nb = (bg,c) => ({ padding:"6px 12px", borderRadius:20, border:"none", back
 function Nav({ session, logout, setPage, isAdmin, pts }) {
   return (
     <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"10px 20px", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", position:"sticky", top:0, zIndex:100 }}>
-      <div style={{ fontWeight:800, fontSize:16, color:"#1a73e8", cursor:"pointer" }} onClick={() => setPage("course")}>IELTS 6.0</div>
+      <div style={{ fontWeight:800, fontSize:16, color:"#1a73e8", cursor:"pointer" }} onClick={() => setPage("course")}>IELTS 8.0</div>
       <div style={{ flex:1 }} />
       <button onClick={() => setPage("course")} style={nb("#e8f0fe","#1a73e8")}>Course</button>
       <button onClick={() => setPage("dashboard")} style={nb("#f3e8ff","#9334E6")}>Progress</button>
