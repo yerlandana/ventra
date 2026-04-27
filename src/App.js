@@ -131,8 +131,37 @@ const FB = {
 const getSession = () => { try { return JSON.parse(localStorage.getItem("lms_session")); } catch { return null; } };
 const saveSession = (s) => localStorage.setItem("lms_session", JSON.stringify(s));
 
-// ─── TAG COLORS ───
-const TC = { Intro:"#6b7280",Vocab:"#8b5cf6",Grammar:"#0891b2",Listening:"#16a34a",Reading:"#ca8a04",Writing:"#dc2626",Speaking:"#9333ea",Mock:"#ea580c",Final:"#1d4ed8" };
+// ─── TAG COLORS — only the 4 IELTS skills carry an accent; everything else is monochrome ───
+const TC = {
+  Reading:   "#FF5959",
+  Listening: "#FAD05A",
+  Writing:   "#49BEB6",
+  Speaking:  "#075F63",
+  Intro:   "#6b7280",
+  Vocab:   "#6b7280",
+  Grammar: "#374151",
+  Mock:    "#0a0a0a",
+  Final:   "#0a0a0a",
+};
+// Tag chip text color — yellow Listening needs dark text for contrast
+const TT = (tag) => tag === "Listening" ? "#0a0a0a" : "#ffffff";
+
+// ─── BRAND LOGO (inline SVG) ───
+const BrandLogo = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display:"block", flexShrink:0 }}>
+    <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
+    <text x="16" y="22" textAnchor="middle" fontSize="18" fontWeight="800" fill="#ffffff"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+          letterSpacing="-1">8</text>
+    <circle cx="25" cy="7" r="2.5" fill="#FF5959"/>
+  </svg>
+);
+const Brand = ({ size = 22, onClick }) => (
+  <div onClick={onClick} style={{ display:"flex", alignItems:"center", gap:8, cursor: onClick ? "pointer" : "default" }}>
+    <BrandLogo size={size} />
+    <span style={{ fontWeight:800, fontSize:15, color:"#0a0a0a", letterSpacing:"-0.3px" }}>IELTS<span style={{ color:"#0a0a0a" }}>8</span></span>
+  </div>
+);
 
 /// ─── UPDATED INITIAL_MODULES ───
 // Replace the existing INITIAL_MODULES constant in src/App.js with this block.
@@ -143,7 +172,7 @@ const INITIAL_MODULES = [
   // MODULE 1: LISTENING & READING FOUNDATIONS
   // ──────────────────────────────────────────────
   {
-    id: 1, title: "MODULE 1: LISTENING & READING FOUNDATIONS", color: "#0891b2", bg: "#e0f7fa",
+    id: 1, title: "MODULE 1: LISTENING & READING FOUNDATIONS", color: "#0a0a0a", bg: "#fafafa",
     lessons: [
       {
         id: "1-1", n: 1,
@@ -230,7 +259,7 @@ const INITIAL_MODULES = [
   // MODULE 2: LISTENING ADVANCED & WRITING
   // ──────────────────────────────────────────────
   {
-    id: 2, title: "MODULE 2: LISTENING ADVANCED & WRITING", color: "#16a34a", bg: "#e6f4ea",
+    id: 2, title: "MODULE 2: LISTENING ADVANCED & WRITING", color: "#0a0a0a", bg: "#fafafa",
     lessons: [
       {
         id: "2-1", n: 6,
@@ -289,7 +318,7 @@ const INITIAL_MODULES = [
   // MODULE 3: WRITING TASKS & CONDITIONALS
   // ──────────────────────────────────────────────
   {
-    id: 3, title: "MODULE 3: WRITING TASKS & CONDITIONALS", color: "#ca8a04", bg: "#fff8e1",
+    id: 3, title: "MODULE 3: WRITING TASKS & CONDITIONALS", color: "#0a0a0a", bg: "#fafafa",
     lessons: [
       {
         id: "3-1", n: 9,
@@ -349,7 +378,7 @@ const INITIAL_MODULES = [
   // MODULE 4: READING SKILLS & CONDITIONALS
   // ──────────────────────────────────────────────
   {
-    id: 4, title: "MODULE 4: READING SKILLS & CONDITIONALS", color: "#9334E6", bg: "#f3e8ff",
+    id: 4, title: "MODULE 4: READING SKILLS & CONDITIONALS", color: "#0a0a0a", bg: "#fafafa",
     lessons: [
       {
         id: "4-1", n: 12,
@@ -408,7 +437,7 @@ const INITIAL_MODULES = [
   // MODULE 5: ADVANCED SKILLS & FINAL PREP
   // ──────────────────────────────────────────────
   {
-    id: 5, title: "MODULE 5: ADVANCED SKILLS & FINAL PREP", color: "#EA4335", bg: "#fce8e6",
+    id: 5, title: "MODULE 5: ADVANCED SKILLS & FINAL PREP", color: "#0a0a0a", bg: "#fafafa",
     lessons: [
       {
         id: "5-1", n: 15,
@@ -541,15 +570,15 @@ function QuizPage({ lesson, session, setPage }) {
   if (submitted) {
     const pct = Math.round(score/total*100);
     return (
-      <div style={{ minHeight:"100vh", background:"#f8fafc", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"sans-serif" }}>
+      <div style={{ minHeight:"100vh", background:"#fafafa", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"sans-serif" }}>
         <div style={{ background:"white", borderRadius:20, padding:40, maxWidth:460, width:"100%", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,0.1)" }}>
           <div style={{ fontSize:60, marginBottom:16 }}>{pct>=80?"🎉":pct>=60?"👍":"📚"}</div>
           <h2 style={{ color:"#1e293b" }}>{pct>=80?"Excellent!":pct>=60?"Good job!":"Keep practising!"}</h2>
-          <div style={{ fontSize:36, fontWeight:800, color:"#1a73e8" }}>{score}/{total}</div>
+          <div style={{ fontSize:36, fontWeight:800, color:"#0a0a0a" }}>{score}/{total}</div>
           <div style={{ color:"#64748b", marginBottom:24 }}>{pct}% · ⭐ {score} points earned</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-            <button onClick={() => { setCurrent(0); setAnswers({}); setMatchAnswers({}); setSubmitted(false); }} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#e8f0fe", color:"#1a73e8", fontWeight:700, cursor:"pointer" }}>Retake</button>
-            <button onClick={() => setPage("lesson")} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#1a73e8", color:"white", fontWeight:700, cursor:"pointer" }}>← Back</button>
+            <button onClick={() => { setCurrent(0); setAnswers({}); setMatchAnswers({}); setSubmitted(false); }} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>Retake</button>
+            <button onClick={() => setPage("lesson")} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>← Back</button>
           </div>
         </div>
       </div>
@@ -557,24 +586,24 @@ function QuizPage({ lesson, session, setPage }) {
   }
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>← Back</button>
-        <div style={{ flex:1, fontWeight:700 }}>Quiz: {lesson.title}</div>
-        <div style={{ fontSize:13, color:"#64748b" }}>{current+1}/{qs.length}</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
+        <div style={{ flex:1, fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Quiz · {lesson.title}</div>
+        <div style={{ fontSize:12, color:"#666", flexShrink:0 }}>{current+1}/{qs.length}</div>
       </div>
-      <div style={{ background:"#e2e8f0", height:6 }}>
-        <div style={{ width:`${(current+1)/qs.length*100}%`, background:"#1a73e8", height:6, transition:"width 0.3s" }} />
+      <div style={{ background:"#e5e5e5", height:3 }}>
+        <div style={{ width:`${(current+1)/qs.length*100}%`, background:"#0a0a0a", height:3, transition:"width 0.3s" }} />
       </div>
-      <div style={{ maxWidth:620, margin:"30px auto", padding:20 }}>
-        <div style={{ background:"white", borderRadius:16, padding:28, boxShadow:"0 2px 16px rgba(0,0,0,0.08)" }}>
+      <div style={{ maxWidth:600, margin:"20px auto", padding:"0 14px" }}>
+        <div style={{ background:"white", borderRadius:12, padding:"20px 18px", border:"1px solid #e5e5e5" }}>
           <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8 }}>Question {current+1} · {q.points} pts</div>
           <div style={{ fontSize:18, fontWeight:700, color:"#1e293b", marginBottom:24, lineHeight:1.5 }}>{q.q}</div>
 
           {q.type==="mc" && q.options.map((opt,i) => (
             <div key={i} onClick={() => setAnswers({...answers,[current]:i})}
-              style={{ padding:"12px 16px", borderRadius:10, border:`2px solid ${answers[current]===i?"#1a73e8":"#e2e8f0"}`, background:answers[current]===i?"#e8f0fe":"white", marginBottom:10, cursor:"pointer" }}>
-              <span style={{ fontWeight:answers[current]===i?700:400, color:answers[current]===i?"#1a73e8":"#374151" }}>{opt}</span>
+              style={{ padding:"12px 16px", borderRadius:10, border:`2px solid ${answers[current]===i?"#0a0a0a":"#e5e5e5"}`, background:answers[current]===i?"#f4f4f4":"white", marginBottom:10, cursor:"pointer" }}>
+              <span style={{ fontWeight:answers[current]===i?700:400, color:answers[current]===i?"#0a0a0a":"#374151" }}>{opt}</span>
             </div>
           ))}
 
@@ -582,7 +611,7 @@ function QuizPage({ lesson, session, setPage }) {
             <div style={{ display:"flex", gap:12 }}>
               {[true,false].map(v => (
                 <div key={String(v)} onClick={() => setAnswers({...answers,[current]:v})}
-                  style={{ flex:1, padding:14, borderRadius:10, border:`2px solid ${answers[current]===v?"#1a73e8":"#e2e8f0"}`, background:answers[current]===v?"#e8f0fe":"white", cursor:"pointer", textAlign:"center", fontWeight:700, color:answers[current]===v?"#1a73e8":"#374151" }}>
+                  style={{ flex:1, padding:14, borderRadius:10, border:`2px solid ${answers[current]===v?"#0a0a0a":"#e5e5e5"}`, background:answers[current]===v?"#f4f4f4":"white", cursor:"pointer", textAlign:"center", fontWeight:700, color:answers[current]===v?"#0a0a0a":"#374151" }}>
                   {v?"✅ True":"❌ False"}
                 </div>
               ))}
@@ -591,7 +620,7 @@ function QuizPage({ lesson, session, setPage }) {
 
           {q.type==="fitb" && (
             <input placeholder="Type your answer..." value={answers[current]||""} onChange={e=>setAnswers({...answers,[current]:e.target.value})}
-              style={{ width:"100%", padding:"14px 16px", borderRadius:10, border:"2px solid #e2e8f0", fontSize:15, boxSizing:"border-box" }} />
+              style={{ width:"100%", padding:"14px 16px", borderRadius:10, border:"2px solid #e5e5e5", fontSize:15, boxSizing:"border-box" }} />
           )}
 
           {q.type==="match" && (
@@ -599,9 +628,9 @@ function QuizPage({ lesson, session, setPage }) {
               <div style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Match each item to the correct answer:</div>
               {q.pairs.map(([k]) => (
                 <div key={k} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
-                  <div style={{ flex:1, padding:"10px 14px", background:"#f8fafc", borderRadius:8, fontWeight:600, fontSize:14 }}>{k}</div>
+                  <div style={{ flex:1, padding:"10px 14px", background:"#fafafa", borderRadius:8, fontWeight:600, fontSize:14 }}>{k}</div>
                   <select value={(matchAnswers[current]||{})[k]||""} onChange={e => setMatchAnswers({...matchAnswers,[current]:{...(matchAnswers[current]||{}),[k]:e.target.value}})}
-                    style={{ flex:1, padding:10, borderRadius:8, border:"2px solid #e2e8f0", fontSize:14 }}>
+                    style={{ flex:1, padding:10, borderRadius:8, border:"2px solid #e5e5e5", fontSize:14 }}>
                     <option value="">Select...</option>
                     {q.pairs.map(([,v]) => <option key={v} value={v}>{v}</option>)}
                   </select>
@@ -612,17 +641,17 @@ function QuizPage({ lesson, session, setPage }) {
 
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:28 }}>
             <button onClick={() => setCurrent(Math.max(0,current-1))} disabled={current===0}
-              style={{ padding:"10px 24px", borderRadius:10, border:"none", background:current===0?"#f1f5f9":"#e2e8f0", color:current===0?"#94a3b8":"#475569", cursor:current===0?"not-allowed":"pointer", fontWeight:600 }}>← Prev</button>
+              style={{ padding:"10px 24px", borderRadius:10, border:"none", background:current===0?"#f0f0f0":"#e5e5e5", color:current===0?"#94a3b8":"#475569", cursor:current===0?"not-allowed":"pointer", fontWeight:600 }}>← Prev</button>
             {current < qs.length-1
-              ? <button onClick={() => setCurrent(current+1)} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#1a73e8", color:"white", fontWeight:700, cursor:"pointer" }}>Next →</button>
-              : <button onClick={submitQuiz} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer" }}>✅ Submit</button>
+              ? <button onClick={() => setCurrent(current+1)} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>Next →</button>
+              : <button onClick={submitQuiz} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>✅ Submit</button>
             }
           </div>
         </div>
         <div style={{ display:"flex", gap:6, justifyContent:"center", marginTop:20, flexWrap:"wrap" }}>
           {qs.map((_,i) => (
             <div key={i} onClick={() => setCurrent(i)}
-              style={{ width:32, height:32, borderRadius:"50%", background:i===current?"#1a73e8":answers[i]!==undefined?"#34A853":"#e2e8f0", color:i===current||answers[i]!==undefined?"white":"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              style={{ width:28, height:28, borderRadius:"50%", background:i===current?"#0a0a0a":answers[i]!==undefined?"#666":"#e5e5e5", color:i===current||answers[i]!==undefined?"white":"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, cursor:"pointer" }}>
               {i+1}
             </div>
           ))}
@@ -671,41 +700,41 @@ function AssignmentPage({ lesson, session, setPage }) {
     setLoading(false);
   };
 
-  const bc = (b) => b>=7?"#16a34a":b>=6?"#ca8a04":b>=5?"#ea580c":"#dc2626";
+  const bc = (b) => b>=7?"#0a0a0a":b>=6?"#333333":b>=5?"#777777":"#bbbbbb";
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>← Back</button>
-        <div style={{ fontWeight:700 }}>Assignment: {lesson.title}</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
+        <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {lesson.title}</div>
       </div>
-      <div style={{ maxWidth:720, margin:"0 auto", padding:20 }}>
-        <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:20, border:"1px solid #e2e8f0" }}>
-          <div style={{ fontWeight:700, marginBottom:10 }}>📋 Task</div>
-          <div style={{ color:"#374151", lineHeight:1.7, whiteSpace:"pre-line", fontSize:14 }}>{lesson.assignment.prompt}</div>
+      <div style={{ maxWidth:700, margin:"0 auto", padding:"14px" }}>
+        <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+          <div style={{ fontWeight:700, marginBottom:8, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Task</div>
+          <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{lesson.assignment.prompt}</div>
         </div>
         {!submitted && (
-          <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:20, border:"1px solid #e2e8f0" }}>
-            <div style={{ fontWeight:700, marginBottom:10 }}>{lesson.assignment.type==="essay"?"✍️ Your Essay":lesson.assignment.type==="speaking"?"🎤 Your Response":"📝 Your Answer"}</div>
+          <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <div style={{ fontWeight:700, marginBottom:10, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>{lesson.assignment.type==="essay"?"Your essay":lesson.assignment.type==="speaking"?"Your response":"Your answer"}</div>
             <textarea value={text} onChange={e=>setText(e.target.value)}
-              placeholder={lesson.assignment.type==="essay"?"Write your essay here (min 150-250 words)...":"Write your response or paste a recording link..."}
-              style={{ width:"100%", minHeight:220, padding:14, borderRadius:10, border:"2px solid #e2e8f0", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box", fontFamily:"sans-serif" }} />
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:12 }}>
-              <div style={{ fontSize:12, color:"#94a3b8" }}>{text.trim().split(/\s+/).filter(Boolean).length} words</div>
+              placeholder={lesson.assignment.type==="essay"?"Write your essay here (min 150–250 words)…":"Write your response or paste a recording link…"}
+              style={{ width:"100%", minHeight:200, padding:12, borderRadius:8, border:"1px solid #e5e5e5", fontSize:13.5, lineHeight:1.6, resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", outline:"none" }} />
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10, gap:10, flexWrap:"wrap" }}>
+              <div style={{ fontSize:11, color:"#888" }}>{text.trim().split(/\s+/).filter(Boolean).length} words</div>
               <button onClick={submit} disabled={loading||text.trim().length<50}
-                style={{ padding:"12px 28px", borderRadius:10, border:"none", background:loading||text.trim().length<50?"#e2e8f0":"linear-gradient(135deg,#EA4335,#FBBC04)", color:text.trim().length<50?"#94a3b8":"white", fontWeight:700, cursor:text.trim().length<50?"not-allowed":"pointer" }}>
-                {loading?"⏳ AI is checking...":lesson.assignment.type==="essay"?"🤖 Get AI Feedback":"📤 Submit"}
+                style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background:loading||text.trim().length<50?"#e5e5e5":"#0a0a0a", color:text.trim().length<50?"#888":"white", fontWeight:700, fontSize:13, cursor:text.trim().length<50?"not-allowed":"pointer", borderColor:loading||text.trim().length<50?"#e5e5e5":"#0a0a0a" }}>
+                {loading?"AI is checking…":lesson.assignment.type==="essay"?"Get AI feedback":"Submit"}
               </button>
             </div>
           </div>
         )}
         {feedback && !feedback.error && (
-          <div style={{ background:"white", borderRadius:14, padding:24, border:"1px solid #e2e8f0" }}>
+          <div style={{ background:"white", borderRadius:14, padding:24, border:"1px solid #e5e5e5" }}>
             <div style={{ fontWeight:800, fontSize:18, marginBottom:16 }}>🤖 AI Feedback</div>
             {lesson.assignment.type==="essay" && (
               <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
                 {[["Overall",feedback.overall],["Task",feedback.tr],["Coherence",feedback.cc],["Lexical",feedback.lr],["Grammar",feedback.gra]].map(([l,v])=>(
-                  <div key={l} style={{ flex:1, minWidth:80, textAlign:"center", background:"#f8fafc", borderRadius:12, padding:"12px 8px", border:`2px solid ${bc(v)}` }}>
+                  <div key={l} style={{ flex:1, minWidth:80, textAlign:"center", background:"#fafafa", borderRadius:12, padding:"12px 8px", border:`2px solid ${bc(v)}` }}>
                     <div style={{ fontSize:22, fontWeight:800, color:bc(v) }}>{v}</div>
                     <div style={{ fontSize:11, color:"#64748b" }}>{l}</div>
                   </div>
@@ -713,27 +742,27 @@ function AssignmentPage({ lesson, session, setPage }) {
               </div>
             )}
             {feedback.corrected_sentence && (
-              <div style={{ background:"#e8f0fe", borderRadius:10, padding:14, marginBottom:16 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:"#1a73e8", marginBottom:4 }}>💡 Example Correction</div>
+              <div style={{ background:"#f4f4f4", borderRadius:10, padding:14, marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#0a0a0a", marginBottom:4 }}>💡 Example Correction</div>
                 <div style={{ fontSize:14 }}>{feedback.corrected_sentence}</div>
               </div>
             )}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
               <div>
-                <div style={{ fontWeight:700, color:"#16a34a", marginBottom:8 }}>✅ Strengths</div>
-                {(feedback.strengths||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #16a34a" }}>{s}</div>)}
+                <div style={{ fontWeight:700, color:"#0a0a0a", marginBottom:8 }}>✅ Strengths</div>
+                {(feedback.strengths||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #0a0a0a" }}>{s}</div>)}
               </div>
               <div>
-                <div style={{ fontWeight:700, color:"#ea580c", marginBottom:8 }}>📈 Improve</div>
-                {(feedback.improvements||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #ea580c" }}>{s}</div>)}
+                <div style={{ fontWeight:700, color:"#666666", marginBottom:8 }}>📈 Improve</div>
+                {(feedback.improvements||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #666666" }}>{s}</div>)}
               </div>
             </div>
-            {feedback.summary && <div style={{ background:"#f8fafc", borderRadius:10, padding:14, fontSize:14, lineHeight:1.6 }}>{feedback.summary}</div>}
-            <div style={{ marginTop:12, textAlign:"center", color:"#16a34a", fontWeight:700, fontSize:13 }}>⭐ +20 points earned!</div>
-            <button onClick={()=>{setSubmitted(false);setText("");setFeedback(null);}} style={{ width:"100%", marginTop:16, padding:12, borderRadius:10, border:"none", background:"#e8f0fe", color:"#1a73e8", fontWeight:700, cursor:"pointer" }}>✏️ Rewrite & Resubmit</button>
+            {feedback.summary && <div style={{ background:"#fafafa", borderRadius:10, padding:14, fontSize:14, lineHeight:1.6 }}>{feedback.summary}</div>}
+            <div style={{ marginTop:12, textAlign:"center", color:"#0a0a0a", fontWeight:700, fontSize:13 }}>⭐ +20 points earned!</div>
+            <button onClick={()=>{setSubmitted(false);setText("");setFeedback(null);}} style={{ width:"100%", marginTop:16, padding:12, borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>✏️ Rewrite & Resubmit</button>
           </div>
         )}
-        {feedback?.error && <div style={{ background:"#fce8e6", borderRadius:12, padding:16, color:"#dc2626" }}>{feedback.error}</div>}
+        {feedback?.error && <div style={{ background:"#f4f4f4", borderRadius:12, padding:16, color:"#0a0a0a" }}>{feedback.error}</div>}
       </div>
     </div>
   );
@@ -750,36 +779,36 @@ function Dashboard({ session, setPage, modules }) {
   const done = allLessons.filter(l=>myP[l.id]?.quizDone).length;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", gap:12, alignItems:"center" }}>
-        <button onClick={() => setPage("course")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>← Back</button>
-        <div style={{ fontWeight:700, fontSize:16 }}>📊 My Progress</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", gap:10, alignItems:"center" }}>
+        <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
+        <div style={{ fontWeight:700, fontSize:14 }}>My Progress</div>
       </div>
-      <div style={{ maxWidth:700, margin:"0 auto", padding:20 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:24 }}>
-          {[["⭐ Points",totalPts,"#e8f0fe","#1a73e8"],["✅ Done",`${done}/${allLessons.length}`,"#e6f4ea","#16a34a"],["📈 Progress",`${allLessons.length>0?Math.round(done/allLessons.length*100):0}%`,"#f3e8ff","#9334E6"]].map(([l,v,bg,c])=>(
-            <div key={l} style={{ background:bg, borderRadius:14, padding:18, textAlign:"center" }}>
-              <div style={{ fontSize:26, fontWeight:800, color:c }}>{v}</div>
-              <div style={{ fontSize:12, color:"#64748b", marginTop:4 }}>{l}</div>
+      <div style={{ maxWidth:680, margin:"0 auto", padding:"14px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:10, marginBottom:18 }}>
+          {[["Points",totalPts],["Done",`${done}/${allLessons.length}`],["Progress",`${allLessons.length>0?Math.round(done/allLessons.length*100):0}%`]].map(([l,v])=>(
+            <div key={l} style={{ background:"white", border:"1px solid #e5e5e5", borderRadius:10, padding:"12px 14px", textAlign:"left" }}>
+              <div style={{ fontSize:11, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>{l}</div>
+              <div style={{ fontSize:20, fontWeight:800, color:"#0a0a0a", marginTop:2 }}>{v}</div>
             </div>
           ))}
         </div>
         {(modules||[]).map(m=>{
           const mDone = m.lessons.filter(l=>myP[l.id]?.quizDone).length;
           return (
-            <div key={m.id} style={{ background:"white", borderRadius:14, padding:18, marginBottom:14, border:"1px solid #e2e8f0" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <div style={{ fontWeight:700, color:m.color }}>{m.title}</div>
-                <div style={{ fontSize:13, color:"#64748b" }}>{mDone}/{m.lessons.length}</div>
+            <div key={m.id} style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:10, border:"1px solid #e5e5e5" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, gap:10 }}>
+                <div style={{ fontWeight:700, color:"#0a0a0a", fontSize:13 }}>{m.title}</div>
+                <div style={{ fontSize:12, color:"#888", flexShrink:0 }}>{mDone}/{m.lessons.length}</div>
               </div>
-              <div style={{ background:"#e2e8f0", borderRadius:6, height:8, marginBottom:10 }}>
-                <div style={{ width:`${m.lessons.length>0?mDone/m.lessons.length*100:0}%`, background:m.color, height:8, borderRadius:6 }} />
+              <div style={{ background:"#e5e5e5", borderRadius:999, height:4, marginBottom:10, overflow:"hidden" }}>
+                <div style={{ width:`${m.lessons.length>0?mDone/m.lessons.length*100:0}%`, background:"#0a0a0a", height:4 }} />
               </div>
               {m.lessons.map(l=>(
-                <div key={l.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 0", borderBottom:"1px solid #f8fafc" }}>
-                  <span>{myP[l.id]?.quizDone?"✅":"⬜"}</span>
-                  <span style={{ flex:1, fontSize:13 }}>{l.title}</span>
-                  {myP[l.id]?.points?<span style={{ fontSize:12, color:"#16a34a", fontWeight:700 }}>+{myP[l.id].points}pts</span>:null}
+                <div key={l.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid #f5f5f5" }}>
+                  <span style={{ fontSize:11, color: myP[l.id]?.quizDone ? "#0a0a0a" : "#bbb" }}>{myP[l.id]?.quizDone?"●":"○"}</span>
+                  <span style={{ flex:1, fontSize:12.5, color:"#0a0a0a" }}>{l.title}</span>
+                  {myP[l.id]?.points?<span style={{ fontSize:12, color:"#0a0a0a", fontWeight:700 }}>+{myP[l.id].points}pts</span>:null}
                 </div>
               ))}
             </div>
@@ -810,28 +839,28 @@ function Leaderboard({ session, setPage }) {
 
   const medals = ["🥇","🥈","🥉"];
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", gap:12, alignItems:"center" }}>
-        <button onClick={() => setPage("course")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>← Back</button>
-        <div style={{ fontWeight:700, fontSize:16 }}>🏆 Leaderboard</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 16px", display:"flex", gap:10, alignItems:"center" }}>
+        <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
+        <div style={{ fontWeight:700, fontSize:14 }}>Leaderboard</div>
       </div>
-      <div style={{ maxWidth:600, margin:"0 auto", padding:20 }}>
-        <div style={{ background:"linear-gradient(135deg,#FBBC04,#EA4335)", borderRadius:16, padding:20, color:"white", textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:36 }}>🏆</div>
-          <div style={{ fontSize:20, fontWeight:800 }}>Top Students</div>
+      <div style={{ maxWidth:560, margin:"0 auto", padding:"16px 14px" }}>
+        <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:14 }}>
+          <div style={{ fontSize:14, fontWeight:700, letterSpacing:"0.2px" }}>Top Students</div>
+          <div style={{ fontSize:11, opacity:0.7, marginTop:2 }}>Ranked by total points</div>
         </div>
         {rankings.map((r,i)=>{
           const isMe = r.email===session.email;
           return (
-            <div key={r.email} style={{ display:"flex", alignItems:"center", gap:16, background:isMe?"#e8f0fe":"white", borderRadius:14, padding:"16px 20px", marginBottom:10, border:`2px solid ${isMe?"#1a73e8":"#e2e8f0"}` }}>
-              <div style={{ fontSize:i<3?28:18, fontWeight:700, width:36, textAlign:"center" }}>{medals[i]||`#${i+1}`}</div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontWeight:700 }}>{r.name} {isMe?"(You)":""}</div>
-                <div style={{ fontSize:12, color:"#64748b" }}>{r.done} lessons done</div>
+            <div key={r.email} style={{ display:"flex", alignItems:"center", gap:12, background:"white", borderRadius:10, padding:"10px 14px", marginBottom:6, border:`1px solid ${isMe?"#0a0a0a":"#e5e5e5"}` }}>
+              <div style={{ fontSize:i<3?20:13, fontWeight:700, width:28, textAlign:"center", color:"#0a0a0a" }}>{medals[i]||`#${i+1}`}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:600, fontSize:13 }}>{r.name}{isMe?" · You":""}</div>
+                <div style={{ fontSize:11, color:"#888" }}>{r.done} lessons done</div>
               </div>
               <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:22, fontWeight:800, color:"#FBBC04" }}>{r.pts}</div>
-                <div style={{ fontSize:11, color:"#94a3b8" }}>points</div>
+                <div style={{ fontSize:16, fontWeight:800, color:"#0a0a0a" }}>{r.pts}</div>
+                <div style={{ fontSize:10, color:"#888" }}>pts</div>
               </div>
             </div>
           );
@@ -881,57 +910,59 @@ function AdminPanel({ session, logout, setPage }) {
   const list = Object.entries(students);
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
-        <div style={{ fontWeight:800, fontSize:16, color:"#dc2626" }}>👑 Admin Panel</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+        <Brand size={22} />
+        <span style={{ fontSize:10, padding:"2px 8px", borderRadius:999, background:"#0a0a0a", color:"white", fontWeight:700, letterSpacing:"0.4px", textTransform:"uppercase" }}>Admin</span>
         <div style={{ flex:1 }} />
-        <button onClick={()=>setPage("course")} style={nb("#e8f0fe","#1a73e8")}>📚 Course</button>
-        <button onClick={()=>setPage("leaderboard")} style={nb("#fff8e1","#ca8a04")}>🏆 Leaderboard</button>
-        <button onClick={logout} style={nb("#fce8e6","#dc2626")}>Logout</button>
+        <button onClick={()=>setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
+        <button onClick={()=>setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>
+        <button onClick={logout} style={nb("white","#666")}>Logout</button>
       </div>
-      <div style={{ maxWidth:720, margin:"0 auto", padding:20 }}>
-        <div style={{ display:"flex", gap:12, marginBottom:20 }}>
-          {[["👥 Total",list.length,"#e8f0fe","#1a73e8"],["✅ Active",list.filter(([,v])=>v.status==="active").length,"#e6f4ea","#16a34a"],["🚫 Revoked",list.filter(([,v])=>v.status==="revoked").length,"#fce8e6","#dc2626"]].map(([l,v,bg,c])=>(
-            <div key={l} style={{ flex:1, background:bg, borderRadius:12, padding:"14px 10px", textAlign:"center" }}>
-              <div style={{ fontSize:22, fontWeight:800, color:c }}>{v}</div>
-              <div style={{ fontSize:11, color:"#64748b" }}>{l}</div>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"14px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:10, marginBottom:14 }}>
+          {[["Total",list.length],["Active",list.filter(([,v])=>v.status==="active").length],["Revoked",list.filter(([,v])=>v.status==="revoked").length]].map(([l,v])=>(
+            <div key={l} style={{ background:"white", border:"1px solid #e5e5e5", borderRadius:10, padding:"12px 14px" }}>
+              <div style={{ fontSize:11, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>{l}</div>
+              <div style={{ fontSize:20, fontWeight:800, color:"#0a0a0a", marginTop:2 }}>{v}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:20, border:"1px solid #e2e8f0" }}>
-          <div style={{ fontWeight:700, marginBottom:12 }}>➕ Add Student</div>
-          <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+        <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+          <div style={{ fontWeight:700, marginBottom:10, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Add Student</div>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             <input placeholder="Full name" value={newName} onChange={e=>setNewName(e.target.value)}
-              style={{ flex:1, minWidth:130, padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14 }} />
+              style={{ flex:1, minWidth:130, padding:"9px 11px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
             <input placeholder="email@example.com" value={newEmail} onChange={e=>setNewEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}
-              style={{ flex:2, minWidth:180, padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14 }} />
-            <button onClick={add} style={{ padding:"10px 20px", borderRadius:8, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer" }}>Add</button>
+              style={{ flex:2, minWidth:180, padding:"9px 11px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
+            <button onClick={add} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>Add</button>
           </div>
-          {msg && <div style={{ marginTop:8, fontSize:13, color:msg.startsWith("✅")?"#16a34a":"#dc2626" }}>{msg}</div>}
+          {msg && <div style={{ marginTop:8, fontSize:12, color:"#0a0a0a" }}>{msg}</div>}
         </div>
 
-        <div style={{ background:"white", borderRadius:14, border:"1px solid #e2e8f0", overflow:"hidden" }}>
-          <div style={{ padding:"12px 20px", borderBottom:"1px solid #e2e8f0", fontWeight:700 }}>Students ({list.length})</div>
-          {loadingStudents && <div style={{ padding:30, textAlign:"center", color:"#94a3b8" }}>Loading...</div>}
-          {!loadingStudents && list.length===0 && <div style={{ padding:30, textAlign:"center", color:"#94a3b8" }}>No students yet.</div>}
+        <div style={{ background:"white", borderRadius:10, border:"1px solid #e5e5e5", overflow:"hidden" }}>
+          <div style={{ padding:"10px 14px", borderBottom:"1px solid #e5e5e5", fontWeight:700, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Students ({list.length})</div>
+          {loadingStudents && <div style={{ padding:24, textAlign:"center", color:"#888", fontSize:13 }}>Loading…</div>}
+          {!loadingStudents && list.length===0 && <div style={{ padding:24, textAlign:"center", color:"#888", fontSize:13 }}>No students yet.</div>}
           {list.map(([email,info])=>{
             const pts = Object.values(allProgress[email]||{}).reduce((s,v)=>s+(v.points||0),0);
             const done = Object.values(allProgress[email]||{}).filter(v=>v.quizDone).length;
+            const active = info.status==="active";
             return (
-              <div key={email} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 20px", borderBottom:"1px solid #f1f5f9", flexWrap:"wrap" }}>
+              <div key={email} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderBottom:"1px solid #f0f0f0", flexWrap:"wrap" }}>
                 <div style={{ flex:1, minWidth:130 }}>
-                  <div style={{ fontWeight:600, fontSize:14 }}>{info.name}</div>
-                  <div style={{ fontSize:12, color:"#64748b" }}>{email}</div>
-                  <div style={{ fontSize:11, color:"#94a3b8" }}>{done} lessons · ⭐{pts}pts {info.lastLogin?`· ${new Date(info.lastLogin).toLocaleDateString("ru-RU")}`:"· Never logged in"}</div>
+                  <div style={{ fontWeight:600, fontSize:13, color:"#0a0a0a" }}>{info.name}</div>
+                  <div style={{ fontSize:11, color:"#666" }}>{email}</div>
+                  <div style={{ fontSize:10, color:"#888", marginTop:1 }}>{done} lessons · {pts} pts {info.lastLogin?`· ${new Date(info.lastLogin).toLocaleDateString("ru-RU")}`:"· never logged in"}</div>
                 </div>
-                <span style={{ fontSize:11, padding:"3px 10px", borderRadius:20, fontWeight:700, background:info.status==="active"?"#e6f4ea":"#fce8e6", color:info.status==="active"?"#16a34a":"#dc2626" }}>
-                  {info.status==="active"?"✅ Active":"🚫 Revoked"}
+                <span style={{ fontSize:10, padding:"2px 9px", borderRadius:999, fontWeight:700, background: active ? "#0a0a0a":"#f0f0f0", color: active ? "white":"#666", letterSpacing:"0.3px", textTransform:"uppercase" }}>
+                  {active?"Active":"Revoked"}
                 </span>
-                <button onClick={()=>toggle(email,info.status)} style={{ padding:"6px 12px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:info.status==="active"?"#fce8e6":"#e6f4ea", color:info.status==="active"?"#dc2626":"#16a34a" }}>
-                  {info.status==="active"?"Revoke":"Restore"}
+                <button onClick={()=>toggle(email,info.status)} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  {active?"Revoke":"Restore"}
                 </button>
-                <button onClick={()=>remove(email)} style={{ padding:"6px 10px", borderRadius:8, border:"none", background:"#f1f5f9", color:"#64748b", cursor:"pointer" }}>🗑</button>
+                <button onClick={()=>remove(email)} aria-label="Delete" style={{ padding:"5px 9px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#666", cursor:"pointer", fontSize:11 }}>×</button>
               </div>
             );
           })}
@@ -966,20 +997,20 @@ function Login({ login }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1a73e8,#9334E6)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderRadius:20, padding:44, width:380, boxShadow:"0 8px 40px rgba(0,0,0,0.2)" }}>
-        <div style={{ textAlign:"center", marginBottom:30 }}>
-          <div style={{ fontSize:48, marginBottom:10 }}>🎯</div>
-          <h2 style={{ margin:0, color:"#1e293b", fontSize:24 }}>IELTS 8.0 Course</h2>
-          <p style={{ color:"#64748b", margin:"8px 0 0", fontSize:14 }}>Enter your email to access</p>
+    <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", padding:16 }}>
+      <div style={{ background:"white", borderRadius:14, padding:32, width:"100%", maxWidth:360, boxShadow:"0 12px 48px rgba(0,0,0,0.35)" }}>
+        <div style={{ textAlign:"center", marginBottom:24, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+          <BrandLogo size={44} />
+          <h2 style={{ margin:0, color:"#0a0a0a", fontSize:20, letterSpacing:"-0.3px" }}>IELTS<span>8</span></h2>
+          <p style={{ color:"#666", margin:0, fontSize:13 }}>Sign in with your email</p>
         </div>
         <input type="email" placeholder="your@email.com" value={email}
           onChange={e => { setEmail(e.target.value); setErr(""); }}
           onKeyDown={e => e.key === "Enter" && go()}
-          style={{ width:"100%", padding:"13px 16px", borderRadius:12, border:"2px solid #e2e8f0", fontSize:15, boxSizing:"border-box" }} />
-        {err && <p style={{ color:"#dc2626", fontSize:13, margin:"8px 0 0" }}>{err}</p>}
-        <button onClick={go} disabled={loading} style={{ width:"100%", marginTop:16, padding:14, borderRadius:12, border:"none", background:"linear-gradient(135deg,#1a73e8,#9334E6)", color:"white", fontSize:15, fontWeight:700, cursor:"pointer", opacity: loading ? 0.7 : 1 }}>
-          {loading ? "Checking..." : "Enter"}
+          style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:"1.5px solid #e5e5e5", fontSize:14, boxSizing:"border-box", outline:"none" }} />
+        {err && <p style={{ color:"#0a0a0a", fontSize:12, margin:"8px 0 0" }}>{err}</p>}
+        <button onClick={go} disabled={loading} style={{ width:"100%", marginTop:14, padding:12, borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontSize:14, fontWeight:700, cursor:"pointer", opacity: loading ? 0.6 : 1, letterSpacing:"0.2px" }}>
+          {loading ? "Checking…" : "Enter"}
         </button>
       </div>
     </div>
@@ -989,19 +1020,19 @@ function Login({ login }) {
 // ══════════════════════════════════════════
 // NAV
 // ══════════════════════════════════════════
-const nb = (bg,c) => ({ padding:"6px 12px", borderRadius:20, border:"none", background:bg, color:c, cursor:"pointer", fontSize:12, fontWeight:600 });
+const nb = (bg,c) => ({ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:bg, color:c, cursor:"pointer", fontSize:12, fontWeight:600, letterSpacing:"0.2px" });
 
 function Nav({ session, logout, setPage, isAdmin, pts }) {
   return (
-    <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"10px 20px", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", position:"sticky", top:0, zIndex:100 }}>
-      <div style={{ fontWeight:800, fontSize:16, color:"#1a73e8", cursor:"pointer" }} onClick={() => setPage("course")}>IELTS 8.0</div>
-      <div style={{ flex:1 }} />
-      <button onClick={() => setPage("course")} style={nb("#e8f0fe","#1a73e8")}>Course</button>
-      <button onClick={() => setPage("dashboard")} style={nb("#f3e8ff","#9334E6")}>Progress</button>
-      <button onClick={() => setPage("leaderboard")} style={nb("#fff8e1","#ca8a04")}>Board</button>
-      {isAdmin && <button onClick={() => setPage("admin")} style={nb("#fce8e6","#dc2626")}>Admin</button>}
-      <div style={{ background:"#e6f4ea", borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700, color:"#16a34a" }}>{pts} pts</div>
-      <button onClick={logout} style={{ padding:"5px 12px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", cursor:"pointer", fontSize:12, color:"#64748b" }}>Logout</button>
+    <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", position:"sticky", top:0, zIndex:100 }}>
+      <Brand size={22} onClick={() => setPage("course")} />
+      <div style={{ flex:1, minWidth:8 }} />
+      <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
+      <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
+      <button onClick={() => setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>
+      {isAdmin && <button onClick={() => setPage("admin")} style={nb("#0a0a0a","white")}>Admin</button>}
+      <div style={{ background:"#0a0a0a", color:"white", borderRadius:999, padding:"4px 11px", fontSize:12, fontWeight:700, letterSpacing:"0.2px" }}>{pts} pts</div>
+      <button onClick={logout} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", cursor:"pointer", fontSize:12, color:"#666" }}>Logout</button>
     </div>
   );
 }
@@ -1019,40 +1050,41 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const done = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
-      <div style={{ maxWidth:780, margin:"0 auto", padding:20 }}>
-        <div style={{ background:"linear-gradient(135deg,#1a73e8,#9334E6)", borderRadius:16, padding:"24px 28px", color:"white", marginBottom:24 }}>
-          <h2 style={{ margin:0, fontSize:22 }}>Welcome back, {session.name}!</h2>
-          <p style={{ margin:"8px 0 16px", opacity:0.9 }}>B1 to IELTS 6.0 - {allLessons.length} lessons</p>
-          <div style={{ display:"flex", gap:24 }}>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:12, opacity:0.8 }}>Points</div></div>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:12, opacity:0.8 }}>Done</div></div>
-            <div><div style={{ fontSize:24, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:12, opacity:0.8 }}>Progress</div></div>
+      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px" }}>
+        <div style={{ background:"#0a0a0a", borderRadius:14, padding:"18px 20px", color:"white", marginBottom:18 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:700, letterSpacing:"-0.2px" }}>Welcome back, {session.name}</h2>
+          <p style={{ margin:"4px 0 14px", opacity:0.7, fontSize:12 }}>B1 → IELTS Band 8 · {allLessons.length} lessons</p>
+          <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+            <div><div style={{ fontSize:20, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:11, opacity:0.7 }}>Points</div></div>
+            <div><div style={{ fontSize:20, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Done</div></div>
+            <div><div style={{ fontSize:20, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:11, opacity:0.7 }}>Progress</div></div>
           </div>
-          <div style={{ marginTop:12, background:"rgba(255,255,255,0.2)", borderRadius:8, height:10 }}>
-            <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"white", height:10, borderRadius:8 }} />
+          <div style={{ marginTop:12, background:"rgba(255,255,255,0.15)", borderRadius:6, height:6 }}>
+            <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"white", height:6, borderRadius:6, transition:"width 0.3s" }} />
           </div>
         </div>
         {(modules||[]).map(m => (
-          <div key={m.id} style={{ marginBottom:20 }}>
-            <div style={{ background:m.color, borderRadius:"12px 12px 0 0", padding:"12px 20px", color:"white", fontWeight:700, fontSize:14 }}>{m.title}</div>
+          <div key={m.id} style={{ marginBottom:18, border:"1px solid #e5e5e5", borderRadius:12, overflow:"hidden", background:"white" }}>
+            <div style={{ background:"#0a0a0a", padding:"10px 16px", color:"white", fontWeight:700, fontSize:13, letterSpacing:"0.2px" }}>{m.title}</div>
             {m.lessons.map(l => {
               const lp = myProgress[l.id] || {};
+              const done = !!lp.quizDone;
               return (
                 <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                  style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 18px", background:"white", borderBottom:"1px solid #f1f5f9", cursor:"pointer" }}>
-                  <div style={{ width:36, height:36, borderRadius:"50%", background: lp.quizDone ? "#16a34a" : m.color, color:"white", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, flexShrink:0 }}>
-                    {lp.quizDone ? "v" : l.n}
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", background:"white", borderTop:"1px solid #f0f0f0", cursor:"pointer" }}>
+                  <div style={{ width:30, height:30, borderRadius:"50%", background: done ? "#0a0a0a" : "white", border: done ? "none" : "1.5px solid #d4d4d4", color: done ? "white" : "#666", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>
+                    {done ? "✓" : l.n}
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:600, fontSize:14, color:"#1e293b" }}>{l.title}</div>
-                    <div style={{ fontSize:12, color:"#94a3b8", marginTop:2 }}>
-                      {(l.materials||[]).length} materials - {l.quiz.questions.length} questions
-                      {lp.points ? ` - ${lp.points} pts` : ""}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:600, fontSize:13.5, color:"#0a0a0a", lineHeight:1.35 }}>{l.title}</div>
+                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>
+                      {(l.materials||[]).length} materials · {l.quiz.questions.length} questions
+                      {lp.points ? ` · ${lp.points} pts` : ""}
                     </div>
                   </div>
-                  <span style={{ fontSize:11, padding:"3px 10px", borderRadius:10, background:TC[l.tag]||"#94a3b8", color:"white", fontWeight:600 }}>{l.tag}</span>
+                  <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, letterSpacing:"0.2px", flexShrink:0 }}>{l.tag}</span>
                 </div>
               );
             })}
@@ -1109,19 +1141,19 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f8fafc", fontFamily:"sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e2e8f0", padding:"12px 20px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => setPage("course")} style={{ padding:"6px 12px", borderRadius:8, border:"none", background:"#e8f0fe", color:"#1a73e8", cursor:"pointer", fontWeight:600 }}>Back</button>
-        <div style={{ flex:1 }}>
-          <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>Lesson {lesson.n}: {lesson.title}</div>
-          <div style={{ fontSize:12, color:"#94a3b8" }}>{lp.points ? `${lp.points} pts earned` : "Not completed yet"}</div>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:700, fontSize:13.5, color:"#0a0a0a", lineHeight:1.3 }}>{lesson.n ? `Lesson ${lesson.n}` : ""}{lesson.n ? " · " : ""}{lesson.title}</div>
+          <div style={{ fontSize:11, color:"#888", marginTop:2 }}>{lp.points ? `${lp.points} pts earned` : "Not completed yet"}</div>
         </div>
-        <span style={{ fontSize:11, padding:"4px 12px", borderRadius:10, background:TC[lesson.tag]||"#94a3b8", color:"white", fontWeight:600 }}>{lesson.tag}</span>
+        <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[lesson.tag]||"#94a3b8", color:TT(lesson.tag), fontWeight:700, letterSpacing:"0.2px", flexShrink:0 }}>{lesson.tag}</span>
       </div>
-      <div style={{ maxWidth:760, margin:"0 auto", padding:20 }}>
-        <div style={{ display:"flex", gap:4, marginBottom:20, background:"white", borderRadius:12, padding:6, border:"1px solid #e2e8f0" }}>
+      <div style={{ maxWidth:740, margin:"0 auto", padding:"14px" }}>
+        <div style={{ display:"flex", gap:4, marginBottom:14, background:"white", borderRadius:10, padding:4, border:"1px solid #e5e5e5" }}>
           {["materials","quiz","assignment"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ flex:1, padding:"9px", borderRadius:9, border:"none", cursor:"pointer", fontWeight:600, fontSize:13, background:tab===t?"#1a73e8":"transparent", color:tab===t?"white":"#64748b" }}>
+            <button key={t} onClick={() => setTab(t)} style={{ flex:1, padding:"8px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:tab===t?"#0a0a0a":"transparent", color:tab===t?"white":"#666", letterSpacing:"0.2px" }}>
               {t==="materials"?"Materials":t==="quiz"?"Quiz":"Assignment"}
             </button>
           ))}
@@ -1130,38 +1162,38 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
         {tab==="materials" && (
           <div>
             {isAdmin && (
-              <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e2e8f0" }}>
+              <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e5e5e5" }}>
                 <div style={{ fontWeight:700, marginBottom:12 }}>Add Material</div>
                 <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
                   {["link","video","presentation","pdf"].map(t => (
-                    <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#1a73e8":"#e2e8f0", color:addType===t?"white":"#475569" }}>
+                    <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#0a0a0a":"#e5e5e5", color:addType===t?"white":"#475569" }}>
                       {t==="link"?"Link":t==="video"?"Video":t==="presentation"?"Slides":"PDF"}
                     </button>
                   ))}
                 </div>
                 <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
                 <input placeholder="URL" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e2e8f0", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#34A853", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
+                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
                   {saving ? "Saving..." : "Add"}
                 </button>
               </div>
             )}
             {materials.length === 0 ? (
-              <div style={{ textAlign:"center", padding:40, color:"#94a3b8", background:"white", borderRadius:14, border:"2px dashed #e2e8f0" }}>
+              <div style={{ textAlign:"center", padding:40, color:"#94a3b8", background:"white", borderRadius:14, border:"2px dashed #e5e5e5" }}>
                 {isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}
               </div>
             ) : (
               materials.map(mat => (
-                <div key={mat.id} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, border:"1px solid #e2e8f0" }}>
+                <div key={mat.id} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, border:"1px solid #e5e5e5" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:600, color:"#1e293b" }}>{mat.title}</div>
                       <div style={{ fontSize:12, color:"#94a3b8" }}>{mat.type}</div>
                     </div>
-                    <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding:"7px 14px", borderRadius:8, background:"#e8f0fe", color:"#1a73e8", textDecoration:"none", fontSize:13, fontWeight:600 }}>Open</a>
-                    {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ padding:"7px 10px", borderRadius:8, border:"none", background:"#fce8e6", color:"#dc2626", cursor:"pointer" }}>Del</button>}
+                    <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding:"7px 14px", borderRadius:8, background:"#f4f4f4", color:"#0a0a0a", textDecoration:"none", fontSize:13, fontWeight:600 }}>Open</a>
+                    {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ padding:"7px 10px", borderRadius:8, border:"none", background:"#f4f4f4", color:"#0a0a0a", cursor:"pointer" }}>Del</button>}
                   </div>
                   {mat.type==="video" && mat.url && mat.url.includes("youtube") && (
                     <div style={{ marginTop:12, borderRadius:10, overflow:"hidden" }}>
@@ -1178,12 +1210,11 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
 
         {tab==="quiz" && (
           <div>
-            <div style={{ background:"linear-gradient(135deg,#1a73e8,#0891b2)", borderRadius:14, padding:20, color:"white", marginBottom:16 }}>
-              <div style={{ fontSize:18, fontWeight:700 }}>Quiz: {lesson.title}</div>
-              <div style={{ fontSize:13, opacity:0.9, marginTop:4 }}>{lesson.quiz.questions.length} questions</div>
-              {lp.quizDone && <div style={{ marginTop:8, background:"rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 12px", fontSize:13 }}>You scored {lp.quizScore} pts</div>}
+            <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
+              <div style={{ fontSize:14, fontWeight:700 }}>Quiz · {lesson.quiz.questions.length} questions</div>
+              {lp.quizDone && <div style={{ marginTop:6, fontSize:12, opacity:0.75 }}>Last score: {lp.quizScore} pts</div>}
             </div>
-            <button onClick={() => setPage("quiz")} style={{ width:"100%", padding:16, borderRadius:12, border:"none", background:lp.quizDone?"#e2e8f0":"linear-gradient(135deg,#1a73e8,#9334E6)", color:lp.quizDone?"#64748b":"white", fontWeight:700, fontSize:16, cursor:"pointer" }}>
+            <button onClick={() => setPage("quiz")} style={{ width:"100%", padding:13, borderRadius:10, border:"none", background:lp.quizDone?"white":"#0a0a0a", color:lp.quizDone?"#0a0a0a":"white", fontWeight:700, fontSize:14, cursor:"pointer", borderWidth:1, borderStyle:"solid", borderColor:lp.quizDone?"#e5e5e5":"#0a0a0a" }}>
               {lp.quizDone?"Retake Quiz":"Start Quiz"}
             </button>
           </div>
@@ -1191,11 +1222,12 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
 
         {tab==="assignment" && (
           <div>
-            <div style={{ background:"linear-gradient(135deg,#EA4335,#FBBC04)", borderRadius:14, padding:20, color:"white", marginBottom:16 }}>
-              <div style={{ fontSize:18, fontWeight:700 }}>Assignment</div>
+            <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
+              <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
+              <div style={{ fontSize:12, opacity:0.7, marginTop:2 }}>{lesson.assignment.type==="essay"?"Written essay · AI feedback":lesson.assignment.type==="speaking"?"Speaking task":"Written response"}</div>
             </div>
-            <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:16, borderRadius:12, border:"none", background:"linear-gradient(135deg,#EA4335,#FBBC04)", color:"white", fontWeight:700, fontSize:16, cursor:"pointer" }}>
-              Submit Assignment
+            <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:13, borderRadius:10, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+              Open Assignment
             </button>
           </div>
         )}
@@ -1241,7 +1273,7 @@ export default function App() {
   };
 
   if (loading) return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#1a73e8,#9334E6)", fontFamily:"sans-serif" }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#0a0a0a,#0a0a0a)", fontFamily:"sans-serif" }}>
       <div style={{ color:"white", textAlign:"center" }}>
         <div style={{ fontSize:48, marginBottom:16 }}>Loading...</div>
       </div>
