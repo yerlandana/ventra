@@ -1,70 +1,111 @@
-# Getting Started with Create React App
+# IELTS8
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A minimalist online IELTS preparation course that guides learners from
+**B1 to IELTS Band 8** through structured lessons, quizzes, written
+assignments, AI feedback, and full mock tests.
 
-## Available Scripts
+The site is intentionally black‑and‑white — colour is reserved only for
+the four IELTS skill tags, so the focus stays on the content:
 
-In the project directory, you can run:
+- 🟥 **Reading** — `#FF5959`
+- 🟨 **Listening** — `#FAD05A`
+- 🟩 **Writing** — `#49BEB6`
+- 🟦 **Speaking** — `#075F63`
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **5 modules · 24 lessons · 5 mock tests** — Listening, Reading,
+  Writing, Speaking, with Grammar / Vocabulary built into every lesson.
+- **Per‑lesson materials** — links, slides, PDFs and embedded YouTube
+  videos that the teacher can upload and edit live from the admin panel.
+- **Quizzes** with multiple‑choice, true/false, fill‑in‑the‑blank and
+  matching question types, plus an instant score breakdown.
+- **Writing & Speaking assignments** sent to the Anthropic Claude API
+  for IELTS‑band feedback (Task Response, Coherence & Cohesion, Lexical
+  Resource, Grammatical Range & Accuracy).
+- **Progress dashboard** — points, completion %, per‑module progress
+  bars and per‑lesson status.
+- **Leaderboard** — ranks every active student by total points.
+- **Admin panel** for the teacher: add / revoke / remove students and
+  monitor everyone’s progress.
+- **Adaptive layout** — the UI is small, dense and responsive down to
+  phone screens.
+- **Open Graph / Twitter Card** previews — the link shows the IELTS8
+  brand image and description in Telegram, WhatsApp, Slack, Discord,
+  iMessage, X, etc.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech stack
 
-### `npm test`
+| Layer        | Tool                                                                |
+| ------------ | ------------------------------------------------------------------- |
+| Frontend     | React 18 (Create React App)                                         |
+| Styling      | Inline styles, monochrome design system, system font stack          |
+| Auth         | E‑mail allowlist (no password) — managed by the admin               |
+| Database     | Firebase Firestore (`students`, `progress`, `submissions`, `lessons`, `config/structure`) |
+| AI feedback  | Anthropic Claude API (`claude-sonnet-4-20250514`) for essay scoring |
+| Hosting      | Static site — works on any host that serves `build/`                |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Project layout
 
-### `npm run build`
+```
+ventra/
+├── public/
+│   ├── index.html        # title, meta, OG / Twitter previews
+│   ├── favicon.svg       # IELTS8 mark (black square + white "8")
+│   ├── og-image.svg      # 1200×630 share preview
+│   └── manifest.json     # PWA metadata
+└── src/
+    ├── App.js            # the entire app: routes, modules, pages, admin
+    ├── index.css         # base resets and focus styles
+    └── index.js          # React entry
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The course structure (modules, lessons, quizzes, assignments) lives in
+`INITIAL_MODULES` inside [src/App.js](src/App.js); the live structure is
+loaded from Firestore (`config/structure`) and falls back to the local
+copy on first run.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Roles
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **Student** — signs in with the email the teacher added; sees the
+  course, takes quizzes, submits writing/speaking, tracks points and
+  ranking.
+- **Admin / Teacher** — signs in with the configured admin email; can
+  add and remove students, revoke or restore access, see everyone’s
+  progress, upload lesson materials.
 
-### `npm run eject`
+## Local development
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Requirements: **Node 18+**.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm install
+npm start          # runs http://localhost:3000
+npm run build      # production bundle in build/
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The Firebase config and the admin email are currently hard‑coded in
+[src/App.js](src/App.js). For a real deployment move them into
+environment variables (`REACT_APP_*`) and rotate the API key.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Deployment
 
-## Learn More
+Any static host works. After `npm run build`, deploy the `build/`
+folder. Examples:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- **Vercel / Netlify** — connect the GitHub repo, the build command is
+  `npm run build`, the output directory is `build`.
+- **GitHub Pages** — `npm run build`, then publish the `build/` folder.
+- **Firebase Hosting** — `firebase init hosting` (public dir = `build`),
+  then `firebase deploy`.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Branding
 
-### Code Splitting
+If you fork the project and want a different brand, change:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. The brand text and `<BrandLogo>` SVG inside [src/App.js](src/App.js).
+2. `public/favicon.svg` and `public/og-image.svg`.
+3. The OG / Twitter / `<title>` / `<description>` strings in
+   [public/index.html](public/index.html).
+4. The `name`, `short_name` and `theme_color` fields in
+   [public/manifest.json](public/manifest.json).
