@@ -146,6 +146,32 @@ const TC = {
 // Tag chip text color — yellow Listening needs dark text for contrast
 const TT = (tag) => tag === "Listening" ? "#0a0a0a" : "#ffffff";
 
+// ─── ASSIGNMENT TIMER + SELF-ASSESSMENT RUBRIC ───
+const ASSIGNMENT_TIMER_MS = 60 * 60 * 1000; // 1 hour
+const RUBRIC_DEFS = {
+  essay: [
+    { key: "tr",  label: "Task Response",        help: "Did I fully answer all parts of the question with a clear position and developed ideas?" },
+    { key: "cc",  label: "Coherence & Cohesion", help: "Is the essay logically organised with clear paragraphs and appropriate linkers?" },
+    { key: "lr",  label: "Lexical Resource",     help: "Is my vocabulary varied and accurate, with some less common words used correctly?" },
+    { key: "gra", label: "Grammar",              help: "Did I use a range of structures (complex, conditional, passive) with few errors?" },
+  ],
+  speaking: [
+    { key: "fc",  label: "Fluency & Coherence",  help: "Did I speak smoothly without long pauses and connect ideas well?" },
+    { key: "lr",  label: "Lexical Resource",     help: "Did I use a range of vocabulary, including topic-specific words and natural expressions?" },
+    { key: "gra", label: "Grammar",              help: "Did I use a mix of simple and complex sentences with few errors?" },
+    { key: "pr",  label: "Pronunciation",        help: "Was my pronunciation clear, with natural rhythm, stress and intonation?" },
+  ],
+};
+const BAND_OPTIONS = [4, 5, 6, 7, 8, 9];
+const BAND_HINT = { 4:"Limited", 5:"Modest", 6:"Competent", 7:"Good", 8:"Very good", 9:"Expert" };
+const wordCountOf = (s) => (s || "").trim().split(/\s+/).filter(Boolean).length;
+const fmtTime = (ms) => {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = String(Math.floor(total / 60)).padStart(2, "0");
+  const s = String(total % 60).padStart(2, "0");
+  return `${m}:${s}`;
+};
+
 // ─── BRAND LOGO (inline SVG) ───
 const BrandLogo = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display:"block", flexShrink:0 }}>
@@ -665,104 +691,287 @@ function QuizPage({ lesson, session, setPage }) {
 // ASSIGNMENT PAGE
 // ══════════════════════════════════════════
 function AssignmentPage({ lesson, session, setPage }) {
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
+  const aType = lesson.assignment.type;          // "essay" | "speaking" | "writing"
+  const isEssay    = aType === "essay";
+  const isSpeaking = aType === "speaking";
+  const useTimer   = isEssay;                    // 1h timer only for essay tasks
+  const useRubric  = isEssay || isSpeaking;
+  const rubricDef  = isSpeaking ? RUBRIC_DEFS.speaking : RUBRIC_DEFS.essay;
 
-  const submit = async () => {
-    if (!text.trim() || text.trim().length < 50) return;
-    setLoading(true);
-    const isEssay = lesson.assignment.type === "essay";
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: isEssay
-            ? `You are an expert IELTS examiner. Score using 4 band descriptors. Return ONLY valid JSON: {"overall":6.0,"tr":6.0,"cc":6.0,"lr":6.0,"gra":6.0,"strengths":["s1","s2","s3"],"improvements":["i1","i2","i3"],"corrected_sentence":"example correction","summary":"2-3 sentence summary"}`
-            : `You are a helpful English teacher. Return ONLY valid JSON: {"score":8,"max_score":10,"strengths":["s1","s2"],"improvements":["i1","i2"],"summary":"feedback"}`,
-          messages: [{ role:"user", content:`Task: ${lesson.assignment.prompt}\n\nStudent response:\n${text}` }]
-        })
-      });
-      const data = await res.json();
-      const raw = data.content?.[0]?.text || "{}";
-      const parsed = JSON.parse(raw.replace(/```json|```/g,"").trim());
-      setFeedback(parsed);
-      await FB.setSubmission(session.email, lesson.id, { text, feedback:parsed, submittedAt:new Date().toISOString() });
-      const existing = await FB.getProgress(session.email);
-      const prev = existing[lesson.id] || {};
-      await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone:true, points:(prev.points||0)+20 } });
-      setSubmitted(true);
-    } catch(e) { setFeedback({ error:"Could not get AI feedback. Please try again." }); }
-    setLoading(false);
+  const timerKey = `assign_start_${session.email}_${lesson.id}`;
+
+  const [stage, setStage] = useState(useTimer ? "intro" : "writing"); // intro | writing | rubric | done
+  const [text, setText] = useState("");
+  const [startedAt, setStartedAt] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const [rubric, setRubric] = useState({});
+  const [notes, setNotes] = useState("");
+  const [previous, setPrevious] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Load existing submission + restore timer
+  useEffect(() => {
+    let alive = true;
+    FB.getSubmissions(session.email).then(s => {
+      if (!alive) return;
+      const prior = s[lesson.id];
+      if (prior) {
+        setPrevious(prior);
+        if (prior.rubric || (!useRubric && prior.text)) { setStage("done"); return; }
+        if (prior.text) setText(prior.text);
+      }
+      if (useTimer) {
+        const saved = localStorage.getItem(timerKey);
+        if (saved) {
+          setStartedAt(parseInt(saved, 10));
+          setStage("writing");
+        }
+      }
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id]);
+
+  // Tick once per second while writing under timer
+  useEffect(() => {
+    if (stage !== "writing" || !useTimer || !startedAt) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [stage, useTimer, startedAt]);
+
+  const startWork = () => {
+    const t = Date.now();
+    localStorage.setItem(timerKey, String(t));
+    setStartedAt(t);
+    setStage("writing");
   };
 
-  const bc = (b) => b>=7?"#0a0a0a":b>=6?"#333333":b>=5?"#777777":"#bbbbbb";
+  const wc = wordCountOf(text);
+  const minWords = isEssay ? 150 : 50;
+  const canSubmitText = wc >= minWords && !saving;
+
+  const submitText = async () => {
+    if (!canSubmitText) return;
+    setSaving(true);
+    try {
+      await FB.setSubmission(session.email, lesson.id, {
+        text,
+        type: aType,
+        startedAt: startedAt ? new Date(startedAt).toISOString() : null,
+        submittedAt: new Date().toISOString(),
+      });
+      if (!useRubric) {
+        const existing = await FB.getProgress(session.email);
+        const prev = existing[lesson.id] || {};
+        await FB.setProgress(session.email, {
+          [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + 10 }
+        });
+        if (useTimer) localStorage.removeItem(timerKey);
+        setPrevious({ text, type: aType, submittedAt: new Date().toISOString() });
+        setStage("done");
+      } else {
+        setStage("rubric");
+      }
+    } finally { setSaving(false); }
+  };
+
+  const allBandsPicked = rubricDef.every(d => rubric[d.key]);
+  const overall = allBandsPicked
+    ? Math.round(rubricDef.reduce((s, d) => s + Number(rubric[d.key]), 0) / rubricDef.length * 2) / 2
+    : null;
+
+  const submitRubric = async () => {
+    if (!allBandsPicked || saving) return;
+    setSaving(true);
+    try {
+      const sub = {
+        text,
+        type: aType,
+        startedAt: startedAt ? new Date(startedAt).toISOString() : (previous?.startedAt || null),
+        submittedAt: new Date().toISOString(),
+        rubric: { ...rubric, overall, notes: notes.trim() },
+      };
+      await FB.setSubmission(session.email, lesson.id, sub);
+      const existing = await FB.getProgress(session.email);
+      const prev = existing[lesson.id] || {};
+      await FB.setProgress(session.email, {
+        [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + 20 }
+      });
+      if (useTimer) localStorage.removeItem(timerKey);
+      setPrevious(sub);
+      setStage("done");
+    } finally { setSaving(false); }
+  };
+
+  const restart = () => {
+    setStage(useTimer ? "intro" : "writing");
+    setText("");
+    setStartedAt(null);
+    setRubric({});
+    setNotes("");
+    if (useTimer) localStorage.removeItem(timerKey);
+  };
+
+  const remaining = startedAt ? Math.max(0, ASSIGNMENT_TIMER_MS - (now - startedAt)) : ASSIGNMENT_TIMER_MS;
+  const timesUp = useTimer && startedAt && remaining === 0;
+  const lowTime = useTimer && remaining > 0 && remaining < 5 * 60 * 1000;
+
+  const labels = {
+    essay:    { kind: "Your essay",    placeholder: "Write your essay here…" },
+    speaking: { kind: "Your response", placeholder: "Type your answer here, or paste a link to your recording…" },
+    writing:  { kind: "Your answer",   placeholder: "Type your answer here…" },
+  }[aType];
 
   return (
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
+      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0, zIndex:50 }}>
+        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
         <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {lesson.title}</div>
+        {stage === "writing" && useTimer && startedAt && (
+          <div style={{ flexShrink:0, padding:"4px 10px", borderRadius:999, background: timesUp ? "#0a0a0a" : (lowTime ? "#0a0a0a" : "#f4f4f4"), color: (timesUp || lowTime) ? "white" : "#0a0a0a", fontWeight:800, fontSize:12, fontVariantNumeric:"tabular-nums", letterSpacing:"0.5px" }}>
+            {timesUp ? "TIME'S UP" : fmtTime(remaining)}
+          </div>
+        )}
       </div>
+
       <div style={{ maxWidth:700, margin:"0 auto", padding:"14px" }}>
         <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
-          <div style={{ fontWeight:700, marginBottom:8, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Task</div>
+          <div style={{ fontWeight:700, marginBottom:8, fontSize:11, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Task</div>
           <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{lesson.assignment.prompt}</div>
         </div>
-        {!submitted && (
+
+        {/* INTRO — start the 1h timer for essays */}
+        {stage === "intro" && (
+          <div style={{ background:"white", borderRadius:10, padding:"16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:6 }}>Ready to start?</div>
+            <div style={{ fontSize:12.5, color:"#666", lineHeight:1.55, marginBottom:12 }}>
+              You'll have <b>60 minutes</b> to write your essay (recommended: at least {minWords} words).
+              The timer keeps running even if you reload the page. After submitting, you'll grade yourself
+              with the IELTS band rubric.
+            </div>
+            <button onClick={startWork} style={{ width:"100%", padding:12, borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.2px" }}>Start · 60:00</button>
+          </div>
+        )}
+
+        {/* WRITING — textarea + word count + submit */}
+        {stage === "writing" && (
           <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
-            <div style={{ fontWeight:700, marginBottom:10, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>{lesson.assignment.type==="essay"?"Your essay":lesson.assignment.type==="speaking"?"Your response":"Your answer"}</div>
-            <textarea value={text} onChange={e=>setText(e.target.value)}
-              placeholder={lesson.assignment.type==="essay"?"Write your essay here (min 150–250 words)…":"Write your response or paste a recording link…"}
-              style={{ width:"100%", minHeight:200, padding:12, borderRadius:8, border:"1px solid #e5e5e5", fontSize:13.5, lineHeight:1.6, resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", outline:"none" }} />
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10, gap:10, flexWrap:"wrap" }}>
-              <div style={{ fontSize:11, color:"#888" }}>{text.trim().split(/\s+/).filter(Boolean).length} words</div>
-              <button onClick={submit} disabled={loading||text.trim().length<50}
-                style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background:loading||text.trim().length<50?"#e5e5e5":"#0a0a0a", color:text.trim().length<50?"#888":"white", fontWeight:700, fontSize:13, cursor:text.trim().length<50?"not-allowed":"pointer", borderColor:loading||text.trim().length<50?"#e5e5e5":"#0a0a0a" }}>
-                {loading?"AI is checking…":lesson.assignment.type==="essay"?"Get AI feedback":"Submit"}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, gap:10, flexWrap:"wrap" }}>
+              <div style={{ fontWeight:700, fontSize:11, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>{labels.kind}</div>
+              <div style={{ fontSize:11, color: wc >= minWords ? "#0a0a0a" : "#888", fontWeight: wc >= minWords ? 700 : 500 }}>
+                {wc} / {minWords}+ words
+              </div>
+            </div>
+            <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={labels.placeholder}
+              style={{ width:"100%", minHeight:240, padding:12, borderRadius:8, border:"1px solid #e5e5e5", fontSize:13.5, lineHeight:1.6, resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", outline:"none" }} />
+            {timesUp && (
+              <div style={{ marginTop:10, padding:"8px 12px", borderRadius:8, background:"#f4f4f4", color:"#0a0a0a", fontSize:12 }}>
+                Time's up. You can still submit, but in the real exam this would already be marked.
+              </div>
+            )}
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
+              <button onClick={submitText} disabled={!canSubmitText}
+                style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background: canSubmitText ? "#0a0a0a" : "#e5e5e5", color: canSubmitText ? "white" : "#888", fontWeight:700, fontSize:13, cursor: canSubmitText ? "pointer" : "not-allowed", borderColor: canSubmitText ? "#0a0a0a" : "#e5e5e5" }}>
+                {saving ? "Saving…" : (useRubric ? "Submit · grade myself →" : "Submit")}
               </button>
             </div>
           </div>
         )}
-        {feedback && !feedback.error && (
-          <div style={{ background:"white", borderRadius:14, padding:24, border:"1px solid #e5e5e5" }}>
-            <div style={{ fontWeight:800, fontSize:18, marginBottom:16 }}>🤖 AI Feedback</div>
-            {lesson.assignment.type==="essay" && (
-              <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
-                {[["Overall",feedback.overall],["Task",feedback.tr],["Coherence",feedback.cc],["Lexical",feedback.lr],["Grammar",feedback.gra]].map(([l,v])=>(
-                  <div key={l} style={{ flex:1, minWidth:80, textAlign:"center", background:"#fafafa", borderRadius:12, padding:"12px 8px", border:`2px solid ${bc(v)}` }}>
-                    <div style={{ fontSize:22, fontWeight:800, color:bc(v) }}>{v}</div>
-                    <div style={{ fontSize:11, color:"#64748b" }}>{l}</div>
+
+        {/* RUBRIC — self-assessment */}
+        {stage === "rubric" && (
+          <div style={{ background:"white", borderRadius:10, padding:"16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:4 }}>Grade yourself · IELTS bands</div>
+            <div style={{ fontSize:12, color:"#666", marginBottom:14, lineHeight:1.5 }}>
+              Be honest. Reading the descriptors and scoring yourself trains your eye for what examiners look at.
+            </div>
+
+            {rubricDef.map(d => (
+              <div key={d.key} style={{ marginBottom:14, paddingBottom:14, borderBottom:"1px solid #f0f0f0" }}>
+                <div style={{ fontWeight:700, fontSize:13, color:"#0a0a0a" }}>{d.label}</div>
+                <div style={{ fontSize:11.5, color:"#666", marginTop:3, marginBottom:8, lineHeight:1.5 }}>{d.help}</div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {BAND_OPTIONS.map(b => {
+                    const active = rubric[d.key] === b;
+                    return (
+                      <button key={b} onClick={() => setRubric({ ...rubric, [d.key]: b })}
+                        style={{ flex:"1 1 45px", minWidth:42, padding:"8px 0", borderRadius:8, border:`1px solid ${active ? "#0a0a0a" : "#e5e5e5"}`, background: active ? "#0a0a0a" : "white", color: active ? "white" : "#0a0a0a", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                        {b}
+                      </button>
+                    );
+                  })}
+                </div>
+                {rubric[d.key] && (
+                  <div style={{ fontSize:11, color:"#888", marginTop:6 }}>
+                    Band {rubric[d.key]} · {BAND_HINT[rubric[d.key]]}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontWeight:700, fontSize:11, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666", marginBottom:6 }}>What I'll improve next time (optional)</div>
+              <textarea value={notes} onChange={e=>setNotes(e.target.value)}
+                placeholder="e.g. Use more linkers in body paragraphs; vary sentence openings; check articles."
+                style={{ width:"100%", minHeight:70, padding:10, borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, lineHeight:1.5, resize:"vertical", boxSizing:"border-box", fontFamily:"inherit", outline:"none" }} />
+            </div>
+
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
+              <div style={{ fontSize:13, color:"#666" }}>
+                Overall band: <b style={{ color:"#0a0a0a", fontSize:18 }}>{overall ?? "—"}</b>
+              </div>
+              <button onClick={submitRubric} disabled={!allBandsPicked || saving}
+                style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background: allBandsPicked ? "#0a0a0a" : "#e5e5e5", color: allBandsPicked ? "white" : "#888", fontWeight:700, fontSize:13, cursor: allBandsPicked ? "pointer" : "not-allowed", borderColor: allBandsPicked ? "#0a0a0a" : "#e5e5e5" }}>
+                {saving ? "Saving…" : "Save self-assessment"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* DONE — summary of latest submission */}
+        {stage === "done" && previous && (
+          <div style={{ background:"white", borderRadius:10, padding:"16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:12 }}>
+              <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a" }}>Submitted</div>
+              <div style={{ fontSize:11, color:"#888" }}>{previous.submittedAt ? new Date(previous.submittedAt).toLocaleString("en-GB") : ""}</div>
+            </div>
+
+            {previous.rubric && (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(78px, 1fr))", gap:8, marginBottom:14 }}>
+                <div style={{ background:"#0a0a0a", color:"white", borderRadius:8, padding:"10px 8px", textAlign:"center" }}>
+                  <div style={{ fontSize:20, fontWeight:800 }}>{previous.rubric.overall ?? "—"}</div>
+                  <div style={{ fontSize:10, opacity:0.8, letterSpacing:"0.3px", textTransform:"uppercase" }}>Overall</div>
+                </div>
+                {rubricDef.map(d => (
+                  <div key={d.key} style={{ background:"#fafafa", border:"1px solid #e5e5e5", borderRadius:8, padding:"10px 8px", textAlign:"center" }}>
+                    <div style={{ fontSize:18, fontWeight:800, color:"#0a0a0a" }}>{previous.rubric[d.key] ?? "—"}</div>
+                    <div style={{ fontSize:10, color:"#666", letterSpacing:"0.2px" }}>{d.label}</div>
                   </div>
                 ))}
               </div>
             )}
-            {feedback.corrected_sentence && (
-              <div style={{ background:"#f4f4f4", borderRadius:10, padding:14, marginBottom:16 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:"#0a0a0a", marginBottom:4 }}>💡 Example Correction</div>
-                <div style={{ fontSize:14 }}>{feedback.corrected_sentence}</div>
+
+            {previous.rubric?.notes && (
+              <div style={{ background:"#fafafa", border:"1px solid #e5e5e5", borderRadius:8, padding:"10px 12px", fontSize:12.5, color:"#0a0a0a", lineHeight:1.55, marginBottom:12 }}>
+                <div style={{ fontSize:10, color:"#666", letterSpacing:"0.3px", textTransform:"uppercase", marginBottom:4, fontWeight:700 }}>To improve</div>
+                {previous.rubric.notes}
               </div>
             )}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
-              <div>
-                <div style={{ fontWeight:700, color:"#0a0a0a", marginBottom:8 }}>✅ Strengths</div>
-                {(feedback.strengths||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #0a0a0a" }}>{s}</div>)}
-              </div>
-              <div>
-                <div style={{ fontWeight:700, color:"#666666", marginBottom:8 }}>📈 Improve</div>
-                {(feedback.improvements||[]).map((s,i)=><div key={i} style={{ fontSize:13, marginBottom:6, paddingLeft:10, borderLeft:"3px solid #666666" }}>{s}</div>)}
-              </div>
-            </div>
-            {feedback.summary && <div style={{ background:"#fafafa", borderRadius:10, padding:14, fontSize:14, lineHeight:1.6 }}>{feedback.summary}</div>}
-            <div style={{ marginTop:12, textAlign:"center", color:"#0a0a0a", fontWeight:700, fontSize:13 }}>⭐ +20 points earned!</div>
-            <button onClick={()=>{setSubmitted(false);setText("");setFeedback(null);}} style={{ width:"100%", marginTop:16, padding:12, borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>✏️ Rewrite & Resubmit</button>
+
+            {previous.text && (
+              <details style={{ marginBottom:12 }}>
+                <summary style={{ fontSize:12, color:"#666", cursor:"pointer", padding:"4px 0" }}>Show submitted text ({wordCountOf(previous.text)} words)</summary>
+                <div style={{ marginTop:8, padding:12, background:"#fafafa", border:"1px solid #e5e5e5", borderRadius:8, fontSize:13, lineHeight:1.6, whiteSpace:"pre-wrap", color:"#0a0a0a" }}>
+                  {previous.text}
+                </div>
+              </details>
+            )}
+
+            <button onClick={restart} style={{ width:"100%", padding:11, borderRadius:8, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+              Try again
+            </button>
           </div>
         )}
-        {feedback?.error && <div style={{ background:"#f4f4f4", borderRadius:12, padding:16, color:"#0a0a0a" }}>{feedback.error}</div>}
       </div>
     </div>
   );
@@ -1106,12 +1315,17 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
   const [myProgress, setMyProgress] = useState({});
   const [saving, setSaving] = useState(false);
   const [materials, setMaterials] = useState(lesson.materials || []);
+  const [submission, setSubmission] = useState(null);
 
   useEffect(() => {
     FB.getLessonMaterials(lesson.id).then(mats => { setMaterials(mats || []); });
   }, [lesson.id]);
 
   useEffect(() => { FB.getProgress(session.email).then(setMyProgress); }, [session.email]);
+
+  useEffect(() => {
+    FB.getSubmissions(session.email).then(s => setSubmission(s[lesson.id] || null));
+  }, [session.email, lesson.id]);
 
   const lp = myProgress[lesson.id] || {};
 
@@ -1220,17 +1434,35 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
           </div>
         )}
 
-        {tab==="assignment" && (
-          <div>
-            <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
-              <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
-              <div style={{ fontSize:12, opacity:0.7, marginTop:2 }}>{lesson.assignment.type==="essay"?"Written essay · AI feedback":lesson.assignment.type==="speaking"?"Speaking task":"Written response"}</div>
+        {tab==="assignment" && (() => {
+          const aType = lesson.assignment.type;
+          const desc = aType === "essay"    ? "Essay · 60-min timer · self-assessment"
+                     : aType === "speaking" ? "Speaking task · self-assessment"
+                                            : "Short written response";
+          const done = !!submission;
+          const band = submission?.rubric?.overall;
+          return (
+            <div>
+              <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
+                    <div style={{ fontSize:12, opacity:0.75, marginTop:2 }}>{desc}</div>
+                  </div>
+                  {band != null && (
+                    <div style={{ background:"white", color:"#0a0a0a", borderRadius:8, padding:"6px 12px", textAlign:"center", minWidth:54 }}>
+                      <div style={{ fontSize:18, fontWeight:800, lineHeight:1 }}>{band}</div>
+                      <div style={{ fontSize:9, letterSpacing:"0.4px", textTransform:"uppercase", color:"#666", marginTop:2 }}>Band</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:13, borderRadius:10, border:"1px solid #0a0a0a", background: done ? "white" : "#0a0a0a", color: done ? "#0a0a0a" : "white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                {done ? "Open · review or retry" : "Open Assignment"}
+              </button>
             </div>
-            <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:13, borderRadius:10, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
-              Open Assignment
-            </button>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
