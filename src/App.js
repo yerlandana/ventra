@@ -1,5 +1,5 @@
 // src/App.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 
@@ -172,6 +172,151 @@ const fmtTime = (ms) => {
   return `${m}:${s}`;
 };
 
+// ─── TIMED TEST: 25 questions · 30-minute limit ───
+const QUIZ_TIMER_MS = 30 * 60 * 1000; // 30 minutes
+
+// ─── QUIZ ILLUSTRATIONS (inline SVG, aviation + IELTS themed) ───
+const QUIZ_SVG = {
+  plane: (
+    <g>
+      <path d="M14,46 L86,30 Q98,27 104,34 Q98,41 86,40 L60,42 L44,58 L36,57 L44,43 L24,45 L16,53 L10,52 Z" fill="#1A5FAD"/>
+      <circle cx="98" cy="35" r="3" fill="#9ED9CF"/>
+      <path d="M50,42 L40,30 L46,30 L60,40 Z" fill="#0D4F45"/>
+    </g>
+  ),
+  airport: (
+    <g>
+      <rect x="14" y="40" width="92" height="26" rx="3" fill="#1A5FAD" opacity=".9"/>
+      <path d="M14,40 Q60,24 106,40 Z" fill="#49BEB6"/>
+      <g fill="#E5EEFA"><rect x="22" y="46" width="10" height="14"/><rect x="38" y="46" width="10" height="14"/><rect x="54" y="46" width="10" height="14"/><rect x="70" y="46" width="10" height="14"/><rect x="86" y="46" width="10" height="14"/></g>
+      <path d="M70,30 L90,16 L92,18 L78,34 Z" fill="#0a0a0a"/>
+    </g>
+  ),
+  controlTower: (
+    <g>
+      <rect x="52" y="30" width="14" height="40" fill="#7A7870"/>
+      <path d="M44,30 L74,30 L68,14 L50,14 Z" fill="#1A5FAD"/>
+      <rect x="50" y="18" width="18" height="8" fill="#E5EEFA"/>
+      <rect x="28" y="64" width="62" height="6" fill="#3D3C39"/>
+    </g>
+  ),
+  runway: (
+    <g>
+      <path d="M30,16 L48,16 L82,68 L10,68 Z" fill="#3D3C39"/>
+      <g fill="#F5C07A"><rect x="42" y="22" width="6" height="8"/><rect x="40" y="36" width="8" height="9"/><rect x="36" y="52" width="10" height="10"/></g>
+    </g>
+  ),
+  boardingPass: (
+    <g>
+      <rect x="12" y="24" width="96" height="36" rx="4" fill="#fff" stroke="#1A5FAD" strokeWidth="2"/>
+      <rect x="78" y="24" width="2" height="36" fill="#1A5FAD" strokeDasharray="3 3"/>
+      <circle cx="93" cy="42" r="9" fill="#E5EEFA"/>
+      <path d="M88,42 L98,38 L96,42 L98,46 Z" fill="#1A5FAD"/>
+      <g fill="#1A5FAD"><rect x="20" y="32" width="34" height="4" rx="2"/><rect x="20" y="42" width="24" height="3" rx="1.5"/><rect x="20" y="49" width="40" height="3" rx="1.5"/></g>
+    </g>
+  ),
+  departureBoard: (
+    <g>
+      <rect x="14" y="18" width="92" height="48" rx="4" fill="#0a0a0a"/>
+      <g fill="#49BEB6"><rect x="20" y="24" width="30" height="5"/><rect x="56" y="24" width="18" height="5"/><rect x="80" y="24" width="20" height="5" fill="#F5C07A"/></g>
+      <g fill="#9ED9CF" opacity=".8"><rect x="20" y="35" width="26" height="4"/><rect x="56" y="35" width="16" height="4"/><rect x="80" y="35" width="20" height="4" fill="#F5C07A"/><rect x="20" y="44" width="30" height="4"/><rect x="56" y="44" width="14" height="4"/><rect x="80" y="44" width="20" height="4" fill="#F5C07A"/><rect x="20" y="53" width="24" height="4"/><rect x="56" y="53" width="18" height="4"/><rect x="80" y="53" width="20" height="4" fill="#FF5959"/></g>
+    </g>
+  ),
+  worldMap: (
+    <g>
+      <circle cx="60" cy="42" r="30" fill="#E5EEFA" stroke="#1A5FAD" strokeWidth="1.5"/>
+      <path d="M44,30 Q54,26 62,32 Q56,40 64,46 Q52,52 46,46 Q40,38 44,30 Z" fill="#49BEB6"/>
+      <path d="M70,34 Q80,32 82,40 Q76,48 70,44 Z" fill="#49BEB6"/>
+      <path d="M40,42 Q70,18 86,40" fill="none" stroke="#FF5959" strokeWidth="2" strokeDasharray="2 4"/>
+      <circle cx="40" cy="42" r="3" fill="#FF5959"/><circle cx="86" cy="40" r="3" fill="#FF5959"/>
+    </g>
+  ),
+  luggage: (
+    <g>
+      <rect x="40" y="30" width="40" height="40" rx="5" fill="#1A5FAD"/>
+      <rect x="52" y="20" width="16" height="12" rx="4" fill="none" stroke="#3D3C39" strokeWidth="3"/>
+      <g stroke="#9ED9CF" strokeWidth="2"><line x1="48" y1="36" x2="48" y2="64"/><line x1="72" y1="36" x2="72" y2="64"/></g>
+      <rect x="55" y="44" width="10" height="8" rx="2" fill="#F5C07A"/>
+    </g>
+  ),
+  passport: (
+    <g>
+      <rect x="36" y="18" width="48" height="48" rx="3" fill="#0D4F45"/>
+      <circle cx="60" cy="38" r="11" fill="none" stroke="#F5C07A" strokeWidth="2"/>
+      <path d="M60,27 L60,49 M49,38 L71,38" stroke="#F5C07A" strokeWidth="1"/>
+      <rect x="48" y="55" width="24" height="4" rx="2" fill="#F5C07A"/>
+    </g>
+  ),
+  headphones: (
+    <g>
+      <path d="M30,52 V42 a30,30 0 0,1 60,0 V52" fill="none" stroke="#1A5FAD" strokeWidth="5"/>
+      <rect x="24" y="48" width="14" height="20" rx="5" fill="#1A5FAD"/>
+      <rect x="82" y="48" width="14" height="20" rx="5" fill="#1A5FAD"/>
+    </g>
+  ),
+  book: (
+    <g>
+      <path d="M60,26 Q44,20 26,24 V62 Q44,58 60,64 Q76,58 94,62 V24 Q76,20 60,26 Z" fill="#49BEB6"/>
+      <path d="M60,26 V64" stroke="#0D4F45" strokeWidth="2"/>
+      <g stroke="#E0F4EF" strokeWidth="1.5"><line x1="32" y1="34" x2="54" y2="32"/><line x1="32" y1="42" x2="54" y2="40"/><line x1="66" y1="32" x2="88" y2="34"/><line x1="66" y1="40" x2="88" y2="42"/></g>
+    </g>
+  ),
+  pencil: (
+    <g>
+      <rect x="30" y="44" width="50" height="14" rx="2" transform="rotate(-30 55 51)" fill="#F5C07A"/>
+      <path d="M70,30 L82,24 L86,34 Z" transform="rotate(-30 78 29)" fill="#0a0a0a"/>
+      <rect x="28" y="44" width="8" height="14" transform="rotate(-30 32 51)" fill="#FF5959"/>
+    </g>
+  ),
+  speechBubble: (
+    <g>
+      <path d="M22,24 H98 a6,6 0 0,1 6,6 V52 a6,6 0 0,1 -6,6 H46 L34,68 V58 H22 a6,6 0 0,1 -6,-6 V30 a6,6 0 0,1 6,-6 Z" fill="#49BEB6"/>
+      <g fill="#fff"><circle cx="42" cy="41" r="4"/><circle cx="60" cy="41" r="4"/><circle cx="78" cy="41" r="4"/></g>
+    </g>
+  ),
+  clock: (
+    <g>
+      <circle cx="60" cy="42" r="26" fill="#fff" stroke="#1A5FAD" strokeWidth="4"/>
+      <path d="M60,42 V26 M60,42 L74,48" stroke="#0a0a0a" strokeWidth="3" strokeLinecap="round"/>
+      <circle cx="60" cy="42" r="3" fill="#FF5959"/>
+    </g>
+  ),
+  lineGraph: (
+    <g>
+      <line x1="22" y1="20" x2="22" y2="64" stroke="#7A7870" strokeWidth="2"/>
+      <line x1="22" y1="64" x2="100" y2="64" stroke="#7A7870" strokeWidth="2"/>
+      <polyline points="26,58 44,48 60,52 76,32 96,24" fill="none" stroke="#1A5FAD" strokeWidth="3"/>
+      <g fill="#FF5959"><circle cx="44" cy="48" r="3"/><circle cx="76" cy="32" r="3"/><circle cx="96" cy="24" r="3"/></g>
+    </g>
+  ),
+  barChart: (
+    <g>
+      <line x1="22" y1="20" x2="22" y2="64" stroke="#7A7870" strokeWidth="2"/>
+      <line x1="22" y1="64" x2="100" y2="64" stroke="#7A7870" strokeWidth="2"/>
+      <g><rect x="32" y="44" width="13" height="20" fill="#1A5FAD"/><rect x="52" y="32" width="13" height="32" fill="#49BEB6"/><rect x="72" y="38" width="13" height="26" fill="#F5C07A"/><rect x="92" y="50" width="8" height="14" fill="#FF5959"/></g>
+    </g>
+  ),
+  pieChart: (
+    <g transform="translate(60,42)">
+      <path d="M0,0 L0,-28 A28,28 0 0,1 24,14 Z" fill="#1A5FAD"/>
+      <path d="M0,0 L24,14 A28,28 0 0,1 -18,21 Z" fill="#49BEB6"/>
+      <path d="M0,0 L-18,21 A28,28 0 0,1 -27,-7 Z" fill="#F5C07A"/>
+      <path d="M0,0 L-27,-7 A28,28 0 0,1 0,-28 Z" fill="#FF5959"/>
+      <circle cx="0" cy="0" r="10" fill="#fff"/>
+    </g>
+  ),
+};
+const QuizImage = ({ id }) => {
+  const art = QUIZ_SVG[id];
+  if (!art) return null;
+  return (
+    <div style={{ borderRadius:12, overflow:"hidden", border:"1px solid #e5e5e5", marginBottom:18,
+      background:"linear-gradient(160deg,#E5EEFA 0%,#E0F4EF 100%)" }}>
+      <svg viewBox="0 0 120 80" width="100%" style={{ display:"block", maxHeight:160 }} role="img" aria-label={`${id} illustration`}>{art}</svg>
+    </div>
+  );
+};
+
 // ─── BRAND LOGO (inline SVG) ───
 const BrandLogo = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ display:"block", flexShrink:0 }}>
@@ -204,78 +349,42 @@ const INITIAL_MODULES = [
         id: "1-1", n: 1,
         title: "Listening — MCQ & Matching Information | Present Simple vs Present Continuous",
         tag: "Listening", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "In IELTS Listening, 'Multiple Choice' questions test your ability to:", options: ["Copy exactly what you hear","Identify the correct answer from three options","Write a full sentence","Spell words correctly"], answer: 1, points: 10 },
-          { type: "mc", q: "Which sentence uses Present Continuous correctly?", options: ["She study every night.","She is studying right now.","She studys at the moment.","She study at the moment."], answer: 1, points: 10 },
-          { type: "tf", q: "Present Simple is used for habits and routines.", answer: true, points: 10 },
-          { type: "fitb", q: "Water _______ at 100°C. (boil)", answer: "boils", points: 10 },
-          { type: "fitb", q: "Listen carefully — in matching tasks you match a speaker to a _______.", answer: "topic", points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"In the IELTS Listening test, how many sections (parts) are there in total?","options":["2","3","4","5"],"answer":2,"points":10,"img":"headphones"},{"type":"mc","q":"How long do you get at the END of the IELTS Listening test to transfer your answers to the answer sheet (on paper)?","options":["5 minutes","10 minutes","30 seconds","15 minutes"],"answer":1,"points":10,"img":"clock"},{"type":"mc","q":"In a Listening Multiple Choice (MCQ) question, what is the best strategy before the audio starts?","options":["Read the question and underline keywords","Close your eyes and relax","Write random answers first","Read the next section instead"],"answer":0,"points":10,"img":"headphones"},{"type":"mc","q":"In Matching Information tasks, you usually have to match items to a list of options. What is a common trap?","options":["Options may be used more than once or not at all","The audio repeats every answer twice","All options are always used once","The answers appear in alphabetical order"],"answer":0,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Simple.","options":["She is going to school every day.","She goes to school every day.","She go to school every day.","She going to school every day."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Continuous.","options":["Look! The train arrives now.","Look! The train is arriving now.","Look! The train arrive now.","Look! The train arriving now."],"answer":1,"points":10,"img":"departureBoard"},{"type":"mc","q":"Which time expression typically signals the Present Simple?","options":["right now","at the moment","usually","Listen!"],"answer":2,"points":10},{"type":"mc","q":"Which time expression typically signals the Present Continuous?","options":["every morning","at the moment","on Mondays","never"],"answer":1,"points":10},{"type":"mc","q":"In MCQ Listening, the speaker often mentions a wrong option first, then corrects it. This technique is called using a:","options":["distractor","synonym chain","filler","false start only"],"answer":0,"points":10,"img":"speechBubble"},{"type":"mc","q":"Complete: 'Water _______ at 100 degrees Celsius.' (a general truth)","options":["is boiling","boils","boil","are boiling"],"answer":1,"points":10},{"type":"mc","q":"Complete: 'Please be quiet — the baby _______.' (action happening now)","options":["sleeps","sleep","is sleeping","slept"],"answer":2,"points":10},{"type":"mc","q":"Which verb is a STATIVE verb that is normally NOT used in the Present Continuous?","options":["run","know","eat","write"],"answer":1,"points":10},{"type":"mc","q":"In Section 1 of the IELTS Listening test, the conversation is usually about a/an:","options":["academic lecture","everyday social situation","group seminar discussion","scientific debate"],"answer":1,"points":10,"img":"headphones"},{"type":"tf","q":"In the IELTS Listening test, you hear each recording only ONCE.","answer":true,"points":10,"img":"headphones"},{"type":"tf","q":"Spelling does not matter in the IELTS Listening test; close spelling is always accepted.","answer":false,"points":10},{"type":"tf","q":"The Present Continuous is used for actions happening at or around the moment of speaking.","answer":true,"points":10},{"type":"tf","q":"Stative verbs such as 'believe', 'love' and 'understand' are commonly used in the Present Continuous.","answer":false,"points":10},{"type":"tf","q":"In Matching Information tasks, the answers always appear in the same order as the audio.","answer":false,"points":10},{"type":"fitb","q":"The Listening question type where you choose the correct option from A, B, C or D is called _______ choice.","answer":"multiple","points":10},{"type":"fitb","q":"We add '-s' or '-es' to the verb in the Present Simple for the third person _______ (he/she/it).","answer":"singular","points":10},{"type":"fitb","q":"Complete with Present Continuous: 'They _______ watching a film right now.' Use the correct form of 'be'.","answer":"are","points":10},{"type":"fitb","q":"A word that has the same meaning as another and is often used in audio to 'paraphrase' the question is a _______.","answer":"synonym","points":10,"img":"speechBubble"},{"type":"fitb","q":"Complete with Present Simple: 'He _______ coffee every morning.' (verb: drink)","answer":"drinks","points":10},{"type":"match","q":"Match each time expression to the correct tense it usually signals","pairs":[["every day","Present Simple"],["right now","Present Continuous"],["once a week","Habitual routine"],["Listen!","Action in progress"]],"points":20},{"type":"match","q":"Match each IELTS Listening feature to its description","pairs":[["Section 1","Everyday conversation"],["Section 4","Academic monologue"],["Distractor","Misleading wrong option"],["Matching task","Link items to a list"]],"points":20,"img":"headphones"}]},
         assignment: { type: "writing", prompt: "Write 8 sentences about your daily routine using Present Simple, and 5 sentences about what is happening right now using Present Continuous." }
       },
       {
         id: "1-2", n: 2,
         title: "Reading — True/False/Not Given, MCQ, Short Answer | Articles",
         tag: "Reading", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "What does 'Not Given' mean in IELTS Reading?", options: ["The statement is false","The text does not mention it","The statement is true","The writer disagrees"], answer: 1, points: 10 },
-          { type: "mc", q: "Choose the correct article: '_____ Eiffel Tower is in Paris.'", options: ["A","An","The","No article"], answer: 2, points: 10 },
-          { type: "tf", q: "'False' and 'Not Given' mean exactly the same thing.", answer: false, points: 10 },
-          { type: "fitb", q: "In Short Answer questions, you must not exceed the _______ word limit given.", answer: "specified", points: 10 },
-          { type: "mc", q: "Which article is used before an uncountable noun used in general?", options: ["A","An","The","No article"], answer: 3, points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"In an IELTS Reading 'True/False/Not Given' task, when should you choose 'Not Given'?","options":["When the statement contradicts the passage","When the statement agrees with the passage","When there is no information in the passage to confirm or deny the statement","When the statement is partly true"],"answer":2,"points":10,"img":"book"},{"type":"mc","q":"In a 'Yes/No/Not Given' task, what exactly are you assessing the statements against?","options":["The writer's claims or opinions","Stated facts only","Your own opinion","Information from other passages"],"answer":0,"points":10},{"type":"mc","q":"If a Short Answer question says 'NO MORE THAN THREE WORDS AND/OR A NUMBER', which answer is acceptable?","options":["'in the early nineteenth century'","'1850'","'a very large number of people'","'the second half of the year'"],"answer":1,"points":10},{"type":"mc","q":"Which is the BEST strategy for True/False/Not Given questions?","options":["Read the whole passage word by word first","Use your background knowledge to decide","Match keywords and look for paraphrases in the passage","Always pick 'Not Given' if unsure"],"answer":2,"points":10,"img":"book"},{"type":"mc","q":"In an IELTS MCQ with one correct answer, the wrong options are often called:","options":["Synonyms","Distractors","Paraphrases","Headings"],"answer":1,"points":10},{"type":"mc","q":"Choose the correct article: 'She is ___ honest student.'","options":["a","an","the","(no article)"],"answer":1,"points":10},{"type":"mc","q":"Choose the correct article: 'He bought ___ university degree online.'","options":["a","an","the","(no article)"],"answer":0,"points":10},{"type":"mc","q":"Which sentence uses 'the' correctly?","options":["The honesty is important.","I play the piano every day.","She likes the music in general.","We had the breakfast at home."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct option: 'The sun rises in ___ east.'","options":["a","an","the","(no article)"],"answer":2,"points":10,"img":"worldMap"},{"type":"mc","q":"Which sentence correctly uses the zero article?","options":["I love the nature.","Cats are independent animals.","She went to the bed early.","The life is hard."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct article: 'We flew over ___ Pacific Ocean.'","options":["a","an","the","(no article)"],"answer":2,"points":10,"img":"plane"},{"type":"mc","q":"Choose the correct article: '___ Mount Everest is the highest mountain on Earth.'","options":["A","An","The","(no article)"],"answer":3,"points":10},{"type":"mc","q":"In TFNG questions, the statements usually appear:","options":["In a random order","In the same order as the information in the passage","In reverse order","Grouped by paragraph headings"],"answer":1,"points":10,"img":"book"},{"type":"tf","q":"In IELTS Reading, 'False' means the statement directly contradicts the information in the passage.","answer":true,"points":10},{"type":"tf","q":"Exceeding the word limit in a Short Answer question (e.g. writing four words when three are allowed) still earns the mark if the meaning is correct.","answer":false,"points":10},{"type":"tf","q":"You should use your own general knowledge, rather than the passage, to answer True/False/Not Given questions.","answer":false,"points":10,"img":"book"},{"type":"tf","q":"The indefinite articles 'a' and 'an' can be used before plural nouns.","answer":false,"points":10},{"type":"tf","q":"We use 'an' before a word that begins with a vowel sound, not just a vowel letter.","answer":true,"points":10},{"type":"fitb","q":"When a statement contradicts the passage in a TFNG task, the correct answer is _______.","answer":"false","points":10},{"type":"fitb","q":"Use the article _______ before a singular noun beginning with a consonant sound, as in '_____ book'.","answer":"a","points":10,"img":"book"},{"type":"fitb","q":"We use the definite article _______ when referring to something already mentioned or known to both speakers.","answer":"the","points":10},{"type":"fitb","q":"In a TFNG task, if the passage neither confirms nor contradicts the statement, the answer is 'Not _______'.","answer":"given","points":10},{"type":"fitb","q":"Choose the article: 'I need _______ umbrella because it is raining.'","answer":"an","points":10},{"type":"match","q":"Match each TFNG answer to the correct situation","pairs":[["True","The statement agrees with the passage"],["False","The statement contradicts the passage"],["Not Given","There is no relevant information in the passage"]],"points":20,"img":"book"},{"type":"match","q":"Match each noun phrase to the correct article","pairs":[["apple (one of many)","an"],["Sahara Desert","the"],["water (in general)","(no article)"],["car (one, first mention)","a"]],"points":20}]},
         assignment: { type: "writing", prompt: "Read any English news article. Write 5 True/False/Not Given statements about it (with answers) and use 'a', 'an', 'the' correctly in 6 example sentences." }
       },
       {
         id: "1-3", n: 3,
         title: "Writing Task 1 — Line Graph | Past Simple vs Past Continuous",
         tag: "Writing", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "A line graph Task 1 MUST include:", options: ["Your opinion","An overview of the main trends","A conclusion recommending action","Personal experience"], answer: 1, points: 10 },
-          { type: "mc", q: "Which sentence is Past Continuous?", options: ["She visited London.","She was visiting London when it started raining.","She visits London often.","She has visited London."], answer: 1, points: 10 },
-          { type: "tf", q: "You should write at least 150 words for Task 1.", answer: true, points: 10 },
-          { type: "fitb", q: "The Past Simple is used for a _______ completed action in the past.", answer: "finished", points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"In an IELTS Writing Task 1 line graph response, what should the overview paragraph contain?","options":["Specific data figures for every year","The main trends and most notable features","Your personal opinion about the data","A conclusion recommending action"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"Which verb best describes a sudden, steep increase on a line graph?","options":["edged up","rose sharply","dipped slightly","levelled off"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"Choose the correct sentence using the Past Simple to describe a completed trend.","options":["Sales were rising in 2010.","Sales rose to 50 units in 2010.","Sales have risen in 2010.","Sales rise in 2010."],"answer":1,"points":10},{"type":"mc","q":"The word 'plateaued' on a line graph means the figures:","options":["increased rapidly","remained stable / stayed the same","fell to zero","fluctuated wildly"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"Which sentence correctly uses the Past Continuous?","options":["The number fell while prices were rising.","The number was fell while prices rose.","The number falling while prices rose.","The number fell while prices rise."],"answer":0,"points":10},{"type":"mc","q":"What is the best adverb to describe a slow, steady increase?","options":["dramatically","gradually","abruptly","steeply"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"When a line reaches its highest point before declining, we say it:","options":["bottomed out","peaked","stagnated","plummeted"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"Which tense is normally used for the main body description of a line graph showing past years (e.g. 1990-2000)?","options":["Present Simple","Past Simple","Present Perfect","Future Simple"],"answer":1,"points":10},{"type":"mc","q":"Identify the noun form: 'There was a sharp _____ in unemployment.'","options":["rise","rose","risen","rising"],"answer":0,"points":10},{"type":"mc","q":"Which sentence describes data that went up and down repeatedly?","options":["The figures plateaued throughout the decade.","The figures fluctuated throughout the decade.","The figures plummeted throughout the decade.","The figures soared throughout the decade."],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"Choose the grammatically correct combination of Past Simple and Past Continuous.","options":["While the population grew, prices were also increasing.","While the population growing, prices increased.","While the population grow, prices were increasing.","While the population was grew, prices increased."],"answer":0,"points":10},{"type":"mc","q":"Which phrase correctly introduces a Task 1 report?","options":["I think the graph is interesting because","The line graph illustrates the changes in","In my opinion the data shows","To sum up the graph proves that"],"answer":1,"points":10},{"type":"mc","q":"What does 'a slight decline' indicate?","options":["A small decrease","A large decrease","A sudden increase","No change at all"],"answer":0,"points":10},{"type":"tf","q":"A good IELTS Task 1 line graph answer should include your personal opinion.","answer":false,"points":10},{"type":"tf","q":"The Past Continuous (was/were + -ing) is often used to show a longer action in progress at a point in the past.","answer":true,"points":10},{"type":"tf","q":"The words 'rose' and 'increased' have a similar meaning when describing trends.","answer":true,"points":10},{"type":"tf","q":"'Plummeted' describes a gradual, gentle decrease.","answer":false,"points":10},{"type":"tf","q":"For a line graph covering future projections (e.g. up to 2050), you may use future forms such as 'will' or 'is expected to'.","answer":true,"points":10,"img":"lineGraph"},{"type":"fitb","q":"The opposite of the verb 'rose' when describing a downward trend is _______.","answer":"fell","points":10},{"type":"fitb","q":"When a line reaches its maximum value, we say it _______ at that point.","answer":"peaked","points":10,"img":"lineGraph"},{"type":"fitb","q":"Past Continuous is formed with 'was' or 'were' plus the verb's _______ form (e.g. rising).","answer":"ing","points":10},{"type":"fitb","q":"An adverb meaning 'slowly and steadily' often used for gentle trends is _______.","answer":"gradually","points":10},{"type":"fitb","q":"When figures stay at the same level over time, we can say they _______ (remained flat).","answer":"plateaued","points":10,"img":"lineGraph"},{"type":"match","q":"Match each trend verb to its meaning","pairs":[["rose","went up"],["fell","went down"],["fluctuated","rose and fell repeatedly"],["plateaued","stayed the same"]],"points":20},{"type":"match","q":"Match each adverb to the type of change it describes","pairs":[["sharply","a sudden, large change"],["gradually","a slow, steady change"],["slightly","a small change"]],"points":20}]},
         assignment: { type: "essay", prompt: "IELTS Writing Task 1: The line graph below shows the percentage of people using the internet in three countries (UK, Kazakhstan, Japan) from 2000 to 2020.\nUK: 25% → 96%, Kazakhstan: 2% → 79%, Japan: 30% → 93%.\nSummarise the main features and make comparisons where relevant. Write at least 150 words.\nAlso write 4 original sentences using Past Simple and Past Continuous together." }
       },
       {
         id: "1-4", n: 4,
         title: "Writing Task 2 — Advantages/Disadvantages Essay | Grammar Review",
         tag: "Writing", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "An Advantages/Disadvantages essay typically has:", options: ["Only advantages","Only disadvantages","Both, with a clear structure","Your personal story"], answer: 2, points: 10 },
-          { type: "fitb", q: "Task 2 requires a minimum of _______ words.", answer: "250", points: 10 },
-          { type: "tf", q: "You must state your opinion in an Advantages/Disadvantages essay.", answer: false, points: 10 },
-          { type: "mc", q: "Which linker introduces a disadvantage?", options: ["Furthermore","In addition","However","Similarly"], answer: 2, points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"What is the minimum word count required for IELTS Writing Task 2?","options":["150 words","200 words","250 words","300 words"],"answer":2,"points":10,"img":"pencil"},{"type":"mc","q":"How many minutes are you advised to spend on Writing Task 2?","options":["20 minutes","30 minutes","40 minutes","60 minutes"],"answer":2,"points":10,"img":"clock"},{"type":"mc","q":"Which is the recommended structure for an advantages/disadvantages essay?","options":["Introduction, one body paragraph, conclusion","Introduction, two body paragraphs, conclusion","Conclusion, body, introduction","Body paragraphs only"],"answer":1,"points":10},{"type":"mc","q":"Which linker is used to introduce a contrasting idea?","options":["Furthermore","However","Therefore","Moreover"],"answer":1,"points":10},{"type":"mc","q":"Which phrase best signals the second side of an argument?","options":["For example","On the other hand","In conclusion","First of all"],"answer":1,"points":10},{"type":"mc","q":"What should the introduction of a Task 2 essay do?","options":["Give your personal opinion only","Paraphrase the question and outline the essay","List all examples","Repeat the question word for word"],"answer":1,"points":10,"img":"pencil"},{"type":"mc","q":"Which linker is best for adding extra supporting information?","options":["In contrast","Furthermore","Although","Whereas"],"answer":1,"points":10},{"type":"mc","q":"What is the main purpose of the conclusion?","options":["Introduce a brand-new idea","Summarise the main points and restate the position","Give a long example","Ask the reader a question"],"answer":1,"points":10},{"type":"mc","q":"Choose the grammatically correct sentence.","options":["There is many advantages to studying abroad.","There are many advantages to studying abroad.","There be many advantages to studying abroad.","There has many advantages to studying abroad."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct form: 'One major benefit is that people _____ access to better jobs.'","options":["gains","gain","gaining","to gain"],"answer":1,"points":10},{"type":"mc","q":"Which sentence uses the correct conditional?","options":["If governments invested more, transport would improve.","If governments invest more, transport would improved.","If governments will invest more, transport improve.","If governments invested more, transport will improving."],"answer":0,"points":10},{"type":"mc","q":"Which word is a formal synonym for 'a lot of' suitable for academic writing?","options":["loads of","tons of","numerous","heaps of"],"answer":2,"points":10},{"type":"mc","q":"Which linker shows a result or consequence?","options":["Consequently","Although","Whereas","On the other hand"],"answer":0,"points":10},{"type":"tf","q":"An advantages/disadvantages essay should present both sides before reaching a conclusion.","answer":true,"points":10},{"type":"tf","q":"Writing fewer than 250 words can reduce your Task Achievement score.","answer":true,"points":10,"img":"pencil"},{"type":"tf","q":"'However' and 'Furthermore' mean exactly the same thing.","answer":false,"points":10},{"type":"tf","q":"Each body paragraph should focus on one main idea.","answer":true,"points":10},{"type":"tf","q":"It is good practice to copy the exact words of the question in your introduction instead of paraphrasing.","answer":false,"points":10},{"type":"fitb","q":"The first paragraph of the essay is called the _______.","answer":"introduction","points":10},{"type":"fitb","q":"To contrast two ideas, you can use the linker 'on the other _______'.","answer":"hand","points":10},{"type":"fitb","q":"A good essay needs a clear _______ sentence at the start of each body paragraph.","answer":"topic","points":10},{"type":"fitb","q":"You should write at least 250 _______ in Task 2.","answer":"words","points":10,"img":"pencil"},{"type":"fitb","q":"The linker 'in _______' is used to show the opposite of a previous idea, as in 'in contrast'.","answer":"contrast","points":10},{"type":"match","q":"Match each linker to its function","pairs":[["However","Contrast"],["Furthermore","Addition"],["Therefore","Result"],["For example","Illustration"]],"points":20},{"type":"match","q":"Match each essay part to its main purpose","pairs":[["Introduction","Paraphrase the question"],["Body paragraph","Develop one main idea"],["Conclusion","Summarise the points"]],"points":20}]},
         assignment: { type: "essay", prompt: "IELTS Writing Task 2: Some people think that the advantages of living in a big city outweigh the disadvantages. To what extent do you agree or disagree?\nWrite at least 250 words with an introduction, two body paragraphs (advantages & disadvantages), and a conclusion." }
       },
       {
         id: "1-5", n: 5,
         title: "Speaking Part 1 — Fluency | Comparative and Superlative",
         tag: "Speaking", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "What is the superlative form of 'good'?", options: ["Gooder","More good","The best","Better"], answer: 2, points: 10 },
-          { type: "mc", q: "In Speaking Part 1, answers should be:", options: ["One word","10+ sentences","2–4 sentences with a reason","Read from notes"], answer: 2, points: 10 },
-          { type: "tf", q: "You can ask the examiner to repeat a question in Part 1.", answer: true, points: 10 },
-          { type: "fitb", q: "Kazakhstan is _______ (large) country in Central Asia.", answer: "the largest", points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"In IELTS Speaking Part 1, what is the best length for most answers?","options":["One word only","Two to three sentences","A two-minute monologue","A single rehearsed paragraph of 200 words"],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Why is fluency rewarded in IELTS Speaking?","options":["It shows you can speak smoothly without too many unnatural pauses","It means you talk as fast as possible","It proves you memorised the answers","It shows you use difficult words"],"answer":0,"points":10},{"type":"mc","q":"Which is the correct comparative form of 'big'?","options":["biger","more big","bigger","biggest"],"answer":2,"points":10},{"type":"mc","q":"Which is the correct superlative of 'good'?","options":["goodest","the best","the better","the most good"],"answer":1,"points":10},{"type":"mc","q":"A good way to extend a Part 1 answer is to:","options":["Repeat the question word for word","Add a reason or example after your main point","Stay completely silent to think","Answer only with 'yes' or 'no'"],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Which sentence is grammatically correct?","options":["My city is more big than yours.","My city is bigger than yours.","My city is more bigger than yours.","My city is the bigger than yours."],"answer":1,"points":10},{"type":"mc","q":"What is the comparative form of 'bad'?","options":["badder","worse","worst","more bad"],"answer":1,"points":10},{"type":"mc","q":"Which superlative is correct for 'far'?","options":["the farrest","the most far","the furthest","the farer"],"answer":2,"points":10},{"type":"mc","q":"Some 'filler' phrases like 'Well, let me think...' are useful in Part 1 because they:","options":["Waste the examiner's time","Help you sound natural while you organise your thoughts","Lower your score automatically","Should never be used"],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Which sentence uses the superlative correctly?","options":["This is the more interesting hobby I have.","This is the most interesting hobby I have.","This is most interesting hobby I have.","This is the interestingest hobby I have."],"answer":1,"points":10},{"type":"mc","q":"For a two-syllable adjective ending in '-y' like 'happy', the comparative is:","options":["more happy","happier","happyer","happiest"],"answer":1,"points":10},{"type":"mc","q":"If you don't understand a Part 1 question, the best strategy is to:","options":["Stay silent","Politely ask the examiner to repeat or rephrase it","Answer a different question","End the test"],"answer":1,"points":10},{"type":"mc","q":"Which word correctly completes: 'Summer is _____ than winter here.'","options":["hot","hotter","hottest","more hot"],"answer":1,"points":10},{"type":"tf","q":"In IELTS Speaking Part 1, you should give very long, essay-length answers to every question.","answer":false,"points":10},{"type":"tf","q":"Adding reasons and examples helps you speak more fluently and develop your answers.","answer":true,"points":10,"img":"speechBubble"},{"type":"tf","q":"The superlative of 'good' is 'goodest'.","answer":false,"points":10},{"type":"tf","q":"Long adjectives such as 'beautiful' usually form the comparative with 'more' (more beautiful), not '-er'.","answer":true,"points":10},{"type":"tf","q":"Speaking extremely fast with no pauses always gives you the highest fluency score.","answer":false,"points":10},{"type":"fitb","q":"Complete the comparative: 'Tokyo is _______ than my hometown.' (big)","answer":"bigger","points":10},{"type":"fitb","q":"Complete the superlative: 'It was _______ day of my life.' (use 'the' + happy)","answer":"the happiest","points":10},{"type":"fitb","q":"The irregular comparative of 'bad' is _______.","answer":"worse","points":10},{"type":"fitb","q":"To avoid awkward silence while thinking, a useful filler is: 'Well, _______ me think...'","answer":"let","points":10,"img":"speechBubble"},{"type":"fitb","q":"Complete with a superlative: 'Mount Everest is _______ mountain in the world.' (use 'the' + high)","answer":"the highest","points":10},{"type":"match","q":"Match each adjective to its correct comparative form","pairs":[["good","better"],["bad","worse"],["far","further"],["happy","happier"]],"points":20},{"type":"match","q":"Match each Part 1 strategy to its purpose","pairs":[["Give a reason","Extends and develops your answer"],["Use a filler phrase","Buys natural thinking time"],["Ask to repeat","Clarifies a question you missed"]],"points":20,"img":"speechBubble"}]},
         assignment: { type: "speaking", prompt: "Record yourself (2–3 min) answering:\n1. Describe your hometown. Is it bigger or smaller than the capital?\n2. What is the most interesting place you have ever visited? Why was it better than other places?\n3. Compare studying alone vs studying in a group.\n\nPaste a recording link or write your answers (min. 150 words)." }
       },
       {
         id: "mock-1", n: null,
         title: "MOCK TEST 1",
         tag: "Mock", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "Which of these is a correct use of the Present Continuous?", options: ["I am go to school.","She is knowing the answer.","They are playing football now.","He is having a car."], answer: 2, points: 10 },
-          { type: "mc", q: "What does 'Not Given' mean in IELTS Reading T/F/NG?", options: ["False","Cannot be determined from the text","True but implied","The question is wrong"], answer: 1, points: 10 },
-          { type: "tf", q: "The superlative of 'bad' is 'baddest'.", answer: false, points: 10 },
-          { type: "fitb", q: "The minimum word count for Writing Task 1 is ___.", answer: "150", points: 10 },
-          { type: "match", q: "Match the task to its minimum word count", pairs: [["Task 1","150 words"],["Task 2","250 words"]], points: 20 },
-          { type: "mc", q: "Which sentence uses Past Continuous correctly?", options: ["She was study when I called.","She were studying when I called.","She was studying when I called.","She studying when I called."], answer: 2, points: 10 },
-          { type: "fitb", q: "In Advantages/Disadvantages essays, both sides must be _______ fairly.", answer: "discussed", points: 10 },
-          { type: "tf", q: "In IELTS Listening, you hear the recording only once.", answer: true, points: 10 },
-        ]},
+        quiz: { questions: [{"type":"mc","q":"In the IELTS Listening test, how many sections are there in total?","options":["2","3","4","5"],"answer":2,"points":10,"img":"headphones"},{"type":"mc","q":"You will hear: 'The library opens at half past nine.' What time does it open?","options":["9:15","9:30","9:45","10:30"],"answer":1,"points":10,"img":"clock"},{"type":"match","q":"Match each speaker to the place they are describing","pairs":[["A modern building with many books","Library"],["A place to catch flights","Airport"],["A room with beds for patients","Hospital"]],"points":20,"img":"airport"},{"type":"mc","q":"In a matching task you hear: 'Gate B7 is now boarding.' Which word signals the location?","options":["now","boarding","Gate","is"],"answer":2,"points":10,"img":"departureBoard"},{"type":"tf","q":"In IELTS Listening, you hear the recording twice.","answer":false,"points":10,"img":"headphones"},{"type":"mc","q":"For an IELTS Reading 'True/False/Not Given' question, you choose 'Not Given' when the statement is:","options":["Clearly stated as correct","Contradicted by the text","Neither confirmed nor contradicted by the text","A grammatical error"],"answer":2,"points":10,"img":"book"},{"type":"tf","q":"In Reading, 'False' means the statement contradicts the information in the passage.","answer":true,"points":10},{"type":"tf","q":"For short-answer questions in Reading, you should usually write a full sentence with at least ten words.","answer":false,"points":10},{"type":"mc","q":"A Reading short-answer instruction says 'NO MORE THAN TWO WORDS'. Which answer is acceptable?","options":["The very large city centre","city centre","A busy city centre area","in the city centre area today"],"answer":1,"points":10,"img":"book"},{"type":"fitb","q":"The definite article used before a specific, already-known noun is '_______'.","answer":"the","points":10},{"type":"fitb","q":"Use the indefinite article '_______' before a singular word starting with a consonant sound, e.g. '___ book'.","answer":"a","points":10,"img":"book"},{"type":"mc","q":"Which sentence uses articles correctly?","options":["I saw a elephant at zoo.","I saw an elephant at the zoo.","I saw an elephant at a zoo yesterday once.","I saw the elephant at an zoo."],"answer":1,"points":10},{"type":"mc","q":"In Writing Task 1, a line graph is best used to show:","options":["Parts of a whole at one moment","Changes or trends over time","A single fixed value","Directions on a map"],"answer":1,"points":10,"img":"lineGraph"},{"type":"fitb","q":"Past Simple of 'rise' is '_______' (e.g. Sales ___ sharply in 2010).","answer":"rose","points":10,"img":"lineGraph"},{"type":"mc","q":"Choose the correct Past Continuous sentence for describing a trend.","options":["Sales was rising steadily.","Sales were rising steadily.","Sales is rising steadily.","Sales rising steadily were."],"answer":1,"points":10,"img":"lineGraph"},{"type":"tf","q":"In Writing Task 1, the Past Simple is appropriate when describing data from a completed past year such as 2005.","answer":true,"points":10},{"type":"match","q":"Match each verb to its Past Simple form","pairs":[["fall","fell"],["increase","increased"],["grow","grew"]],"points":20,"img":"lineGraph"},{"type":"mc","q":"Which phrase best describes a small downward movement on a line graph?","options":["soared dramatically","dipped slightly","plummeted sharply","remained stable"],"answer":1,"points":10,"img":"lineGraph"},{"type":"mc","q":"An 'advantages and disadvantages' essay in Writing Task 2 should mainly:","options":["Tell a personal story","Discuss the benefits and drawbacks of a topic","Describe a graph in detail","List vocabulary words only"],"answer":1,"points":10,"img":"pencil"},{"type":"fitb","q":"A common linking word to introduce a drawback is 'One _______ is that...' (a negative point).","answer":"disadvantage","points":10},{"type":"tf","q":"A Writing Task 2 essay should have a clear introduction, body paragraphs, and a conclusion.","answer":true,"points":10,"img":"pencil"},{"type":"mc","q":"In Speaking Part 1 you are asked to compare two cities. Which sentence is correct?","options":["My city is more big than yours.","My city is bigger than yours.","My city is the bigger than yours.","My city is biggest than yours."],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Choose the correct superlative form.","options":["This is the most fast train.","This is the fastest train.","This is the more fast train.","This is fastest train."],"answer":1,"points":10},{"type":"fitb","q":"The comparative of the adjective 'good' is '_______'.","answer":"better","points":10},{"type":"match","q":"Match each adjective to its superlative form","pairs":[["happy","happiest"],["bad","worst"],["expensive","most expensive"]],"points":20,"img":"speechBubble"}]},
         assignment: { type: "essay", prompt: "MOCK ESSAY — Task 2: Some people believe that technology is making people less social. Others argue it helps them connect better. Discuss both views and give your own opinion. Write at least 250 words." }
       },
     ]
@@ -314,13 +423,8 @@ const INITIAL_MODULES = [
       {
         id: "2-3", n: 8,
         title: "Writing Task 1 — Bar Chart & Pie Chart | Grammar Review",
-        tag: "Writing", materials: [],
-        quiz: { questions: [
-          { type: "mc", q: "When describing a pie chart, what is most important to highlight?", options: ["Every percentage","The largest and smallest segments","Your opinion","Future predictions"], answer: 1, points: 10 },
-          { type: "tf", q: "You should always compare figures in Task 1 descriptions.", answer: true, points: 10 },
-          { type: "fitb", q: "The phrase 'account for' is used to describe a _______ of a total.", answer: "proportion", points: 10 },
-          { type: "mc", q: "Which phrase is best for describing a large bar chart category?", options: ["It was small","The majority of…","Slightly more than…","Roughly less than…"], answer: 1, points: 10 },
-        ]},
+        tag: "Writing", materials: [], guideUrl: "/writing-guide.html",
+        quiz: { questions: [{"type":"mc","q":"In IELTS Writing Task 1, when describing a bar chart or pie chart, you should:","options":["Give your personal opinion about the data","Only describe data objectively without any opinion","Suggest solutions to the problems shown","Predict what will happen in the future"],"answer":1,"points":10,"img":"barChart"},{"type":"mc","q":"A good overview for a Task 1 chart should:","options":["List every single number in the chart","Summarise the main trends or most striking features","Be the last sentence of the conclusion only","Repeat the question word for word"],"answer":1,"points":10,"img":"pieChart"},{"type":"mc","q":"\"Asia _______ 45% of all global air passengers in 2023.\" Choose the best phrase to complete this sentence.","options":["accounted for","accounted to","was accounted","accounting of"],"answer":0,"points":10,"img":"worldMap"},{"type":"mc","q":"If Airline A carried 4 million passengers and Airline B carried 2 million, which sentence is correct?","options":["Airline A carried twice as many passengers as Airline B","Airline B carried twice as many passengers as Airline A","Airline A carried half as many passengers as Airline B","Airline A carried two times fewer passengers than Airline B"],"answer":0,"points":10,"img":"plane"},{"type":"mc","q":"Which word best describes a slice making up more than 50% of a pie chart?","options":["minority","fraction","majority","remainder"],"answer":2,"points":10,"img":"pieChart"},{"type":"mc","q":"\"The number of flights at Heathrow rose _______ 300 to 450 between 2010 and 2020.\" Choose the correct prepositions.","options":["from ... to","by ... from","at ... by","of ... to"],"answer":0,"points":10,"img":"airport"},{"type":"mc","q":"Which sentence uses a percentage correctly to compare proportions?","options":["Business travel made up a quarter, while leisure travel accounted for almost half.","Business travel made the quarter, while leisure travel accounted half.","Business travel was a quarter percent of leisure travel half.","Business travel quarter and leisure travel half accounted."],"answer":0,"points":10,"img":"boardingPass"},{"type":"mc","q":"To describe the smallest segment of a pie chart of reasons for flying, you could write:","options":["The largest proportion flew for business.","Visiting family made up the smallest share, at just 5%.","The majority flew for tourism above all else.","Tourism accounted for the second largest slice only."],"answer":1,"points":10,"img":"pieChart"},{"type":"mc","q":"Which is the best synonym for \"rose sharply\" when describing a bar's increase?","options":["fell gradually","increased significantly","remained stable","fluctuated slightly"],"answer":1,"points":10,"img":"barChart"},{"type":"mc","q":"In the sentence \"Each of the airports _______ a different number of flights,\" which verb form is grammatically correct?","options":["handle","handles","are handling","have handled"],"answer":1,"points":10,"img":"departureBoard"},{"type":"mc","q":"Which sentence correctly uses an approximation for chart data?","options":["Exactly around 60% of passengers were tourists.","Roughly two thirds of passengers were tourists.","Approximately exactly 60% of passengers.","Around precisely two thirds were tourists."],"answer":1,"points":10,"img":"luggage"},{"type":"mc","q":"Which comparative sentence is grammatically correct?","options":["Dubai handled more flights than any other airport.","Dubai handled more flights then any other airport.","Dubai handled the more flights than other airports.","Dubai handled flights more than any other airport did it."],"answer":0,"points":10,"img":"airport"},{"type":"mc","q":"A pie chart is most appropriate for showing:","options":["Changes in passenger numbers over many years","How a total is divided into parts at one point in time","The exact speed of different aircraft","A timeline of airline mergers"],"answer":1,"points":10,"img":"pieChart"},{"type":"tf","q":"In IELTS Writing Task 1, you should include your own opinion about whether the trends are good or bad.","answer":false,"points":10,"img":"pencil"},{"type":"tf","q":"The phrase \"accounted for\" can be used to express what proportion or percentage a category represents.","answer":true,"points":10,"img":"pieChart"},{"type":"tf","q":"A bar chart is generally better than a pie chart for comparing values across several different categories.","answer":true,"points":10,"img":"barChart"},{"type":"tf","q":"If 50% chose business and 25% chose leisure, it is correct to say twice as many people chose business as leisure.","answer":true,"points":10,"img":"plane"},{"type":"tf","q":"A Task 1 response should always finish with a paragraph recommending what the airline should do next.","answer":false,"points":10,"img":"clock"},{"type":"fitb","q":"A summary sentence highlighting the main features of a chart is called the _______.","answer":"overview","points":10,"img":"barChart"},{"type":"fitb","q":"\"Tourism _______ for the largest proportion of reasons for flying.\" Fill in the verb (past tense).","answer":"accounted","points":10,"img":"pieChart"},{"type":"fitb","q":"A pie chart slice equal to 50% can be described as exactly _______ of the total.","answer":"half","points":10,"img":"pieChart"},{"type":"fitb","q":"\"The number of passengers _______ steadily from 2015 to 2020.\" Fill in a verb meaning went up (past tense).","answer":"increased","points":10,"img":"lineGraph"},{"type":"fitb","q":"When a category represents the greatest share of a pie chart, we call it the _______ (opposite of minority).","answer":"majority","points":10,"img":"pieChart"},{"type":"match","q":"Match each percentage to the fraction commonly used to describe it","pairs":[["25%","a quarter"],["50%","a half"],["75%","three quarters"],["10%","a tenth"]],"points":20,"img":"pieChart"},{"type":"match","q":"Match each chart-description phrase to its meaning","pairs":[["accounted for","made up a proportion of"],["the majority","more than half"],["twice as many as","double the amount of"]],"points":20,"img":"barChart"}]},
         assignment: { type: "essay", prompt: "IELTS Writing Task 1: The pie chart shows the distribution of household spending in Kazakhstan in 2023: Food 35%, Housing 25%, Transport 15%, Education 12%, Entertainment 8%, Other 5%.\nWrite a 150-word report summarising the main features and making comparisons." }
       },
       {
@@ -568,8 +672,18 @@ function QuizPage({ lesson, session, setPage }) {
   const [matchAnswers, setMatchAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
 
-  const submitQuiz = async () => {
+  // 30-minute test timer
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const submittedRef = useRef(false);
+  const remaining = Math.max(0, QUIZ_TIMER_MS - (now - startedAt));
+
+  const submitQuiz = async (auto = false) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    if (auto) setTimedOut(true);
     let pts = 0;
     qs.forEach((q, i) => {
       if (q.type==="mc" && answers[i]===q.answer) pts += q.points;
@@ -590,8 +704,29 @@ function QuizPage({ lesson, session, setPage }) {
     setSubmitted(true);
   };
 
+  // tick once per second while the test is running
+  useEffect(() => {
+    if (submitted) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [submitted]);
+
+  // auto-submit when time runs out
+  useEffect(() => {
+    if (!submitted && remaining === 0) submitQuiz(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining, submitted]);
+
+  const restart = () => {
+    setCurrent(0); setAnswers({}); setMatchAnswers({}); setSubmitted(false);
+    setTimedOut(false); submittedRef.current = false;
+    setStartedAt(Date.now()); setNow(Date.now());
+  };
+
   const q = qs[current];
   const total = qs.reduce((s,q)=>s+(q.points||10),0);
+  const answeredCount = qs.filter((_,i) => answers[i] !== undefined || matchAnswers[i] !== undefined).length;
+  const lowTime = remaining > 0 && remaining < 5 * 60 * 1000;
 
   if (submitted) {
     const pct = Math.round(score/total*100);
@@ -600,10 +735,11 @@ function QuizPage({ lesson, session, setPage }) {
         <div style={{ background:"white", borderRadius:20, padding:40, maxWidth:460, width:"100%", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,0.1)" }}>
           <div style={{ fontSize:60, marginBottom:16 }}>{pct>=80?"🎉":pct>=60?"👍":"📚"}</div>
           <h2 style={{ color:"#1e293b" }}>{pct>=80?"Excellent!":pct>=60?"Good job!":"Keep practising!"}</h2>
+          {timedOut && <div style={{ fontSize:13, color:"#FF5959", fontWeight:700, marginBottom:8 }}>⏰ Time's up — auto-submitted</div>}
           <div style={{ fontSize:36, fontWeight:800, color:"#0a0a0a" }}>{score}/{total}</div>
           <div style={{ color:"#64748b", marginBottom:24 }}>{pct}% · ⭐ {score} points earned</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-            <button onClick={() => { setCurrent(0); setAnswers({}); setMatchAnswers({}); setSubmitted(false); }} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>Retake</button>
+            <button onClick={restart} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>Retake</button>
             <button onClick={() => setPage("lesson")} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>← Back</button>
           </div>
         </div>
@@ -615,7 +751,9 @@ function QuizPage({ lesson, session, setPage }) {
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
         <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
-        <div style={{ flex:1, fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Quiz · {lesson.title}</div>
+        <div style={{ flex:1, fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Test · {lesson.title}</div>
+        <div title="Time remaining" style={{ fontSize:13, fontWeight:800, fontVariantNumeric:"tabular-nums", padding:"4px 10px", borderRadius:999, flexShrink:0,
+          background: lowTime ? "#FF5959" : "#0a0a0a", color:"white" }}>⏱ {fmtTime(remaining)}</div>
         <div style={{ fontSize:12, color:"#666", flexShrink:0 }}>{current+1}/{qs.length}</div>
       </div>
       <div style={{ background:"#e5e5e5", height:3 }}>
@@ -623,7 +761,8 @@ function QuizPage({ lesson, session, setPage }) {
       </div>
       <div style={{ maxWidth:600, margin:"20px auto", padding:"0 14px" }}>
         <div style={{ background:"white", borderRadius:12, padding:"20px 18px", border:"1px solid #e5e5e5" }}>
-          <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8 }}>Question {current+1} · {q.points} pts</div>
+          <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8 }}>Question {current+1} of {qs.length} · {q.points} pts</div>
+          {q.img && <QuizImage id={q.img} />}
           <div style={{ fontSize:18, fontWeight:700, color:"#1e293b", marginBottom:24, lineHeight:1.5 }}>{q.q}</div>
 
           {q.type==="mc" && q.options.map((opt,i) => (
@@ -670,17 +809,21 @@ function QuizPage({ lesson, session, setPage }) {
               style={{ padding:"10px 24px", borderRadius:10, border:"none", background:current===0?"#f0f0f0":"#e5e5e5", color:current===0?"#94a3b8":"#475569", cursor:current===0?"not-allowed":"pointer", fontWeight:600 }}>← Prev</button>
             {current < qs.length-1
               ? <button onClick={() => setCurrent(current+1)} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>Next →</button>
-              : <button onClick={submitQuiz} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>✅ Submit</button>
+              : <button onClick={() => { if (window.confirm(`Submit your test? You have answered ${answeredCount} of ${qs.length} questions.`)) submitQuiz(); }} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>✅ Submit test</button>
             }
           </div>
         </div>
-        <div style={{ display:"flex", gap:6, justifyContent:"center", marginTop:20, flexWrap:"wrap" }}>
-          {qs.map((_,i) => (
+        <div style={{ textAlign:"center", marginTop:18, fontSize:12, color:"#888" }}>{answeredCount} of {qs.length} answered</div>
+        <div style={{ display:"flex", gap:6, justifyContent:"center", marginTop:10, flexWrap:"wrap" }}>
+          {qs.map((_,i) => {
+            const ans = answers[i]!==undefined || matchAnswers[i]!==undefined;
+            return (
             <div key={i} onClick={() => setCurrent(i)}
-              style={{ width:28, height:28, borderRadius:"50%", background:i===current?"#0a0a0a":answers[i]!==undefined?"#666":"#e5e5e5", color:i===current||answers[i]!==undefined?"white":"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+              style={{ width:28, height:28, borderRadius:"50%", background:i===current?"#0a0a0a":ans?"#666":"#e5e5e5", color:i===current||ans?"white":"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, cursor:"pointer" }}>
               {i+1}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1262,16 +1405,40 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
       <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px" }}>
-        <div style={{ background:"#0a0a0a", borderRadius:14, padding:"18px 20px", color:"white", marginBottom:18 }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:700, letterSpacing:"-0.2px" }}>Welcome back, {session.name}</h2>
-          <p style={{ margin:"4px 0 14px", opacity:0.7, fontSize:12 }}>B1 → IELTS Band 8 · {allLessons.length} lessons</p>
-          <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
-            <div><div style={{ fontSize:20, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:11, opacity:0.7 }}>Points</div></div>
-            <div><div style={{ fontSize:20, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Done</div></div>
-            <div><div style={{ fontSize:20, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:11, opacity:0.7 }}>Progress</div></div>
-          </div>
-          <div style={{ marginTop:12, background:"rgba(255,255,255,0.15)", borderRadius:6, height:6 }}>
-            <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"white", height:6, borderRadius:6, transition:"width 0.3s" }} />
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:16, padding:"20px 20px 18px", color:"white", marginBottom:18,
+          background:"linear-gradient(135deg,#0a0a0a 0%,#0d2540 55%,#1A5FAD 130%)", boxShadow:"0 12px 30px rgba(13,37,64,.25)" }}>
+          {/* aviation sky backdrop */}
+          <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
+            style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:.9 }}>
+            <circle cx="60" cy="34" r="40" fill="#1A5FAD" opacity=".25"/>
+            <g fill="#ffffff" opacity=".10">
+              <ellipse cx="320" cy="40" rx="46" ry="15"/><ellipse cx="290" cy="48" rx="30" ry="11"/>
+              <ellipse cx="120" cy="118" rx="40" ry="13"/>
+            </g>
+            <path d="M-10,150 C120,120 250,60 420,8" fill="none" stroke="#49BEB6" strokeWidth="2" strokeDasharray="2 10" opacity=".7"/>
+            <g transform="translate(330,40) rotate(-20)">
+              <path d="M-26,2 Q0,-7 30,0 Q36,2 30,4 Q0,9 -26,8 Z" fill="#49BEB6"/>
+              <path d="M-6,2 L-20,-12 L-12,2 Z" fill="#9ED9CF"/>
+              <path d="M8,1 L20,-12 L14,1 Z" fill="#9ED9CF"/>
+              <circle cx="28" cy="2" r="2.5" fill="#FF5959"/>
+            </g>
+          </svg>
+          <div style={{ position:"relative", zIndex:1 }}>
+            <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>✈ Flight to Band 8 · Now boarding</div>
+            <h2 style={{ margin:0, fontSize:19, fontWeight:800, letterSpacing:"-0.2px" }}>Welcome back, {session.name}</h2>
+            <p style={{ margin:"4px 0 14px", opacity:0.75, fontSize:12 }}>B1 → IELTS Band 8 · {allLessons.length} lessons on the route</p>
+            <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+              <div><div style={{ fontSize:20, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:11, opacity:0.7 }}>Miles (pts)</div></div>
+              <div><div style={{ fontSize:20, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Legs flown</div></div>
+              <div><div style={{ fontSize:20, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:11, opacity:0.7 }}>Journey</div></div>
+            </div>
+            <div style={{ marginTop:14, position:"relative", background:"rgba(255,255,255,0.18)", borderRadius:6, height:6 }}>
+              <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"linear-gradient(90deg,#49BEB6,#9ED9CF)", height:6, borderRadius:6, transition:"width 0.3s" }} />
+              <span style={{ position:"absolute", top:-7, left:`calc(${allLessons.length>0?done/allLessons.length*100:0}% - 6px)`, fontSize:13, transition:"left 0.3s" }}>✈️</span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, fontSize:10, opacity:0.6 }}>
+              <span>B1 · Departure</span><span>Band 8 · Arrival</span>
+            </div>
           </div>
         </div>
         {(modules||[]).map(m => (
@@ -1373,6 +1540,18 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
           ))}
         </div>
 
+        {lesson.guideUrl && (
+          <a href={lesson.guideUrl} target="_blank" rel="noreferrer"
+            style={{ display:"flex", alignItems:"center", gap:12, textDecoration:"none", background:"#0a0a0a", color:"white", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+            <span style={{ fontSize:22, lineHeight:1 }}>✈️</span>
+            <span style={{ flex:1, minWidth:0 }}>
+              <span style={{ display:"block", fontWeight:700, fontSize:14 }}>Open Interactive Writing Guide</span>
+              <span style={{ display:"block", fontSize:12, opacity:0.75, marginTop:2 }}>Pie charts, hybrid tasks & Band 7+ strategies — aviation example</span>
+            </span>
+            <span style={{ fontSize:13, fontWeight:700, opacity:0.9 }}>Open ↗</span>
+          </a>
+        )}
+
         {tab==="materials" && (
           <div>
             {isAdmin && (
@@ -1422,17 +1601,24 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
           </div>
         )}
 
-        {tab==="quiz" && (
+        {tab==="quiz" && (() => {
+          const nq = lesson.quiz.questions.length;
+          const isTimed = nq >= 20;
+          return (
           <div>
             <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
-              <div style={{ fontSize:14, fontWeight:700 }}>Quiz · {lesson.quiz.questions.length} questions</div>
-              {lp.quizDone && <div style={{ marginTop:6, fontSize:12, opacity:0.75 }}>Last score: {lp.quizScore} pts</div>}
+              <div style={{ fontSize:14, fontWeight:700 }}>{isTimed ? "Timed Test" : "Quiz"} · {nq} questions{isTimed ? " · 30 min" : ""}</div>
+              <div style={{ marginTop:6, fontSize:12, opacity:0.75 }}>
+                {isTimed ? "One attempt clock: the test auto-submits when time runs out." : "Short practice quiz."}
+                {lp.quizDone ? ` · Last score: ${lp.quizScore} pts` : ""}
+              </div>
             </div>
             <button onClick={() => setPage("quiz")} style={{ width:"100%", padding:13, borderRadius:10, border:"none", background:lp.quizDone?"white":"#0a0a0a", color:lp.quizDone?"#0a0a0a":"white", fontWeight:700, fontSize:14, cursor:"pointer", borderWidth:1, borderStyle:"solid", borderColor:lp.quizDone?"#e5e5e5":"#0a0a0a" }}>
-              {lp.quizDone?"Retake Quiz":"Start Quiz"}
+              {lp.quizDone ? (isTimed ? "Retake Test" : "Retake Quiz") : (isTimed ? "Start Test (30 min)" : "Start Quiz")}
             </button>
           </div>
-        )}
+          );
+        })()}
 
         {tab==="assignment" && (() => {
           const aType = lesson.assignment.type;
