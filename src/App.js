@@ -667,116 +667,163 @@ const INITIAL_MODULES = [
 // ══════════════════════════════════════════
 function QuizPage({ lesson, session, setPage }) {
   const qs = lesson.quiz.questions;
+  const total = qs.reduce((s,q)=>s+(q.points||10),0);
+
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [matchAnswers, setMatchAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+
+  // per-question interaction
+  const [pick, setPick] = useState(null);        // mc index / tf bool
+  const [fitbVal, setFitbVal] = useState("");
+  const [matchVal, setMatchVal] = useState({});
+  const [locked, setLocked] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
+  const [lastGain, setLastGain] = useState(0);
+  const [lastBonus, setLastBonus] = useState(0);
+
+  const [finished, setFinished] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
-  // 30-minute test timer
+  // flight timer (30 min)
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
-  const submittedRef = useRef(false);
+  const finishedRef = useRef(false);
   const remaining = Math.max(0, QUIZ_TIMER_MS - (now - startedAt));
+  const lowTime = remaining > 0 && remaining < 5 * 60 * 1000;
 
-  const submitQuiz = async (auto = false) => {
-    if (submittedRef.current) return;
-    submittedRef.current = true;
+  const q = qs[current];
+
+  const finish = async (auto = false) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     if (auto) setTimedOut(true);
-    let pts = 0;
-    qs.forEach((q, i) => {
-      if (q.type==="mc" && answers[i]===q.answer) pts += q.points;
-      if (q.type==="tf" && answers[i]===q.answer) pts += q.points;
-      if (q.type==="fitb" && answers[i]?.trim().toLowerCase()===q.answer.toLowerCase()) pts += q.points;
-      if (q.type==="match") {
-        const ma = matchAnswers[i] || {};
-        if (q.pairs.every(([k,v]) => ma[k]===v)) pts += q.points;
-      }
-    });
-    setScore(pts);
-    const total = qs.reduce((s,q)=>s+(q.points||10),0);
     const existing = await FB.getProgress(session.email);
     const prev = existing[lesson.id] || {};
     await FB.setProgress(session.email, {
-      [lesson.id]: { ...prev, quizDone:true, quizScore:pts, quizTotal:total, points:(prev.points||0)+pts, completedAt:new Date().toISOString() }
+      [lesson.id]: { ...prev, quizDone:true, quizScore:score, quizTotal:total, points:(prev.points||0)+score, completedAt:new Date().toISOString() }
     });
-    setSubmitted(true);
+    setFinished(true);
   };
 
-  // tick once per second while the test is running
   useEffect(() => {
-    if (submitted) return;
+    if (finished) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [submitted]);
+  }, [finished]);
 
-  // auto-submit when time runs out
   useEffect(() => {
-    if (!submitted && remaining === 0) submitQuiz(true);
+    if (!finished && remaining === 0) finish(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining, submitted]);
+  }, [remaining, finished]);
+
+  const lockAnswer = (correct) => {
+    if (locked) return;
+    const newStreak = correct ? streak + 1 : 0;
+    const bonus = correct ? Math.min(Math.max(newStreak - 1, 0), 5) * 2 : 0;
+    const gained = correct ? (q.points + bonus) : 0;
+    setLocked(true); setWasCorrect(correct);
+    setStreak(newStreak); setBestStreak(b => Math.max(b, newStreak));
+    if (correct) setCorrectCount(c => c + 1);
+    setLastGain(gained); setLastBonus(bonus);
+    setScore(s => s + gained);
+  };
+
+  const resetQ = () => { setLocked(false); setWasCorrect(false); setPick(null); setFitbVal(""); setMatchVal({}); setLastGain(0); setLastBonus(0); };
+  const advance = () => { if (current < qs.length - 1) { setCurrent(c => c + 1); resetQ(); } else finish(); };
 
   const restart = () => {
-    setCurrent(0); setAnswers({}); setMatchAnswers({}); setSubmitted(false);
-    setTimedOut(false); submittedRef.current = false;
+    setCurrent(0); setScore(0); setCorrectCount(0); setStreak(0); setBestStreak(0);
+    resetQ(); setFinished(false); setTimedOut(false); finishedRef.current = false;
     setStartedAt(Date.now()); setNow(Date.now());
   };
 
-  const q = qs[current];
-  const total = qs.reduce((s,q)=>s+(q.points||10),0);
-  const answeredCount = qs.filter((_,i) => answers[i] !== undefined || matchAnswers[i] !== undefined).length;
-  const lowTime = remaining > 0 && remaining < 5 * 60 * 1000;
+  const matchReady = q && q.type === "match" && q.pairs.every(([k]) => (matchVal[k] || "") !== "");
+  const evalMatch = () => q.pairs.every(([k,v]) => matchVal[k] === v);
 
-  if (submitted) {
-    const pct = Math.round(score/total*100);
+  // ── LANDING / RESULTS ──
+  if (finished) {
+    const pct = Math.round(correctCount / qs.length * 100);
+    const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0;
+    const rank = pct >= 90 ? "✈️ Captain" : pct >= 75 ? "🧑‍✈️ First Officer" : pct >= 60 ? "🛩️ Co-pilot" : pct >= 40 ? "🎓 Cadet" : "🧳 Trainee";
     return (
-      <div style={{ minHeight:"100vh", background:"#fafafa", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"sans-serif" }}>
-        <div style={{ background:"white", borderRadius:20, padding:40, maxWidth:460, width:"100%", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,0.1)" }}>
-          <div style={{ fontSize:60, marginBottom:16 }}>{pct>=80?"🎉":pct>=60?"👍":"📚"}</div>
-          <h2 style={{ color:"#1e293b" }}>{pct>=80?"Excellent!":pct>=60?"Good job!":"Keep practising!"}</h2>
-          {timedOut && <div style={{ fontSize:13, color:"#FF5959", fontWeight:700, marginBottom:8 }}>⏰ Time's up — auto-submitted</div>}
-          <div style={{ fontSize:36, fontWeight:800, color:"#0a0a0a" }}>{score}/{total}</div>
-          <div style={{ color:"#64748b", marginBottom:24 }}>{pct}% · ⭐ {score} points earned</div>
-          <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-            <button onClick={restart} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#f4f4f4", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>Retake</button>
-            <button onClick={() => setPage("lesson")} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>← Back</button>
+      <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0d2540,#1A5FAD)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+        <div style={{ background:"white", borderRadius:22, maxWidth:420, width:"100%", overflow:"hidden", boxShadow:"0 24px 60px rgba(0,0,0,0.35)" }}>
+          <div style={{ background:"linear-gradient(135deg,#0d2540,#1A5FAD)", color:"white", padding:"22px 22px 18px", textAlign:"center" }}>
+            <div style={{ fontSize:11, letterSpacing:"2px", opacity:0.7, fontWeight:700 }}>BOARDING PASS · IELTS8 AIR</div>
+            <div style={{ fontSize:50, margin:"6px 0" }}>{pct>=70?"🛬":"📚"}</div>
+            <div style={{ fontSize:20, fontWeight:800 }}>{pct>=90?"Perfect landing!":pct>=70?"Smooth landing!":pct>=50?"You touched down":"Bumpy flight — try again"}</div>
+            <div style={{ fontSize:22, marginTop:6 }}>{"⭐".repeat(stars)}{"☆".repeat(3-stars)}</div>
+            {timedOut && <div style={{ fontSize:12, color:"#FFD27A", fontWeight:700, marginTop:8 }}>⏰ Flight time ended — auto-landed</div>}
+          </div>
+          <div style={{ padding:"18px 22px 24px" }}>
+            <div style={{ display:"flex", justifyContent:"space-around", textAlign:"center", marginBottom:16 }}>
+              <div><div style={{ fontSize:24, fontWeight:800, color:"#1A5FAD" }}>{score}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Miles (pts)</div></div>
+              <div><div style={{ fontSize:24, fontWeight:800, color:"#0a0a0a" }}>{correctCount}/{qs.length}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Correct</div></div>
+              <div><div style={{ fontSize:24, fontWeight:800, color:"#B8620A" }}>🔥{bestStreak}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Best streak</div></div>
+            </div>
+            <div style={{ textAlign:"center", background:"#eef4fd", borderRadius:12, padding:"10px", marginBottom:18, fontWeight:700, color:"#0d2540" }}>Rank earned: {rank} · {pct}%</div>
+            <div style={{ display:"flex", gap:12 }}>
+              <button onClick={restart} style={{ flex:1, padding:"12px", borderRadius:10, border:"2px solid #e5e5e5", background:"white", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>↻ Fly again</button>
+              <button onClick={() => setPage("lesson")} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"#1A5FAD", color:"white", fontWeight:700, cursor:"pointer" }}>Done →</button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // option styling with instant feedback
+  const optStyle = (selected, isCorrect, isWrongPick) => {
+    if (locked && isCorrect) return { border:"2px solid #1E7A4F", background:"#e2ece5", color:"#0d4f45" };
+    if (locked && isWrongPick) return { border:"2px solid #B23A2E", background:"#f6e2df", color:"#7a1f16" };
+    if (locked) return { border:"2px solid #e5e5e5", background:"white", color:"#94a3b8" };
+    return { border:`2px solid ${selected?"#1A5FAD":"#e5e5e5"}`, background:selected?"#eef4fd":"white", color:selected?"#0d2540":"#374151" };
+  };
+  const flightPct = qs.length > 1 ? (current/(qs.length-1))*100 : 100;
+
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"linear-gradient(180deg,#cfe4fa,#eaf3fc 220px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <style>{"@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}} @keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}"}</style>
+
+      {/* HUD */}
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
-        <div style={{ flex:1, fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Test · {lesson.title}</div>
-        <div title="Time remaining" style={{ fontSize:13, fontWeight:800, fontVariantNumeric:"tabular-nums", padding:"4px 10px", borderRadius:999, flexShrink:0,
-          background: lowTime ? "#FF5959" : "#0a0a0a", color:"white" }}>⏱ {fmtTime(remaining)}</div>
-        <div style={{ fontSize:12, color:"#666", flexShrink:0 }}>{current+1}/{qs.length}</div>
+        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Exit</button>
+        <div style={{ flex:1, fontWeight:800, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>✈️ Flight {current+1}/{qs.length}</div>
+        <div style={{ fontSize:12, fontWeight:800, color:"#B8620A", flexShrink:0 }}>🔥 {streak}</div>
+        <div style={{ fontSize:12, fontWeight:800, color:"#1A5FAD", flexShrink:0 }}>⭐ {score}</div>
+        <div title="Flight time" style={{ fontSize:13, fontWeight:800, fontVariantNumeric:"tabular-nums", padding:"4px 10px", borderRadius:999, flexShrink:0, background: lowTime ? "#FF5959" : "#0a0a0a", color:"white" }}>⏱ {fmtTime(remaining)}</div>
       </div>
-      <div style={{ background:"#e5e5e5", height:3 }}>
-        <div style={{ width:`${(current+1)/qs.length*100}%`, background:"#0a0a0a", height:3, transition:"width 0.3s" }} />
+
+      {/* flight sky progress */}
+      <div style={{ position:"relative", height:34, background:"linear-gradient(180deg,#bcdcff,#e3f0fc)", borderBottom:"1px solid #cfe1f5", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:"50%", left:0, right:0, borderTop:"2px dashed #8fb6e6" }} />
+        <span style={{ position:"absolute", top:"50%", left:`calc(${flightPct}% - 12px)`, transform:"translateY(-50%)", fontSize:18, transition:"left .4s ease" }}>✈️</span>
+        <span style={{ position:"absolute", top:"50%", right:6, transform:"translateY(-50%)", fontSize:15 }}>🎓</span>
       </div>
-      <div style={{ maxWidth:600, margin:"20px auto", padding:"0 14px" }}>
-        <div style={{ background:"white", borderRadius:12, padding:"20px 18px", border:"1px solid #e5e5e5" }}>
-          <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8 }}>Question {current+1} of {qs.length} · {q.points} pts</div>
+
+      <div style={{ maxWidth:600, margin:"18px auto", padding:"0 14px" }}>
+        <div style={{ background:"white", borderRadius:16, padding:"20px 18px", border:"1px solid #e5edf7", boxShadow:"0 10px 26px rgba(13,37,64,.08)" }}>
+          <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8, fontWeight:600 }}>Question {current+1} of {qs.length} · {q.points} pts{q.type==="match"?"":""}</div>
           {q.img && <QuizImage id={q.img} />}
-          <div style={{ fontSize:18, fontWeight:700, color:"#1e293b", marginBottom:24, lineHeight:1.5 }}>{q.q}</div>
+          <div style={{ fontSize:18, fontWeight:700, color:"#1e293b", marginBottom:20, lineHeight:1.5 }}>{q.q}</div>
 
           {q.type==="mc" && q.options.map((opt,i) => (
-            <div key={i} onClick={() => setAnswers({...answers,[current]:i})}
-              style={{ padding:"12px 16px", borderRadius:10, border:`2px solid ${answers[current]===i?"#0a0a0a":"#e5e5e5"}`, background:answers[current]===i?"#f4f4f4":"white", marginBottom:10, cursor:"pointer" }}>
-              <span style={{ fontWeight:answers[current]===i?700:400, color:answers[current]===i?"#0a0a0a":"#374151" }}>{opt}</span>
+            <div key={i} onClick={() => { if(!locked){ setPick(i); lockAnswer(i===q.answer); } }}
+              style={{ padding:"12px 16px", borderRadius:10, marginBottom:10, cursor: locked?"default":"pointer", display:"flex", alignItems:"center", gap:8, ...optStyle(pick===i, i===q.answer, pick===i && i!==q.answer) }}>
+              <span style={{ fontWeight:600, flex:1 }}>{opt}</span>
+              {locked && i===q.answer && <span>✓</span>}
+              {locked && pick===i && i!==q.answer && <span>✗</span>}
             </div>
           ))}
 
           {q.type==="tf" && (
             <div style={{ display:"flex", gap:12 }}>
               {[true,false].map(v => (
-                <div key={String(v)} onClick={() => setAnswers({...answers,[current]:v})}
-                  style={{ flex:1, padding:14, borderRadius:10, border:`2px solid ${answers[current]===v?"#0a0a0a":"#e5e5e5"}`, background:answers[current]===v?"#f4f4f4":"white", cursor:"pointer", textAlign:"center", fontWeight:700, color:answers[current]===v?"#0a0a0a":"#374151" }}>
+                <div key={String(v)} onClick={() => { if(!locked){ setPick(v); lockAnswer(v===q.answer); } }}
+                  style={{ flex:1, padding:14, borderRadius:10, cursor: locked?"default":"pointer", textAlign:"center", fontWeight:700, ...optStyle(pick===v, v===q.answer, pick===v && v!==q.answer) }}>
                   {v?"✅ True":"❌ False"}
                 </div>
               ))}
@@ -784,46 +831,59 @@ function QuizPage({ lesson, session, setPage }) {
           )}
 
           {q.type==="fitb" && (
-            <input placeholder="Type your answer..." value={answers[current]||""} onChange={e=>setAnswers({...answers,[current]:e.target.value})}
-              style={{ width:"100%", padding:"14px 16px", borderRadius:10, border:"2px solid #e5e5e5", fontSize:15, boxSizing:"border-box" }} />
+            <input placeholder="Type your answer…" value={fitbVal} disabled={locked}
+              onChange={e=>setFitbVal(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter" && !locked && fitbVal.trim()) lockAnswer(fitbVal.trim().toLowerCase()===q.answer.toLowerCase()); }}
+              style={{ width:"100%", padding:"14px 16px", borderRadius:10, fontSize:15, boxSizing:"border-box",
+                border:`2px solid ${locked?(wasCorrect?"#1E7A4F":"#B23A2E"):"#e5e5e5"}`, background: locked?(wasCorrect?"#e2ece5":"#f6e2df"):"white" }} />
           )}
 
           {q.type==="match" && (
             <div>
               <div style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Match each item to the correct answer:</div>
-              {q.pairs.map(([k]) => (
-                <div key={k} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
-                  <div style={{ flex:1, padding:"10px 14px", background:"#fafafa", borderRadius:8, fontWeight:600, fontSize:14 }}>{k}</div>
-                  <select value={(matchAnswers[current]||{})[k]||""} onChange={e => setMatchAnswers({...matchAnswers,[current]:{...(matchAnswers[current]||{}),[k]:e.target.value}})}
-                    style={{ flex:1, padding:10, borderRadius:8, border:"2px solid #e5e5e5", fontSize:14 }}>
-                    <option value="">Select...</option>
-                    {q.pairs.map(([,v]) => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
-              ))}
+              {q.pairs.map(([k,correctV]) => {
+                const chosen = matchVal[k] || "";
+                const ok = locked && chosen === correctV;
+                const bad = locked && chosen !== correctV;
+                return (
+                  <div key={k} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                    <div style={{ flex:1, padding:"10px 14px", background:"#f4f8fb", borderRadius:8, fontWeight:600, fontSize:14 }}>{k}</div>
+                    <select value={chosen} disabled={locked} onChange={e => setMatchVal({ ...matchVal, [k]: e.target.value })}
+                      style={{ flex:1, padding:10, borderRadius:8, fontSize:14, border:`2px solid ${ok?"#1E7A4F":bad?"#B23A2E":"#e5e5e5"}`, background: ok?"#e2ece5":bad?"#f6e2df":"white" }}>
+                      <option value="">Select…</option>
+                      {q.pairs.map(([,v]) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                    {locked && (ok ? <span style={{ color:"#1E7A4F", fontWeight:800 }}>✓</span> : <span style={{ color:"#B23A2E", fontWeight:800 }}>✗</span>)}
+                  </div>
+                );
+              })}
+              {locked && !wasCorrect && <div style={{ fontSize:12, color:"#B23A2E", marginTop:4 }}>Correct: {q.pairs.map(([k,v])=>`${k} → ${v}`).join(" · ")}</div>}
             </div>
           )}
 
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:28 }}>
-            <button onClick={() => setCurrent(Math.max(0,current-1))} disabled={current===0}
-              style={{ padding:"10px 24px", borderRadius:10, border:"none", background:current===0?"#f0f0f0":"#e5e5e5", color:current===0?"#94a3b8":"#475569", cursor:current===0?"not-allowed":"pointer", fontWeight:600 }}>← Prev</button>
-            {current < qs.length-1
-              ? <button onClick={() => setCurrent(current+1)} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>Next →</button>
-              : <button onClick={() => { if (window.confirm(`Submit your test? You have answered ${answeredCount} of ${qs.length} questions.`)) submitQuiz(); }} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer" }}>✅ Submit test</button>
-            }
-          </div>
-        </div>
-        <div style={{ textAlign:"center", marginTop:18, fontSize:12, color:"#888" }}>{answeredCount} of {qs.length} answered</div>
-        <div style={{ display:"flex", gap:6, justifyContent:"center", marginTop:10, flexWrap:"wrap" }}>
-          {qs.map((_,i) => {
-            const ans = answers[i]!==undefined || matchAnswers[i]!==undefined;
-            return (
-            <div key={i} onClick={() => setCurrent(i)}
-              style={{ width:28, height:28, borderRadius:"50%", background:i===current?"#0a0a0a":ans?"#666":"#e5e5e5", color:i===current||ans?"white":"#94a3b8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, cursor:"pointer" }}>
-              {i+1}
+          {/* check button for fitb/match */}
+          {!locked && (q.type==="fitb" || q.type==="match") && (
+            <button disabled={q.type==="fitb" ? !fitbVal.trim() : !matchReady}
+              onClick={() => lockAnswer(q.type==="fitb" ? (fitbVal.trim().toLowerCase()===q.answer.toLowerCase()) : evalMatch())}
+              style={{ marginTop:18, width:"100%", padding:"12px", borderRadius:10, border:"none", fontWeight:800, fontSize:14,
+                background:(q.type==="fitb"?fitbVal.trim():matchReady)?"#1A5FAD":"#e5e5e5", color:(q.type==="fitb"?fitbVal.trim():matchReady)?"white":"#999", cursor:(q.type==="fitb"?fitbVal.trim():matchReady)?"pointer":"not-allowed" }}>
+              Check answer ✓
+            </button>
+          )}
+
+          {/* feedback + advance */}
+          {locked && (
+            <div style={{ marginTop:18, animation: wasCorrect?"pop .35s ease":"shakeX .35s ease" }}>
+              <div style={{ borderRadius:12, padding:"12px 14px", background: wasCorrect?"#e2ece5":"#f6e2df", color: wasCorrect?"#0d4f45":"#7a1f16", fontWeight:700, fontSize:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                <span>{wasCorrect ? "✅ Correct!" : "❌ Not quite — answer shown above"}</span>
+                {wasCorrect && <span style={{ color:"#1A5FAD" }}>+{lastGain}{lastBonus>0?` 🔥+${lastBonus}`:""}</span>}
+              </div>
+              {wasCorrect && streak>=3 && <div style={{ textAlign:"center", marginTop:8, fontWeight:800, color:"#B8620A" }}>🔥 {streak} in a row — combo bonus!</div>}
+              <button onClick={advance} style={{ marginTop:14, width:"100%", padding:"13px", borderRadius:10, border:"none", background:"#0d2540", color:"white", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                {current < qs.length-1 ? "Next ✈️" : "Land & see results 🛬"}
+              </button>
             </div>
-            );
-          })}
+          )}
         </div>
       </div>
     </div>
@@ -1380,6 +1440,8 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
       <Brand size={22} onClick={() => setPage("course")} />
       <div style={{ flex:1, minWidth:8 }} />
       <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
+      <button onClick={() => setPage("admissions")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #1E7A4F", background:"#1E7A4F", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>✈ Universities</button>
+      <button onClick={() => setPage("psych")} style={nb("white","#0a0a0a")}>🧘 Mindset</button>
       <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
       <button onClick={() => setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>
       {isAdmin && <button onClick={() => setPage("admin")} style={nb("#0a0a0a","white")}>Admin</button>}
@@ -1392,93 +1454,368 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
 // ══════════════════════════════════════════
 // COURSE PAGE
 // ══════════════════════════════════════════
+const fmtBand = (b) => Number.isInteger(Number(b)) ? Number(b).toFixed(1) : String(b);
+const BAND_OPTS = [4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9];
+
 function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modules }) {
   const [myProgress, setMyProgress] = useState({});
+  const [expanded, setExpanded] = useState(null);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [goalSel, setGoalSel] = useState(7);
+  const [reflectMod, setReflectMod] = useState(null);
+  const [rBand, setRBand] = useState(6.5);
+  const [rReview, setRReview] = useState("");
+  const [rewardOpen, setRewardOpen] = useState(false);
+  const [certBand, setCertBand] = useState(7);
+  const [certFile, setCertFile] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => { FB.getProgress(session.email).then(setMyProgress); }, [session.email]);
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => {
+      const prog = p || {};
+      setMyProgress(prog);
+      if (!(prog.__meta && prog.__meta.goal)) setGoalOpen(true);
+      else { setGoalSel(prog.__meta.goal); setCertBand(prog.__meta.goal); }
+    });
+  }, [session.email]);
 
-  const totalPts = Object.values(myProgress).reduce((s,v) => s+(v.points||0), 0);
-  const allLessons = (modules||[]).flatMap(m => m.lessons);
-  const done = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
+  const meta = myProgress.__meta || {};
+  const reflections = meta.reflections || {};
+  const mods = modules || [];
+  const totalPts = Object.entries(myProgress).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0);
+  const allLessons = mods.flatMap(m => m.lessons);
+  const doneCount = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
+  const journeyPct = allLessons.length ? Math.round(doneCount/allLessons.length*100) : 0;
+
+  const moduleComplete = (m) => m.lessons.length > 0 && m.lessons.every(l => myProgress[l.id]?.quizDone);
+  const hasReflection = (m) => !!reflections[m.id];
+  const isUnlocked = (i) => i === 0 || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
+  const activeIdx = mods.findIndex((m,i) => isUnlocked(i) && !moduleComplete(m));
+  const allDone = mods.length > 0 && moduleComplete(mods[mods.length-1]) && hasReflection(mods[mods.length-1]);
+  const cert = meta.certificate;
+
+  const writeMeta = async (patch) => {
+    setSaving(true);
+    const cur = await FB.getProgress(session.email);
+    const merged = { ...(cur.__meta || {}), ...patch };
+    await FB.setProgress(session.email, { __meta: merged });
+    setMyProgress(prev => ({ ...prev, __meta: merged }));
+    setSaving(false);
+    return merged;
+  };
+
+  const submitGoal = async () => { await writeMeta({ goal: goalSel }); setGoalOpen(false); };
+
+  const submitReflection = async () => {
+    if (!rReview.trim() || !reflectMod) return;
+    const cur = await FB.getProgress(session.email);
+    const newRef = { ...((cur.__meta||{}).reflections || {}), [reflectMod.id]: { band: rBand, review: rReview.trim(), at: new Date().toISOString() } };
+    await writeMeta({ reflections: newRef });
+    setReflectMod(null); setRReview(""); setRBand(6.5);
+  };
+
+  const submitCert = async () => {
+    await writeMeta({ certificate: { band: certBand, file: certFile || "(file attached)", at: new Date().toISOString() } });
+  };
+
+  const cloudShadow = "0 10px 26px rgba(13,37,64,.10)";
 
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 230px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
-      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px" }}>
-        <div style={{ position:"relative", overflow:"hidden", borderRadius:16, padding:"20px 20px 18px", color:"white", marginBottom:18,
-          background:"linear-gradient(135deg,#0a0a0a 0%,#0d2540 55%,#1A5FAD 130%)", boxShadow:"0 12px 30px rgba(13,37,64,.25)" }}>
-          {/* aviation sky backdrop */}
-          <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
-            style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:.9 }}>
-            <circle cx="60" cy="34" r="40" fill="#1A5FAD" opacity=".25"/>
-            <g fill="#ffffff" opacity=".10">
-              <ellipse cx="320" cy="40" rx="46" ry="15"/><ellipse cx="290" cy="48" rx="30" ry="11"/>
-              <ellipse cx="120" cy="118" rx="40" ry="13"/>
-            </g>
-            <path d="M-10,150 C120,120 250,60 420,8" fill="none" stroke="#49BEB6" strokeWidth="2" strokeDasharray="2 10" opacity=".7"/>
-            <g transform="translate(330,40) rotate(-20)">
-              <path d="M-26,2 Q0,-7 30,0 Q36,2 30,4 Q0,9 -26,8 Z" fill="#49BEB6"/>
-              <path d="M-6,2 L-20,-12 L-12,2 Z" fill="#9ED9CF"/>
-              <path d="M8,1 L20,-12 L14,1 Z" fill="#9ED9CF"/>
-              <circle cx="28" cy="2" r="2.5" fill="#FF5959"/>
-            </g>
-          </svg>
+      <style>{"@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}"}</style>
+      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+
+        {/* ── HERO · IELTS8.KZ boarding pass ── */}
+        <style>{"@keyframes heroFly{0%{transform:translateX(-50px) translateY(0) rotate(-8deg)}100%{transform:translateX(640px) translateY(-16px) rotate(-8deg)}} @keyframes heroDrift{0%{transform:translateX(0)}100%{transform:translateX(-40px)}}"}</style>
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:20, padding:"18px 20px 16px", color:"white", marginBottom:22,
+          background:"linear-gradient(135deg,#070d18 0%,#0d2540 50%,#1A5FAD 135%)", boxShadow:"0 16px 38px rgba(13,37,64,.32)" }}>
+          {/* aviation motion backdrop */}
+          <div aria-hidden="true" style={{ position:"absolute", inset:0, overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:18, left:0, fontSize:20, opacity:.5, animation:"heroFly 18s linear infinite" }}>✈️</div>
+            <div style={{ position:"absolute", top:14, left:"60%", fontSize:26, opacity:.12, animation:"heroDrift 9s ease-in-out infinite alternate" }}>☁️</div>
+            <div style={{ position:"absolute", bottom:24, left:"18%", fontSize:20, opacity:.10, animation:"heroDrift 12s ease-in-out infinite alternate" }}>☁️</div>
+            <svg viewBox="0 0 400 160" preserveAspectRatio="none" style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:.6 }}>
+              <circle cx="58" cy="30" r="42" fill="#1A5FAD" opacity=".22"/>
+              <path d="M-10,150 C120,118 250,58 420,6" fill="none" stroke="#49BEB6" strokeWidth="2" strokeDasharray="2 10" opacity=".5"/>
+            </svg>
+          </div>
+
           <div style={{ position:"relative", zIndex:1 }}>
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>✈ Flight to Band 8 · Now boarding</div>
-            <h2 style={{ margin:0, fontSize:19, fontWeight:800, letterSpacing:"-0.2px" }}>Welcome back, {session.name}</h2>
-            <p style={{ margin:"4px 0 14px", opacity:0.75, fontSize:12 }}>B1 → IELTS Band 8 · {allLessons.length} lessons on the route</p>
-            <div style={{ display:"flex", gap:18, flexWrap:"wrap" }}>
+            {/* top ticket row */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px dashed rgba(255,255,255,.22)", paddingBottom:10, marginBottom:12 }}>
+              <span style={{ fontSize:14, fontWeight:900, letterSpacing:"0.5px" }}>IELTS<span style={{ color:"#49BEB6" }}>8</span>.KZ</span>
+              <span style={{ fontSize:9.5, fontWeight:700, letterSpacing:"2px", color:"#9ED9CF", textTransform:"uppercase" }}>Boarding pass ✈</span>
+            </div>
+
+            <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:"1.4px", textTransform:"uppercase", color:"#9ED9CF" }}>Passenger</div>
+            <h2 style={{ margin:"1px 0 0", fontSize:21, fontWeight:800, letterSpacing:"-0.3px" }}>Welcome back, {session.name}</h2>
+            <p style={{ margin:"3px 0 12px", opacity:0.72, fontSize:12 }}>From B1 to IELTS Band 8 · keep learning, keep climbing ✦</p>
+
+            {/* route line */}
+            <div style={{ position:"relative", height:20, margin:"2px 2px 14px" }}>
+              <span style={{ position:"absolute", left:0, top:1, fontSize:11, fontWeight:800 }}>B1</span>
+              <div style={{ position:"absolute", top:9, left:24, right:62, borderTop:"2px dashed rgba(255,255,255,.4)" }} />
+              <span style={{ position:"absolute", left:`calc(24px + (100% - 86px) * ${journeyPct/100})`, top:-3, fontSize:15, transition:"left .4s ease" }}>✈️</span>
+              <span style={{ position:"absolute", right:0, top:1, fontSize:11, fontWeight:800, color:"#9ED9CF" }}>BAND 8</span>
+            </div>
+
+            {/* stats */}
+            <div style={{ display:"flex", gap:18, flexWrap:"wrap", alignItems:"center" }}>
               <div><div style={{ fontSize:20, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:11, opacity:0.7 }}>Miles (pts)</div></div>
-              <div><div style={{ fontSize:20, fontWeight:800 }}>{done}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Legs flown</div></div>
-              <div><div style={{ fontSize:20, fontWeight:800 }}>{allLessons.length > 0 ? Math.round(done/allLessons.length*100) : 0}%</div><div style={{ fontSize:11, opacity:0.7 }}>Journey</div></div>
+              <div><div style={{ fontSize:20, fontWeight:800 }}>{doneCount}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Legs flown</div></div>
+              <div><div style={{ fontSize:20, fontWeight:800 }}>{journeyPct}%</div><div style={{ fontSize:11, opacity:0.7 }}>Journey</div></div>
+              <div onClick={() => setGoalOpen(true)} style={{ marginLeft:"auto", cursor:"pointer", background:"rgba(255,255,255,0.14)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:12, padding:"6px 12px", textAlign:"center" }}>
+                <div style={{ fontSize:18, fontWeight:800, color:"#9ED9CF" }}>🎯 {meta.goal ? "Band "+fmtBand(meta.goal) : "—"}</div>
+                <div style={{ fontSize:10, opacity:0.7 }}>Target · tap to edit</div>
+              </div>
             </div>
-            <div style={{ marginTop:14, position:"relative", background:"rgba(255,255,255,0.18)", borderRadius:6, height:6 }}>
-              <div style={{ width:`${allLessons.length>0?done/allLessons.length*100:0}%`, background:"linear-gradient(90deg,#49BEB6,#9ED9CF)", height:6, borderRadius:6, transition:"width 0.3s" }} />
-              <span style={{ position:"absolute", top:-7, left:`calc(${allLessons.length>0?done/allLessons.length*100:0}% - 6px)`, fontSize:13, transition:"left 0.3s" }}>✈️</span>
-            </div>
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, fontSize:10, opacity:0.6 }}>
-              <span>B1 · Departure</span><span>Band 8 · Arrival</span>
+
+            {/* achievements */}
+            <div style={{ marginTop:14, paddingTop:12, borderTop:"1px dashed rgba(255,255,255,.22)" }}>
+              <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:"1.4px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:8 }}>🏅 Achievements</div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {[
+                  { e:"🛫", t:"Takeoff", on: doneCount>=1 },
+                  { e:"📚", t:"Bookworm", on: doneCount>=5 },
+                  { e:"🏅", t:"Module", on: mods.some(moduleComplete) },
+                  { e:"🎯", t:"Goal set", on: !!meta.goal },
+                  { e:"🎓", t:"Certified", on: !!cert },
+                ].map(a => (
+                  <span key={a.t} title={a.on ? "Unlocked!" : "Locked"} style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11.5, fontWeight:700,
+                    padding:"5px 10px", borderRadius:999, border:"1px solid", borderColor: a.on?"rgba(73,190,182,.6)":"rgba(255,255,255,.14)",
+                    background: a.on?"rgba(73,190,182,.18)":"rgba(255,255,255,.04)", color: a.on?"#bff0e9":"rgba(255,255,255,.45)", filter: a.on?"none":"grayscale(1)" }}>
+                    <span style={{ fontSize:13 }}>{a.on?a.e:"🔒"}</span>{a.t}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-        {(modules||[]).map(m => (
-          <div key={m.id} style={{ marginBottom:18, border:"1px solid #e5e5e5", borderRadius:12, overflow:"hidden", background:"white" }}>
-            <div style={{ background:"#0a0a0a", padding:"10px 16px", color:"white", fontWeight:700, fontSize:13, letterSpacing:"0.2px" }}>{m.title}</div>
-            {m.lessons.map(l => {
-              const lp = myProgress[l.id] || {};
-              const done = !!lp.quizDone;
-              return (
-                <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                  style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", background:"white", borderTop:"1px solid #f0f0f0", cursor:"pointer" }}>
-                  <div style={{ width:30, height:30, borderRadius:"50%", background: done ? "#0a0a0a" : "white", border: done ? "none" : "1.5px solid #d4d4d4", color: done ? "white" : "#666", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>
-                    {done ? "✓" : l.n}
-                  </div>
+
+        {/* ── ROUTE MAP (module clouds on a sky) ── */}
+        <div style={{ position:"relative", borderRadius:22, padding:"30px 8px 14px", marginBottom:18, overflow:"hidden",
+          background:"linear-gradient(180deg,#cfe4fa 0%,#e3f0fc 45%,#f1f7fd 100%)", border:"1px solid #cfe1f5" }}>
+          {/* decorative sky */}
+          <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMin slice" aria-hidden="true" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", opacity:.55 }}>
+            <g fill="#ffffff"><ellipse cx="70" cy="60" rx="46" ry="16"/><ellipse cx="40" cy="68" rx="28" ry="11"/><ellipse cx="330" cy="180" rx="44" ry="15"/><ellipse cx="300" cy="188" rx="26" ry="10"/><ellipse cx="80" cy="330" rx="40" ry="14"/><ellipse cx="340" cy="470" rx="42" ry="14"/></g>
+          </svg>
+          <div style={{ position:"relative", zIndex:1, textAlign:"center", fontSize:11, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase", color:"#1A5FAD", marginBottom:14 }}>🛫 Departure — follow the clouds to your reward</div>
+
+          <div style={{ position:"relative", zIndex:1 }}>
+        {mods.map((m, i) => {
+          const unlocked = isUnlocked(i);
+          const complete = moduleComplete(m);
+          const reflected = hasReflection(m);
+          const isActive = i === activeIdx;
+          const lessonsDone = m.lessons.filter(l => myProgress[l.id]?.quizDone).length;
+          const open = expanded === m.id;
+          const prev = i > 0 ? mods[i-1] : null;
+          const canUnlockHere = !unlocked && prev && moduleComplete(prev) && !hasReflection(prev);
+          const badge = complete ? "✓" : !unlocked ? "🔒" : isActive ? "✈️" : (i+1);
+          const accent = !unlocked ? (canUnlockHere ? "#B8620A" : "#94a3b8") : complete ? "#1E7A4F" : "#1A5FAD";
+          const onCloud = () => {
+            if (unlocked) { setExpanded(open ? null : m.id); }
+            else if (canUnlockHere) { setReflectMod(prev); setRBand(reflections[prev.id]?.band || 6.5); }
+          };
+          return (
+            <div key={m.id} style={{ display:"flex", gap:12, alignItems:"stretch", paddingLeft: i%2 ? 26 : 0, paddingRight: i%2 ? 0 : 26, transition:"padding .2s" }}>
+              {/* rail */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:42 }}>
+                <div style={{ width:42, height:42, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:complete||!unlocked||isActive?18:15, fontWeight:800, color:"white", background:accent, boxShadow:`0 4px 12px ${accent}66`, border:"3px solid white", animation: canUnlockHere ? "pulse 1.6s ease-in-out infinite" : "none" }}>{badge}</div>
+                <div style={{ flex:1, width:0, borderLeft:`2px dashed ${complete?"#1E7A4F":"#9bbbe0"}`, minHeight:22, margin:"2px 0" }} />
+              </div>
+              {/* cloud card */}
+              <div style={{ flex:1, marginBottom:14, borderRadius:22, overflow:"hidden", background: unlocked ? "white" : (canUnlockHere ? "#fffaf2" : "#eef2f7"),
+                boxShadow: unlocked||canUnlockHere ? cloudShadow : "none", border: unlocked ? "1px solid #e5edf7" : (canUnlockHere ? "1px solid #f0d6b0" : "1px dashed #cbd5e1"), opacity: (unlocked||canUnlockHere) ? 1 : 0.8 }}>
+                <div onClick={onCloud}
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor: (unlocked||canUnlockHere) ? "pointer" : "not-allowed",
+                    background: unlocked ? "linear-gradient(180deg,#f3f9ff,#ffffff)" : "transparent" }}>
+                  <span style={{ fontSize:22 }}>{unlocked ? "☁️" : "🔒"}</span>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:600, fontSize:13.5, color:"#0a0a0a", lineHeight:1.35 }}>{l.title}</div>
-                    <div style={{ fontSize:11, color:"#888", marginTop:2 }}>
-                      {(l.materials||[]).length} materials · {l.quiz.questions.length} questions
-                      {lp.points ? ` · ${lp.points} pts` : ""}
+                    <div style={{ fontWeight:800, fontSize:13.5, color: unlocked ? "#0a0a0a" : (canUnlockHere?"#8a5a12":"#64748b"), lineHeight:1.3 }}>{m.title}</div>
+                    <div style={{ fontSize:11, color: canUnlockHere?"#B8620A":"#7a8aa0", marginTop:3, fontWeight: canUnlockHere?700:400 }}>
+                      {unlocked ? `${lessonsDone}/${m.lessons.length} lessons`
+                        : canUnlockHere ? "🔓 Tap to take the mock test + write a review → unlock"
+                        : "🔒 Finish the previous module first"}
+                      {reflected ? ` · ✓ Mock Band ${fmtBand(reflections[m.id].band)}` : ""}
                     </div>
                   </div>
-                  <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, letterSpacing:"0.2px", flexShrink:0 }}>{l.tag}</span>
+                  {unlocked && <span style={{ fontSize:13, color:"#94a3b8" }}>{open ? "▲" : "▼"}</span>}
                 </div>
-              );
-            })}
+
+                {/* lessons */}
+                {open && unlocked && m.lessons.map(l => {
+                  const lp = myProgress[l.id] || {};
+                  const ld = !!lp.quizDone;
+                  return (
+                    <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
+                      style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px", borderTop:"1px solid #f0f4f9", cursor:"pointer" }}>
+                      <div style={{ width:28, height:28, borderRadius:"50%", background: ld?"#0a0a0a":"white", border: ld?"none":"1.5px solid #d4d4d4", color: ld?"white":"#666", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0 }}>{ld?"✓":(l.n||"·")}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:13, color:"#0a0a0a", lineHeight:1.35 }}>{l.title}</div>
+                        <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{l.quiz.questions.length} questions{lp.points?` · ${lp.points} pts`:""}</div>
+                      </div>
+                      <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
+                    </div>
+                  );
+                })}
+
+                {/* reflection gate */}
+                {unlocked && complete && !reflected && (
+                  <div style={{ padding:"14px 16px", borderTop:"1px solid #f0f4f9", background:"#fff8ec" }}>
+                    <div style={{ fontSize:12.5, color:"#8a5a12", fontWeight:600, marginBottom:8 }}>🛬 Module complete! Log your mock-test IELTS score + a short review to open the next module.</div>
+                    <button onClick={() => { setReflectMod(m); setRBand(reflections[m.id]?.band || 6.5); }}
+                      style={{ padding:"9px 16px", borderRadius:10, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Add score & review</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── FINISH / REWARD cloud ── */}
+        <div style={{ display:"flex", gap:14, alignItems:"stretch" }}>
+          <div style={{ width:42, display:"flex", justifyContent:"center" }}>
+            <div style={{ width:42, height:42, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, background: allDone?"#B8860B":"#94a3b8", boxShadow:`0 4px 12px ${(allDone?"#B8860B":"#94a3b8")}55`, border:"3px solid white" }}>🏆</div>
           </div>
-        ))}
+          <div onClick={() => allDone && setRewardOpen(true)}
+            style={{ flex:1, borderRadius:22, padding:"16px 18px", cursor: allDone?"pointer":"default",
+              background: allDone ? "linear-gradient(135deg,#1A5FAD,#0d2540)" : "#f1f5f9", color: allDone?"white":"#64748b",
+              boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #cbd5e1" }}>
+            <div style={{ fontWeight:800, fontSize:15 }}>{cert ? "🎓 Certificate received!" : "🏆 Finish line — your reward"}</div>
+            <div style={{ fontSize:12, opacity:0.85, marginTop:4 }}>
+              {cert ? `Your IELTS: Band ${fmtBand(cert.band)} · target was Band ${fmtBand(meta.goal)}. Tap to see admissions →`
+                    : allDone ? "All modules done! Tap to upload your IELTS certificate and claim your reward."
+                    : "Complete every module + reflection to unlock. Then upload your IELTS certificate."}
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
       </div>
+
+      {/* ═══ GOAL MODAL ═══ */}
+      {goalOpen && (
+        <Overlay>
+          <div style={{ fontSize:34, textAlign:"center" }}>🎯</div>
+          <h3 style={{ margin:"8px 0 4px", textAlign:"center", fontSize:18 }}>Set your target IELTS band</h3>
+          <p style={{ margin:"0 0 14px", textAlign:"center", fontSize:12.5, color:"#64748b" }}>This is your goal at the start of the journey. We'll compare it to your certificate at the finish.</p>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center", marginBottom:18 }}>
+            {BAND_OPTS.map(b => (
+              <button key={b} onClick={() => setGoalSel(b)} style={{ padding:"9px 14px", borderRadius:10, border:`2px solid ${goalSel===b?"#1A5FAD":"#e5e5e5"}`, background:goalSel===b?"#1A5FAD":"white", color:goalSel===b?"white":"#0a0a0a", fontWeight:700, cursor:"pointer" }}>{fmtBand(b)}</button>
+            ))}
+          </div>
+          <button onClick={submitGoal} disabled={saving} style={btnPrimary}>{saving?"Saving…":"Start the journey ✈️"}</button>
+        </Overlay>
+      )}
+
+      {/* ═══ REFLECTION MODAL ═══ */}
+      {reflectMod && (
+        <Overlay onClose={() => setReflectMod(null)}>
+          <div style={{ fontSize:32, textAlign:"center" }}>🛬</div>
+          <h3 style={{ margin:"6px 0 2px", textAlign:"center", fontSize:17 }}>Module reflection</h3>
+          <p style={{ margin:"0 0 12px", textAlign:"center", fontSize:12, color:"#64748b" }}>{reflectMod.title}</p>
+          <label style={lblStyle}>Your mock-test IELTS score</label>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+            {BAND_OPTS.map(b => (
+              <button key={b} onClick={() => setRBand(b)} style={{ padding:"7px 11px", borderRadius:8, border:`2px solid ${rBand===b?"#B8620A":"#e5e5e5"}`, background:rBand===b?"#B8620A":"white", color:rBand===b?"white":"#0a0a0a", fontWeight:700, fontSize:13, cursor:"pointer" }}>{fmtBand(b)}</button>
+            ))}
+          </div>
+          <label style={lblStyle}>Short review (required)</label>
+          <textarea value={rReview} onChange={e=>setRReview(e.target.value)} rows={4} placeholder="What did you learn? What was hard? How do you feel about your mock result?"
+            style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #e5e5e5", fontSize:13, boxSizing:"border-box", resize:"vertical", marginBottom:14, fontFamily:"inherit" }} />
+          <button onClick={submitReflection} disabled={saving || !rReview.trim()} style={{ ...btnPrimary, background: rReview.trim()?"#B8620A":"#e5e5e5", color: rReview.trim()?"white":"#999" }}>{saving?"Saving…":"Save & unlock next module →"}</button>
+        </Overlay>
+      )}
+
+      {/* ═══ REWARD MODAL ═══ */}
+      {rewardOpen && (
+        <Overlay onClose={() => setRewardOpen(false)}>
+          <div style={{ fontSize:42, textAlign:"center" }}>🏆</div>
+          <h3 style={{ margin:"6px 0 2px", textAlign:"center", fontSize:19 }}>Congratulations, {session.name}!</h3>
+          <p style={{ margin:"0 0 14px", textAlign:"center", fontSize:12.5, color:"#64748b" }}>You reached the finish line. Upload your real IELTS certificate to claim your reward.</p>
+          {!cert ? (
+            <>
+              <label style={lblStyle}>Upload IELTS certificate (PDF / image)</label>
+              <input type="file" accept="image/*,.pdf" onChange={e=>setCertFile(e.target.files?.[0]?.name || "")}
+                style={{ width:"100%", marginBottom:12, fontSize:12 }} />
+              <label style={lblStyle}>Your actual overall band</label>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
+                {BAND_OPTS.map(b => (
+                  <button key={b} onClick={() => setCertBand(b)} style={{ padding:"7px 11px", borderRadius:8, border:`2px solid ${certBand===b?"#1A5FAD":"#e5e5e5"}`, background:certBand===b?"#1A5FAD":"white", color:certBand===b?"white":"#0a0a0a", fontWeight:700, fontSize:13, cursor:"pointer" }}>{fmtBand(b)}</button>
+                ))}
+              </div>
+              <button onClick={submitCert} disabled={saving} style={btnPrimary}>{saving?"Saving…":"🎁 Claim reward"}</button>
+            </>
+          ) : (
+            <>
+              <div style={{ display:"flex", gap:10, justifyContent:"center", margin:"4px 0 14px" }}>
+                <div style={{ background:"#eef4fd", borderRadius:12, padding:"12px 18px", textAlign:"center" }}><div style={{ fontSize:11, color:"#64748b" }}>Target</div><div style={{ fontSize:22, fontWeight:800, color:"#1A5FAD" }}>{fmtBand(meta.goal)}</div></div>
+                <div style={{ background: cert.band>=meta.goal?"#e2ece5":"#fdf0e0", borderRadius:12, padding:"12px 18px", textAlign:"center" }}><div style={{ fontSize:11, color:"#64748b" }}>Achieved</div><div style={{ fontSize:22, fontWeight:800, color: cert.band>=meta.goal?"#1E7A4F":"#B8620A" }}>{fmtBand(cert.band)}</div></div>
+              </div>
+              <p style={{ textAlign:"center", fontSize:13, color:"#0a0a0a", margin:"0 0 14px", fontWeight:600 }}>
+                {cert.band>=meta.goal ? "🌟 Goal achieved! Outstanding work." : "Great effort — you're close. Keep pushing!"}
+              </p>
+              <button onClick={() => { setRewardOpen(false); setPage("admissions"); }} style={btnPrimary}>✈️ Open Admissions Alley →</button>
+            </>
+          )}
+        </Overlay>
+      )}
     </div>
   );
 }
 
+// shared modal shell + small style helpers
+function Overlay({ children, onClose }) {
+  return (
+    <div onClick={onClose ? (e => { if (e.target === e.currentTarget) onClose(); }) : undefined}
+      style={{ position:"fixed", inset:0, background:"rgba(13,37,64,0.45)", backdropFilter:"blur(2px)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, zIndex:200 }}>
+      <div style={{ background:"white", borderRadius:20, padding:"24px 22px", maxWidth:440, width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.3)", maxHeight:"90vh", overflowY:"auto" }}>{children}</div>
+    </div>
+  );
+}
+const btnPrimary = { width:"100%", padding:"12px", borderRadius:10, border:"none", background:"#1A5FAD", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" };
+const lblStyle = { display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.3px", textTransform:"uppercase", color:"#94a3b8", marginBottom:6 };
+
 // ══════════════════════════════════════════
 // LESSON PAGE
 // ══════════════════════════════════════════
+const OPEN_POINTS = 5;
+const MOTIVATION = [
+  "Small steps every day take you to Band 8.",
+  "You don't have to be perfect — just keep going.",
+  "Every expert was once a beginner.",
+  "Believe you can, and you're halfway there.",
+  "Progress, not perfection.",
+  "Your future self will thank you for today.",
+  "Mistakes are proof that you are trying.",
+  "One page a day becomes fluency.",
+];
+const pickMotivation = (id) => { let h=0; const s=String(id); for (let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return MOTIVATION[h % MOTIVATION.length]; };
+const presentLabel = (type) => type==="presentation" ? "Understanding the presentation" : type==="pdf" ? "Read & take notes" : type==="video" ? "Watch & note down" : "Open & explore";
+
+// Turn a Slides/PDF/Doc/Office URL into an embeddable preview src.
+function embedSrc(url) {
+  if (!url) return null;
+  const u = url.trim();
+  const slides = u.match(/presentation\/d\/([\w-]+)/);
+  if (slides) return `https://docs.google.com/presentation/d/${slides[1]}/embed?start=false&loop=false`;
+  const drive = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (drive) return `https://drive.google.com/file/d/${drive[1]}/preview`;
+  const doc = u.match(/document\/d\/([\w-]+)/);
+  if (doc) return `https://docs.google.com/document/d/${doc[1]}/preview`;
+  if (u.includes("canva.com/design")) return u.split("?")[0].replace(/\/edit$/, "/view") + "?embed";
+  if (/\.(pptx?|docx?|xlsx?)(\?|$)/i.test(u)) return "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(u);
+  return u; // direct PDF or any framable page
+}
+
 function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refreshModules, modules }) {
   const [tab, setTab] = useState("materials");
   const [addType, setAddType] = useState("link");
   const [addUrl, setAddUrl] = useState("");
   const [addTitle, setAddTitle] = useState("");
+  const [addText, setAddText] = useState("");
   const [myProgress, setMyProgress] = useState({});
   const [saving, setSaving] = useState(false);
   const [materials, setMaterials] = useState(lesson.materials || []);
@@ -1501,11 +1838,11 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     setSaving(true);
     try {
       const current = await FB.getLessonMaterials(lesson.id);
-      const newMat = { type: addType, url: addUrl, title: addTitle, id: Date.now() };
+      const newMat = { type: addType, url: addUrl, title: addTitle, text: addText.trim(), id: Date.now() };
       const updated = [...(current || []), newMat];
       await FB.setLessonMaterials(lesson.id, updated);
       setMaterials(updated);
-      setAddUrl(""); setAddTitle("");
+      setAddUrl(""); setAddTitle(""); setAddText("");
     } catch(e) { alert("Failed to save: " + e.message); }
     setSaving(false);
   };
@@ -1519,6 +1856,24 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
       setMaterials(updated);
     } catch(e) { alert("Failed to delete: " + e.message); }
     setSaving(false);
+  };
+
+  // award points the first time a student opens a material
+  const [openToast, setOpenToast] = useState("");
+  const isOpened = (mat) => (lp.openedMaterials || []).includes(mat.id);
+  const awardOpen = async (mat) => {
+    if (isOpened(mat)) return;
+    try {
+      const cur = await FB.getProgress(session.email);
+      const lpc = cur[lesson.id] || {};
+      const opened = lpc.openedMaterials || [];
+      if (opened.includes(mat.id)) return;
+      const updated = { ...lpc, openedMaterials: [...opened, mat.id], points: (lpc.points||0) + OPEN_POINTS };
+      await FB.setProgress(session.email, { [lesson.id]: updated });
+      setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
+      setOpenToast(`+${OPEN_POINTS} pts · material opened! ✨`);
+      setTimeout(() => setOpenToast(""), 2400);
+    } catch(e) {}
   };
 
   return (
@@ -1566,37 +1921,86 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
                 </div>
                 <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <input placeholder="URL" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
+                <input placeholder="URL (Google Slides / Drive / Canva / PDF / .pptx)" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
                   style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
+                <textarea placeholder="Text / notes shown under the preview (optional)" value={addText} onChange={e=>setAddText(e.target.value)} rows={3}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8, resize:"vertical", fontFamily:"inherit" }} />
                 <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
                   {saving ? "Saving..." : "Add"}
                 </button>
               </div>
             )}
-            {materials.length === 0 ? (
-              <div style={{ textAlign:"center", padding:40, color:"#94a3b8", background:"white", borderRadius:14, border:"2px dashed #e5e5e5" }}>
-                {isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}
+            <style>{`
+              @keyframes flyIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:none}}
+              @keyframes birdFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(7deg)}}
+              .matFly{animation:flyIn .55s cubic-bezier(.2,.85,.25,1) both}
+              .matCard{transition:transform .3s cubic-bezier(.2,.85,.25,1),box-shadow .3s cubic-bezier(.2,.85,.25,1)}
+              .matCard:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 22px 48px rgba(13,37,64,.16)}
+              .iconBadge{transition:transform .35s cubic-bezier(.2,.85,.25,1)}
+              .matCard:hover .iconBadge{transform:scale(1.14) rotate(-7deg)}
+              .openBtn{transition:transform .2s cubic-bezier(.2,.85,.25,1),filter .2s}
+              .openBtn:hover{transform:scale(1.07);filter:brightness(1.08)}
+              .birdFloat{animation:birdFloat 5s ease-in-out infinite;display:inline-block}
+            `}</style>
+
+            {/* header */}
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"2px 4px 16px" }}>
+              <span className="birdFloat" style={{ fontSize:26 }}>🕊️</span>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:22, fontWeight:800, color:"#0a0a0a", letterSpacing:"-0.4px" }}>Materials</div>
+                <div style={{ fontSize:13, color:"#8a94a6", marginTop:1 }}>{pickMotivation(lesson.id)}</div>
               </div>
-            ) : (
-              materials.map(mat => (
-                <div key={mat.id} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, border:"1px solid #e5e5e5" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:600, color:"#1e293b" }}>{mat.title}</div>
-                      <div style={{ fontSize:12, color:"#94a3b8" }}>{mat.type}</div>
-                    </div>
-                    <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding:"7px 14px", borderRadius:8, background:"#f4f4f4", color:"#0a0a0a", textDecoration:"none", fontSize:13, fontWeight:600 }}>Open</a>
-                    {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ padding:"7px 10px", borderRadius:8, border:"none", background:"#f4f4f4", color:"#0a0a0a", cursor:"pointer" }}>Del</button>}
+            </div>
+
+            {materials.length === 0 ? (
+              <div style={{ textAlign:"center", padding:44, color:"#aab2c0", background:"white", borderRadius:20, border:"1px solid rgba(0,0,0,.06)", fontSize:14 }}>{isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}</div>
+            ) : materials.map((mat, idx) => {
+              const isVideo = mat.type==="video" && mat.url && (mat.url.includes("youtube") || mat.url.includes("youtu.be"));
+              const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
+              const tall = mat.type==="pdf";
+              const opened = isOpened(mat);
+              return (
+              <div key={mat.id} className="matCard matFly" style={{ animationDelay:`${idx*70}ms`, background:"white", borderRadius:20, padding:16, marginBottom:14, border:"1px solid rgba(0,0,0,.06)", boxShadow:"0 6px 18px rgba(13,37,64,.06)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <span className="iconBadge" style={{ width:44, height:44, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:"linear-gradient(145deg,#eef5fd,#d9e8f8)", flexShrink:0 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:15.5, fontWeight:700, color:"#0a0a0a", letterSpacing:"-0.2px", lineHeight:1.25 }}>{mat.title}</div>
+                    <div style={{ fontSize:12, color:"#9aa3b2", marginTop:1, textTransform:"capitalize" }}>{mat.type}{opened ? " · opened" : ""}</div>
                   </div>
-                  {mat.type==="video" && mat.url && mat.url.includes("youtube") && (
-                    <div style={{ marginTop:12, borderRadius:10, overflow:"hidden" }}>
-                      <iframe width="100%" height="250" title="Lesson video"
-                        src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
-                        frameBorder="0" allowFullScreen style={{ borderRadius:10, display:"block" }} />
-                    </div>
-                  )}
+                  {opened
+                    ? <span style={{ fontSize:12, fontWeight:700, color:"#1E7A4F", background:"#e8f3ec", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>✓ +{OPEN_POINTS}</span>
+                    : <span style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", background:"#eaf2fb", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>+{OPEN_POINTS} pts</span>}
+                  <a className="openBtn" href={mat.url} target="_blank" rel="noreferrer" onClick={() => awardOpen(mat)}
+                    style={{ padding:"8px 16px", borderRadius:999, background:"linear-gradient(180deg,#2a7fe6,#1559c0)", color:"white", textDecoration:"none", fontSize:13, fontWeight:700, flexShrink:0, boxShadow:"0 5px 14px rgba(21,89,192,.32)" }}>Open</a>
+                  {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ width:32, height:32, borderRadius:10, border:"none", background:"#f4f4f6", color:"#9aa3b2", cursor:"pointer", flexShrink:0, fontSize:14 }}>✕</button>}
                 </div>
-              ))
+
+                {(isVideo || preview) && (
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase", color:"#2a7fe6", marginTop:14, marginBottom:7 }}>{presentLabel(mat.type)}</div>
+                )}
+                {isVideo && (
+                  <div style={{ borderRadius:16, overflow:"hidden" }}>
+                    <iframe width="100%" height="250" title={mat.title||"Lesson video"}
+                      src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
+                      frameBorder="0" allowFullScreen style={{ display:"block" }} />
+                  </div>
+                )}
+                {preview && (
+                  <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(0,0,0,.06)" }}>
+                    <iframe width="100%" height={tall?520:360} title={mat.title||"Preview"}
+                      src={preview} frameBorder="0" allowFullScreen style={{ display:"block", background:"#f6f9fd" }} />
+                  </div>
+                )}
+
+                {mat.text && (
+                  <div style={{ marginTop:12, fontSize:14, color:"#475569", lineHeight:1.7, whiteSpace:"pre-line" }}>{mat.text}</div>
+                )}
+              </div>
+              );
+            })}
+
+            {openToast && (
+              <div style={{ position:"fixed", bottom:22, left:"50%", transform:"translateX(-50%)", background:"#1d1d1f", color:"white", padding:"11px 20px", borderRadius:999, fontWeight:700, fontSize:13.5, boxShadow:"0 12px 30px rgba(0,0,0,.3)", zIndex:300 }}>{openToast}</div>
             )}
           </div>
         )}
@@ -1655,6 +2059,327 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
 }
 
 // ══════════════════════════════════════════
+// ADMISSIONS ALLEY — universities + scholarships by IELTS band
+// ══════════════════════════════════════════
+const REGION_FLAG = { "Middle East":"🕌", "Italy":"🇮🇹", "Europe":"🇪🇺", "USA":"🇺🇸", "Australia":"🇦🇺" };
+const REGIONS = ["All","Middle East","Italy","Europe","USA","Australia"];
+
+const UNIVERSITIES = [
+  // Middle East
+  { name:"King Abdullah University of Science and Technology (KAUST)", country:"Saudi Arabia", city:"Thuwal", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall (no band below 6.0)", level:"Both", fields:"Engineering, Computer Science, Sciences", scholarship:"KAUST Fellowship — full tuition + monthly stipend, housing, medical", note:"Every admitted student is automatically funded — one of the most generous in the region." },
+  { name:"New York University Abu Dhabi (NYUAD)", country:"UAE", city:"Abu Dhabi", region:"Middle East", minIELTS:7.0, bandNote:"7.0 overall recommended", level:"Bachelor", fields:"Engineering, Business, Sciences, Humanities", scholarship:"NYUAD Need-Based Aid — full tuition, housing, travel as needed", note:"Need-blind admission; strong applicants funded regardless of income." },
+  { name:"Khalifa University", country:"UAE", city:"Abu Dhabi", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Engineering, Sciences, Medicine", scholarship:"Khalifa Scholarship — full tuition + stipend (grad)", note:"Well-funded STEM university with substantial merit awards." },
+  { name:"Hamad Bin Khalifa University (HBKU)", country:"Qatar", city:"Doha", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Engineering, Computing, Public Policy", scholarship:"HBKU Graduate Scholarship — full tuition waiver + stipend", note:"Qatar's Education City with strong graduate research funding." },
+  { name:"American University of Beirut (AUB)", country:"Lebanon", city:"Beirut", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Engineering, Business, Medicine", scholarship:"AUB Merit & Financial Aid — partial to substantial tuition support", note:"US-style university with a strong scholarship and aid tradition." },
+  { name:"Koç University", country:"Turkey", city:"Istanbul", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall recommended", level:"Both", fields:"Engineering, Business, Sciences, Medicine", scholarship:"Koç Scholarship — full/partial tuition waiver, possible stipend + housing", note:"Top Turkish private university; merit scholarships cover most or all tuition." },
+  { name:"Sabancı University", country:"Turkey", city:"Istanbul", region:"Middle East", minIELTS:6.0, bandNote:"6.0 overall typical (UG)", level:"Both", fields:"Engineering, Management, Natural Sciences", scholarship:"Sabancı Merit Scholarship — full tuition + stipend + accommodation", note:"Generous tiered merit awards for high achievers." },
+  { name:"Bilkent University", country:"Turkey", city:"Ankara", region:"Middle East", minIELTS:6.5, bandNote:"6.5 overall typical", level:"Both", fields:"Engineering, Business, Sciences, Humanities", scholarship:"Bilkent Comprehensive Scholarship — full tuition, housing + stipend", note:"Comprehensive merit scholarships cover the full cost of study." },
+  { name:"United Arab Emirates University (UAEU)", country:"UAE", city:"Al Ain", region:"Middle East", minIELTS:6.0, bandNote:"6.0 overall, 5.5 each band", level:"Both", fields:"Engineering, Business, Sciences, Medicine", scholarship:"UAEU Graduate Scholarship — tuition waiver + assistantship stipend", note:"Flagship public university with funded assistantships." },
+  // Italy
+  { name:"Politecnico di Milano", country:"Italy", city:"Milan", region:"Italy", minIELTS:6.0, bandNote:"6.0 overall (programme-dependent)", level:"Both", fields:"Engineering, Architecture, Design", scholarship:"Merit Scholarship + DSU Lombardia — tuition waiver + ~€5,000/yr grant", note:"Merit awards plus regional DSU grants make it a prime target." },
+  { name:"Politecnico di Torino", country:"Italy", city:"Turin", region:"Italy", minIELTS:5.5, bandNote:"5.5 overall (programme-dependent)", level:"Both", fields:"Engineering, Architecture, ICT", scholarship:"TOP-UIC / EDISU Piemonte — tuition exemption + ~€4–7k/yr grant", note:"Internal merit scholarships plus EDISU grants for living costs + housing." },
+  { name:"University of Bologna", country:"Italy", city:"Bologna", region:"Italy", minIELTS:6.0, bandNote:"6.0 overall (programme-dependent)", level:"Both", fields:"Economics, Engineering, Humanities", scholarship:"Unibo Study Grants + ER-GO — tuition waiver + ~€11,000/yr grant", note:"Oldest Western university; many study grants plus ER-GO DSU funding." },
+  { name:"Sapienza University of Rome", country:"Italy", city:"Rome", region:"Italy", minIELTS:6.0, bandNote:"6.0 overall (programme-dependent)", level:"Both", fields:"Engineering, Sciences, Economics", scholarship:"Sapienza Merit + DiSCo Lazio — tuition waiver + ~€5,000/yr grant", note:"Income-based fees and DiSCo Lazio grants for non-EU students." },
+  { name:"University of Padua", country:"Italy", city:"Padua", region:"Italy", minIELTS:6.0, bandNote:"6.0 overall (programme-dependent)", level:"Both", fields:"Engineering, Sciences, Economics", scholarship:"Padua Excellence Scholarship — ~€8,000/yr + tuition waiver + ESU grant", note:"Strong excellence scholarships for incoming international Master's students." },
+  { name:"Bocconi University", country:"Italy", city:"Milan", region:"Italy", minIELTS:6.5, bandNote:"6.5 overall (programme-dependent)", level:"Both", fields:"Economics, Management, Finance", scholarship:"Bocconi Merit & International Awards — up to ~€13,000/yr tuition waiver", note:"Top business school with substantial merit-based tuition waivers." },
+  { name:"University of Pavia", country:"Italy", city:"Pavia", region:"Italy", minIELTS:5.5, bandNote:"5.5 overall (programme-dependent)", level:"Both", fields:"Engineering, Economics, Sciences", scholarship:"UNIPV International Scholarship + EDiSU — ~€8,000/yr + free housing/meals", note:"Covers fees, stipend, housing and meals for top students." },
+  { name:"Ca' Foscari University of Venice", country:"Italy", city:"Venice", region:"Italy", minIELTS:6.0, bandNote:"6.0 overall (programme-dependent)", level:"Both", fields:"Economics, Languages, Humanities", scholarship:"Ca' Foscari Welcome + Invest Your Talent in Italy — waiver + ~€8,000/yr", note:"Part of Invest Your Talent in Italy with internal grants." },
+  // Europe
+  { name:"Technical University of Munich (TUM)", country:"Germany", city:"Munich", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall (≈5.5 each)", level:"Both", fields:"Engineering, CS, Natural Sciences, Management", scholarship:"Deutschlandstipendium — €300/month (most programmes tuition-free)", note:"Tuition-free public university plus merit grants — low cost, high prestige." },
+  { name:"RWTH Aachen University", country:"Germany", city:"Aachen", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Mechanical/Electrical Engineering, CS", scholarship:"DAAD + Deutschlandstipendium — living stipend (tuition-free)", note:"No tuition plus DAAD funding covers living costs." },
+  { name:"Delft University of Technology (TU Delft)", country:"Netherlands", city:"Delft", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Aerospace, Civil Eng, CS, Architecture", scholarship:"Justus & Louise van Effen — full tuition + living allowance", note:"Top engineering school with full-ride excellence funding for non-EU." },
+  { name:"University of Amsterdam", country:"Netherlands", city:"Amsterdam", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Business, Economics, Social Sciences, CS", scholarship:"Holland Scholarship — €5,000 first-year grant (non-EEA)", note:"Government-backed grant offsets first-year costs." },
+  { name:"Lund University", country:"Sweden", city:"Lund", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 5.5 each band", level:"Both", fields:"Engineering, Life Sciences, Business, Law", scholarship:"Lund Global Scholarship — 25–100% tuition waiver", note:"Global scholarship plus Erasmus Mundus joint programmes." },
+  { name:"KTH Royal Institute of Technology", country:"Sweden", city:"Stockholm", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 5.5 each band", level:"Master", fields:"Engineering, CS, Architecture", scholarship:"KTH + Swedish Institute Scholarships — full tuition (some full living)", note:"Institute waivers plus SI full scholarships and Erasmus Mundus." },
+  { name:"Sciences Po", country:"France", city:"Paris", region:"Europe", minIELTS:7.0, bandNote:"7.0 overall, 6.5 each band", level:"Both", fields:"Political Science, International Affairs, Economics", scholarship:"Eiffel Excellence — monthly stipend, travel, insurance", note:"Eiffel programme funds top international students in policy/politics." },
+  { name:"ETH Zürich", country:"Switzerland", city:"Zürich", region:"Europe", minIELTS:7.0, bandNote:"7.0 overall, 6.5 each band", level:"Master", fields:"Engineering, CS, Mathematics, Physics", scholarship:"Excellence Scholarship (ESOP) — full tuition + living stipend", note:"Competitive full-funding package at a world top-10 university." },
+  { name:"Aalto University", country:"Finland", city:"Espoo", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall, 5.5 each band", level:"Both", fields:"Technology, Design, Business, Architecture", scholarship:"Aalto Scholarship — 50–100% tuition waiver", note:"Tiered waivers and Erasmus Mundus programmes for non-EU." },
+  { name:"University of Amsterdam — Amsterdam Merit", country:"Netherlands", city:"Amsterdam", region:"Europe", minIELTS:6.5, bandNote:"6.5 overall", level:"Master", fields:"Business, Data Science, Law", scholarship:"Amsterdam Merit Scholarship — partial tuition for top non-EEA", note:"Additional merit route for outstanding master's applicants." },
+  // USA
+  { name:"Harvard University", country:"USA", city:"Cambridge, MA", region:"USA", minIELTS:7.0, bandNote:"7.0–7.5 overall", level:"Both", fields:"Engineering, Liberal Arts, Business, Sciences", scholarship:"Harvard Financial Aid Initiative — full need-based aid (tuition, room, board)", note:"Need-blind for all applicants with extremely generous full-need aid." },
+  { name:"Yale University", country:"USA", city:"New Haven, CT", region:"USA", minIELTS:7.0, bandNote:"7.0–7.5 overall", level:"Both", fields:"Liberal Arts, Engineering, Law, Sciences", scholarship:"Yale Need-Based Scholarship — covers 100% of demonstrated need", note:"Need-blind for internationals; no loans in aid packages." },
+  { name:"Princeton University", country:"USA", city:"Princeton, NJ", region:"USA", minIELTS:7.0, bandNote:"7.0–7.5 overall", level:"Both", fields:"Engineering, Public Policy, Liberal Arts", scholarship:"Princeton Financial Aid — grant-based full-need, no loans", note:"Pioneered no-loan aid; meets full need for admitted internationals." },
+  { name:"MIT", country:"USA", city:"Cambridge, MA", region:"USA", minIELTS:7.0, bandNote:"7.0–7.5 overall", level:"Both", fields:"Engineering, CS, Sciences, Management", scholarship:"MIT Need-Based Aid — meets full demonstrated need (UG)", note:"Need-blind for internationals; meets 100% of demonstrated need." },
+  { name:"Stanford University", country:"USA", city:"Stanford, CA", region:"USA", minIELTS:7.0, bandNote:"7.0 overall", level:"Both", fields:"Engineering, CS, Business, Liberal Arts", scholarship:"Stanford Need-Based Aid — full demonstrated need met", note:"Meets 100% of demonstrated need for admitted internationals." },
+  { name:"Amherst College", country:"USA", city:"Amherst, MA", region:"USA", minIELTS:7.0, bandNote:"7.0 overall", level:"Bachelor", fields:"Liberal Arts, Sciences, Humanities", scholarship:"Amherst Need-Based Aid — full need met, no loans", note:"Need-blind for internationals; very generous liberal arts college." },
+  { name:"Williams College", country:"USA", city:"Williamstown, MA", region:"USA", minIELTS:7.0, bandNote:"7.0 overall", level:"Bachelor", fields:"Liberal Arts, Sciences, Economics", scholarship:"Williams Need-Based Aid — 100% of demonstrated need", note:"Top liberal arts college; grant-based aid for internationals." },
+  { name:"Berea College", country:"USA", city:"Berea, KY", region:"USA", minIELTS:6.5, bandNote:"6.5 overall typical", level:"Bachelor", fields:"Liberal Arts, Education, Agriculture, Business", scholarship:"Tuition Promise Scholarship — full tuition for every admitted student", note:"No student pays tuition — ideal for high-need international students." },
+  { name:"University of Alabama", country:"USA", city:"Tuscaloosa, AL", region:"USA", minIELTS:6.0, bandNote:"6.0 overall typical", level:"Both", fields:"Engineering, Business, Communications", scholarship:"Automatic Merit Scholarships — up to full tuition by GPA/test", note:"Predictable automatic merit aid for strong academic stats." },
+  { name:"Arizona State University", country:"USA", city:"Tempe, AZ", region:"USA", minIELTS:6.5, bandNote:"6.5 overall typical", level:"Both", fields:"Engineering, Business, Journalism, Sustainability", scholarship:"New American University / International Merit — renewable awards", note:"Large public university with accessible merit scholarships." },
+  // Australia
+  { name:"University of Melbourne", country:"Australia", city:"Melbourne", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Engineering, Business, Health, Law", scholarship:"Melbourne International Scholarships + Australia Awards — partial to full remission", note:"Top-ranked AU university; generous merit awards + Australia Awards." },
+  { name:"Australian National University (ANU)", country:"Australia", city:"Canberra", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"International Relations, Science, Public Policy", scholarship:"ANU Chancellor's International + Australia Awards — up to 50% + living support", note:"Strong research funding and dedicated international merit scholarships." },
+  { name:"University of Sydney", country:"Australia", city:"Sydney", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Business, Medicine, Engineering, Arts", scholarship:"Sydney Scholars Awards + VC's International Scholarships — annual grants", note:"Many automatically-considered merit scholarships." },
+  { name:"UNSW Sydney", country:"Australia", city:"Sydney", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Engineering, Business, Science", scholarship:"UNSW International Scholarships + Australia Awards — partial + merit", note:"Group of Eight engineering leader with multiple scholarship streams." },
+  { name:"Monash University", country:"Australia", city:"Melbourne", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Pharmacy, Engineering, Business, Health", scholarship:"Monash International Merit + Australia Awards — up to AUD 10,000/yr + full awards", note:"Renewable merit scholarships across most faculties." },
+  { name:"University of Queensland (UQ)", country:"Australia", city:"Brisbane", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Agriculture, Health, Engineering, Business", scholarship:"UQ International Scholarships + Australia Awards — fee remission + merit", note:"Generous research and UG merit awards." },
+  { name:"University of Adelaide", country:"Australia", city:"Adelaide", region:"Australia", minIELTS:6.0, bandNote:"6.0 overall, 6.0 each band", level:"Both", fields:"Wine Science, Engineering, Health, Mining", scholarship:"Adelaide Global Academic Excellence + Australia Awards — up to 50% remission", note:"Lower entry threshold with substantial automatic merit awards." },
+  { name:"University of Western Australia (UWA)", country:"Australia", city:"Perth", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"Mining, Marine Science, Business, Medicine", scholarship:"UWA Global Excellence + Australia Awards — partial reductions + merit", note:"Go8 research strength with accessible excellence scholarships." },
+  { name:"University of Technology Sydney (UTS)", country:"Australia", city:"Sydney", region:"Australia", minIELTS:6.5, bandNote:"6.5 overall, 6.0 each band", level:"Both", fields:"IT, Engineering, Design, Business", scholarship:"UTS International Academic Excellence Scholarships — partial tuition", note:"Industry-focused, practical merit scholarships for internationals." },
+];
+
+// Common-App-style chance estimator
+const ELITE_UNIS = new Set(["Harvard University","Yale University","Princeton University","MIT","Stanford University","Amherst College","Williams College","ETH Zürich","Sciences Po","New York University Abu Dhabi (NYUAD)"]);
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const reqStrength = (u) => ELITE_UNIS.has(u.name) ? 92 : u.minIELTS >= 7 ? 80 : u.minIELTS >= 6.5 ? 64 : u.minIELTS >= 6 ? 52 : 40;
+function calcProfile({ gpa, sat, satOptional, band, activities, essays }) {
+  const gpaPts = clamp01(gpa/4) * 35;
+  const ieltsPts = clamp01((band-5)/4) * 15;
+  const map = { low:5, medium:10, high:15 };
+  const actPts = map[activities] ?? 5, essPts = map[essays] ?? 5;
+  if (satOptional) return Math.round((gpaPts + ieltsPts + actPts + essPts) / 80 * 100);
+  const satPts = clamp01((sat-400)/1200) * 20;
+  return Math.round(gpaPts + ieltsPts + actPts + essPts + satPts);
+}
+function admitVerdict(u, P, band) {
+  const diff = P - reqStrength(u);
+  let tier = diff >= 12 ? "likely" : diff >= -8 ? "target" : "reach";
+  const gap = band - u.minIELTS;
+  if (gap < 0) { if (gap <= -0.5) tier = "reach"; else if (tier === "likely") tier = "target"; }
+  return { tier, ieltsOk: gap >= 0 };
+}
+const VERDICT_META = {
+  likely: { label:"✓ Likely", color:"#1E7A4F", bg:"#e2ece5", blurb:"Your profile is at or above the typical bar." },
+  target: { label:"◎ Target", color:"#1A5FAD", bg:"#e5eefa", blurb:"A realistic match — competitive but achievable." },
+  reach:  { label:"↗ Reach", color:"#B8620A", bg:"#fdf0e0", blurb:"Ambitious — apply, but add safer options too." },
+};
+const strengthLabel = (p) => p>=88?"Exceptional":p>=75?"Very strong":p>=60?"Strong":p>=45?"Solid":"Building";
+const segBtn = (on, c="#1A5FAD") => ({ padding:"7px 12px", borderRadius:8, border:`2px solid ${on?c:"#e5e5e5"}`, background:on?c:"white", color:on?"white":"#0a0a0a", fontWeight:700, fontSize:12.5, cursor:"pointer", textTransform:"capitalize" });
+
+function AdmissionsPage({ session, logout, setPage, isAdmin }) {
+  const [myProgress, setMyProgress] = useState({});
+  const [band, setBand] = useState(6.5);
+  const [region, setRegion] = useState("All");
+  const [level, setLevel] = useState("All");
+  // Common App profile
+  const [gpa, setGpa] = useState(3.5);
+  const [satOptional, setSatOptional] = useState(true);
+  const [sat, setSat] = useState(1250);
+  const [activities, setActivities] = useState("medium");
+  const [essays, setEssays] = useState("medium");
+
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => {
+      const prog = p || {}; setMyProgress(prog);
+      const m = prog.__meta || {};
+      const pre = (m.certificate && m.certificate.band) || m.goal;
+      if (pre) setBand(pre);
+    });
+  }, [session.email]);
+
+  const totalPts = Object.entries(myProgress).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0);
+  const profile = calcProfile({ gpa, sat, satOptional, band, activities, essays });
+
+  const pool = UNIVERSITIES
+    .filter(u => region === "All" || u.region === region)
+    .filter(u => level === "All" || u.level === "Both" || u.level === level)
+    .map(u => ({ ...u, v: admitVerdict(u, profile, band) }))
+    .sort((a,b) => reqStrength(b) - reqStrength(a));
+  const groups = { likely: pool.filter(u=>u.v.tier==="likely"), target: pool.filter(u=>u.v.tier==="target"), reach: pool.filter(u=>u.v.tier==="reach") };
+
+  const Card = ({ u }) => {
+    const vm = VERDICT_META[u.v.tier];
+    return (
+      <div style={{ background:"white", borderRadius:14, padding:"14px 16px", border:`1px solid ${vm.bg}`, borderLeft:`4px solid ${vm.color}`, boxShadow:"0 6px 18px rgba(13,37,64,.06)", marginBottom:10 }}>
+        <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
+          <span style={{ fontSize:22, lineHeight:1 }}>{REGION_FLAG[u.region] || "🎓"}</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", lineHeight:1.3 }}>{u.name}</div>
+            <div style={{ fontSize:11.5, color:"#7a8aa0", marginTop:2 }}>{u.city} · {u.country} · {u.level === "Both" ? "Bachelor & Master" : u.level}</div>
+          </div>
+          <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:"4px 10px", borderRadius:999, background:vm.bg, color:vm.color }}>{vm.label}</span>
+        </div>
+        <div style={{ marginTop:10, fontSize:12.5, color:"#1f3864" }}><b>🎁 {u.scholarship}</b></div>
+        <div style={{ marginTop:5, fontSize:12, color:"#475569" }}>{u.note}</div>
+        <div style={{ marginTop:7, display:"flex", gap:6, flexWrap:"wrap" }}>
+          <span style={chip}>{u.fields}</span>
+          <span style={{ ...chip, background: u.v.ieltsOk?"#e2ece5":"#fde2df", color: u.v.ieltsOk?"#1E7A4F":"#B23A2E" }}>{u.v.ieltsOk?"✓":"⚠"} IELTS {fmtBand(u.minIELTS)}{u.v.ieltsOk?"":" — below your band"}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const Group = ({ tier }) => {
+    const vm = VERDICT_META[tier];
+    const list = groups[tier];
+    if (!list.length) return null;
+    return (
+      <>
+        <div style={{ display:"flex", alignItems:"center", gap:8, margin:"18px 2px 10px" }}>
+          <span style={{ fontSize:15, fontWeight:800, color:vm.color }}>{vm.label} ({list.length})</span>
+          <span style={{ fontSize:11, color:"#94a3b8" }}>— {vm.blurb}</span>
+        </div>
+        {list.map(u => <Card key={u.name} u={u} />)}
+      </>
+    );
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 230px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
+      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d2540,#1A5FAD)", boxShadow:"0 12px 30px rgba(13,37,64,.25)" }}>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>✈ Admissions Alley</div>
+          <h2 style={{ margin:0, fontSize:19, fontWeight:800 }}>Where can you get in?</h2>
+          <p style={{ margin:"4px 0 0", opacity:0.8, fontSize:12 }}>Fill your Common App profile — we estimate your chances and match scholarships abroad.</p>
+        </div>
+
+        {/* IELTS + filters */}
+        <div style={{ background:"white", borderRadius:14, padding:16, border:"1px solid #e5edf7", marginBottom:14 }}>
+          <label style={lblStyle}>Your IELTS band</label>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
+            {BAND_OPTS.map(b => (
+              <button key={b} onClick={() => setBand(b)} style={segBtn(band===b)}>{fmtBand(b)}</button>
+            ))}
+          </div>
+          <label style={lblStyle}>Region</label>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
+            {REGIONS.map(r => (
+              <button key={r} onClick={() => setRegion(r)} style={segBtn(region===r, "#0d2540")}>{r==="All"?"🌍 All":`${REGION_FLAG[r]||""} ${r}`}</button>
+            ))}
+          </div>
+          <label style={lblStyle}>Level</label>
+          <div style={{ display:"flex", gap:6 }}>
+            {["All","Bachelor","Master"].map(lv => (
+              <button key={lv} onClick={() => setLevel(lv)} style={segBtn(level===lv)}>{lv}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Common App profile */}
+        <div style={{ background:"white", borderRadius:14, padding:16, border:"1px solid #e5edf7", marginBottom:16 }}>
+          <div style={{ fontSize:13, fontWeight:800, color:"#0d2540", marginBottom:2 }}>📋 Common App profile</div>
+          <div style={{ fontSize:11.5, color:"#94a3b8", marginBottom:14 }}>The same factors universities weigh on your application.</div>
+
+          <div style={{ display:"flex", justifyContent:"space-between" }}><label style={lblStyle}>GPA (out of 4.0)</label><span style={{ fontWeight:800, color:"#1A5FAD" }}>{gpa.toFixed(1)}</span></div>
+          <input type="range" min="0" max="4" step="0.1" value={gpa} onChange={e=>setGpa(Number(e.target.value))} style={{ width:"100%", marginBottom:6, accentColor:"#1A5FAD" }} />
+          <div style={{ fontSize:10.5, color:"#aab4c4", marginBottom:14 }}>Tip: ~90–100% ≈ 4.0 · ~80–89% ≈ 3.3 · ~70–79% ≈ 2.7</div>
+
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+            <label style={{ ...lblStyle, marginBottom:0 }}>SAT score</label>
+            <label style={{ fontSize:12, color:"#475569", display:"flex", alignItems:"center", gap:6, cursor:"pointer" }}>
+              <input type="checkbox" checked={satOptional} onChange={e=>setSatOptional(e.target.checked)} /> Applying test-optional (no SAT)
+            </label>
+          </div>
+          {!satOptional && (
+            <>
+              <div style={{ textAlign:"right", fontWeight:800, color:"#1A5FAD" }}>{sat}</div>
+              <input type="range" min="400" max="1600" step="10" value={sat} onChange={e=>setSat(Number(e.target.value))} style={{ width:"100%", marginBottom:14, accentColor:"#1A5FAD" }} />
+            </>
+          )}
+          {satOptional && <div style={{ height:8 }} />}
+
+          <label style={lblStyle}>Extracurriculars & leadership</label>
+          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+            {["low","medium","high"].map(v => <button key={v} onClick={()=>setActivities(v)} style={segBtn(activities===v, "#1E7A4F")}>{v}</button>)}
+          </div>
+
+          <label style={lblStyle}>Essays & recommendations</label>
+          <div style={{ display:"flex", gap:6 }}>
+            {["low","medium","high"].map(v => <button key={v} onClick={()=>setEssays(v)} style={segBtn(essays===v, "#1E7A4F")}>{v}</button>)}
+          </div>
+        </div>
+
+        {/* Profile strength meter */}
+        <div style={{ background:"linear-gradient(135deg,#0d2540,#1A5FAD)", borderRadius:14, padding:"16px 18px", color:"white", marginBottom:18 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
+            <span style={{ fontSize:12, opacity:0.8, fontWeight:600, letterSpacing:"0.3px" }}>YOUR PROFILE STRENGTH</span>
+            <span style={{ fontSize:24, fontWeight:800 }}>{profile}<span style={{ fontSize:13, opacity:0.7 }}>/100</span></span>
+          </div>
+          <div style={{ marginTop:8, background:"rgba(255,255,255,0.2)", borderRadius:6, height:8 }}>
+            <div style={{ width:`${profile}%`, height:8, borderRadius:6, background:"linear-gradient(90deg,#49BEB6,#9ED9CF)", transition:"width .3s" }} />
+          </div>
+          <div style={{ marginTop:8, fontSize:12.5 }}>
+            <b>{strengthLabel(profile)}</b> profile · ✓ {groups.likely.length} likely · ◎ {groups.target.length} target · ↗ {groups.reach.length} reach
+          </div>
+        </div>
+
+        <Group tier="likely" />
+        <Group tier="target" />
+        <Group tier="reach" />
+
+        <div style={{ marginTop:16, fontSize:11, color:"#94a3b8", lineHeight:1.6, background:"white", borderRadius:12, padding:"12px 14px", border:"1px solid #eef2f8" }}>
+          ⚠️ This is an indicative estimate, not an admissions decision. Real outcomes also depend on your major, country quotas, interviews, finances and the year's competition. IELTS minimums and scholarships change often — always confirm on each university's official website.
+        </div>
+      </div>
+    </div>
+  );
+}
+const chip = { fontSize:11, color:"#475569", background:"#eef4fd", borderRadius:999, padding:"3px 10px", fontWeight:600 };
+
+// ══════════════════════════════════════════
+// IELTS PSYCHOLOGIST — stress-reduction techniques
+// ══════════════════════════════════════════
+const PSYCH_TECHNIQUES = [
+  { icon:"🌬️", title:"Box breathing (4·4·4·4)", color:"#1A5FAD",
+    body:"The fastest way to calm a racing heart before or during the test. Breathe in for 4, hold for 4, out for 4, hold for 4. Repeat 4 rounds — it lowers your heart rate and clears your head.", tip:"Use the breathing circle above for 1–2 minutes before you start." },
+  { icon:"😮‍💨", title:"4-7-8 calming breath", color:"#1E7A4F",
+    body:"Inhale through the nose for 4, hold for 7, exhale slowly through the mouth for 8. Great the night before to fall asleep, or in the waiting room.", tip:"Do 3–4 cycles, no more — it's powerful." },
+  { icon:"🖐️", title:"5-4-3-2-1 grounding", color:"#B8620A",
+    body:"When panic hits, name 5 things you can see, 4 you can hear, 3 you can touch, 2 you can smell, 1 you can taste. It pulls your brain out of fear and back into the room.", tip:"Perfect just before the Speaking test." },
+  { icon:"🛫", title:"Pre-flight checklist (exam day)", color:"#0d2540",
+    body:"Sleep 7–8h, eat a real breakfast, arrive 30 min early, bring water and ID. Don't cram new material in the last hour — review light notes only. A calm body makes a calm mind.", tip:"Lay everything out the night before." },
+  { icon:"🧭", title:"In-flight: when you get stuck", color:"#1A5FAD",
+    body:"If one question freezes you, take 2 slow breaths, mark it, and move on — never let one item sink the whole test. Listening: let a missed answer go instantly and catch the next. Reading/Writing: watch the clock, not the perfect sentence.", tip:"A skipped question costs 1 mark; panic costs ten." },
+  { icon:"💭", title:"Reframe the nerves", color:"#1E7A4F",
+    body:"Those butterflies are energy, not danger. Swap 'I'm going to fail' for 'I've prepared, and I'll do my best.' Nervous excitement and fear feel the same in the body — tell yourself it's excitement.", tip:"Say it out loud: 'This is excitement, and I'm ready.'" },
+  { icon:"📉", title:"Shrink the catastrophe", color:"#B8620A",
+    body:"Ask: what's the worst that realistically happens? You retake one section. IELTS is repeatable — it's a checkpoint, not a verdict on your worth or your future.", tip:"One test does not define you." },
+  { icon:"🛬", title:"After landing: let go", color:"#0d2540",
+    body:"Once the pen is down, it's done — replaying it only drains you. Do something kind for yourself and rest. Reflect briefly (you already do this after each module!), then close the loop.", tip:"Reward yourself regardless of how it felt." },
+];
+
+function PsychPage({ session, logout, setPage, isAdmin }) {
+  const [pts, setPts] = useState(0);
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => {
+      const prog = p || {};
+      setPts(Object.entries(prog).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0));
+    });
+  }, [session.email]);
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(#e7f6f3,#f2f9fb 240px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
+      <style>{"@keyframes breathe{0%{transform:scale(.6)}25%{transform:scale(1)}50%{transform:scale(1)}75%{transform:scale(.6)}100%{transform:scale(.6)}}"}</style>
+      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+
+        <div style={{ borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d4f45,#1A5FAD)", boxShadow:"0 12px 30px rgba(13,79,69,.25)" }}>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>🧘 IELTS Psychologist</div>
+          <h2 style={{ margin:0, fontSize:19, fontWeight:800 }}>Calm mind, higher band</h2>
+          <p style={{ margin:"4px 0 0", opacity:0.85, fontSize:12 }}>Stress is the #1 hidden score-killer. These techniques keep you steady before, during and after the test.</p>
+        </div>
+
+        {/* breathing widget */}
+        <div style={{ background:"white", borderRadius:18, padding:"24px 16px", border:"1px solid #d9eee9", marginBottom:18, textAlign:"center", boxShadow:"0 6px 18px rgba(13,79,69,.06)" }}>
+          <div style={{ fontSize:13, fontWeight:800, color:"#0d4f45", marginBottom:4 }}>Breathe with the circle</div>
+          <div style={{ fontSize:11.5, color:"#7a8aa0", marginBottom:16 }}>In 4 · Hold 4 · Out 4 · Hold 4 — follow it for a minute</div>
+          <div style={{ height:150, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%,#9ED9CF,#1A5FAD)", boxShadow:"0 0 40px rgba(26,95,173,.4)", animation:"breathe 16s ease-in-out infinite", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontWeight:700, fontSize:13 }}>breathe</div>
+          </div>
+        </div>
+
+        {/* technique cards */}
+        {PSYCH_TECHNIQUES.map(t => (
+          <div key={t.title} style={{ background:"white", borderRadius:14, padding:"15px 16px", border:"1px solid #e6eef0", marginBottom:11, boxShadow:"0 4px 14px rgba(13,79,69,.05)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:7 }}>
+              <span style={{ fontSize:22 }}>{t.icon}</span>
+              <span style={{ fontWeight:800, fontSize:14.5, color:t.color }}>{t.title}</span>
+            </div>
+            <div style={{ fontSize:13, color:"#374151", lineHeight:1.55 }}>{t.body}</div>
+            <div style={{ marginTop:9, fontSize:12, color:t.color, background:"#f4f8fb", borderRadius:8, padding:"7px 11px", fontWeight:600 }}>💡 {t.tip}</div>
+          </div>
+        ))}
+
+        <div style={{ marginTop:12, fontSize:11, color:"#94a3b8", lineHeight:1.6, background:"white", borderRadius:12, padding:"12px 14px", border:"1px solid #eef2f8" }}>
+          These are self-help wellbeing techniques, not medical advice. If anxiety feels overwhelming or persistent, please talk to a doctor or a qualified mental-health professional.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
 // APP (main)
 // ══════════════════════════════════════════
 export default function App() {
@@ -1703,6 +2428,8 @@ export default function App() {
   const isAdmin = session.email === ADMIN_EMAIL;
 
   if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} />;
+  if (page === "admissions") return <AdmissionsPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
+  if (page === "psych") return <PsychPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "leaderboard") return <Leaderboard session={session} setPage={setPage} />;
   if (page === "dashboard") return <Dashboard session={session} setPage={setPage} modules={modules} />;
   if (page === "lesson" && currentLesson) return <LessonPage lesson={currentLesson} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} refreshModules={refreshModules} modules={modules} />;
