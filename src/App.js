@@ -19,6 +19,12 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 const ADMIN_EMAIL = "dyerlanova@gmail.com";
+// Students who can log in directly (no DB entry needed) with every module unlocked.
+const FULL_ACCESS = {
+  "sabinabekbulat1@gmail.com": "Sabina",
+  "yedige.kurmanali@gmail.com": "Yedige",
+};
+const hasFullAccess = (email) => !!FULL_ACCESS[(email || "").trim().toLowerCase()];
 
 // ─── FIRESTORE HELPERS ───
 const FB = {
@@ -1397,6 +1403,10 @@ function Login({ login }) {
     if (!e) { setErr("Enter your email"); return; }
     setLoading(true);
     if (e === ADMIN_EMAIL) { login({ email: e, role: "admin", name: "Teacher Dana" }); return; }
+    if (FULL_ACCESS[e]) {
+      try { await FB.setStudent(e, { name: FULL_ACCESS[e], status: "active", fullAccess: true, lastLogin: new Date().toISOString() }); } catch(_) {}
+      login({ email: e, role: "student", name: FULL_ACCESS[e] }); return;
+    }
     try {
       const student = await FB.getStudent(e);
       if (!student) { setErr("No access. Ask your teacher to add your email."); setLoading(false); return; }
@@ -1489,7 +1499,8 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
 
   const moduleComplete = (m) => m.lessons.length > 0 && m.lessons.every(l => myProgress[l.id]?.quizDone);
   const hasReflection = (m) => !!reflections[m.id];
-  const isUnlocked = (i) => i === 0 || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
+  const fullAccess = hasFullAccess(session.email);
+  const isUnlocked = (i) => fullAccess || i === 0 || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
   const activeIdx = mods.findIndex((m,i) => isUnlocked(i) && !moduleComplete(m));
   const allDone = mods.length > 0 && moduleComplete(mods[mods.length-1]) && hasReflection(mods[mods.length-1]);
   const cert = meta.certificate;
