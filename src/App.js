@@ -1451,6 +1451,7 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
       <div style={{ flex:1, minWidth:8 }} />
       <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
       <button onClick={() => setPage("admissions")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #1E7A4F", background:"#1E7A4F", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>✈ Universities</button>
+      <a href="/skyielts-writing.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid transparent", background:"linear-gradient(90deg,#0ea5e9,#8b5cf6)", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✍️ Writing Bands</a>
       <button onClick={() => setPage("psych")} style={nb("white","#0a0a0a")}>🧘 Mindset</button>
       <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
       <button onClick={() => setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>

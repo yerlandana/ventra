@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SkyIELTS — Writing Band Guide</title>
+<meta name="description" content="Got your IELTS Writing score? See exactly what to fix to reach the next band — from 5.0 to 6.0 and beyond." />
+<style>
+:root{--sky:#0ea5e9;--sky2:#38bdf8;--grape:#8b5cf6;--ink:#0f172a;--soft:#475569;--line:#e2e8f0;--bg:#f6f9fe;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+a{color:inherit}
+.wrap{max-width:880px;margin:0 auto;padding:0 18px 80px}
+.grad-text{background:linear-gradient(90deg,var(--sky),var(--grape));-webkit-background-clip:text;background-clip:text;color:transparent}
+header.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.8);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top-in{max-width:880px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.3px}
+.back{margin-left:auto;font-size:13px;font-weight:600;color:var(--sky);text-decoration:none}
+.hero{padding:26px 0 6px}
+.hero h1{font-size:30px;line-height:1.1;margin:0 0 8px;font-weight:800;letter-spacing:-.5px}
+.hero p{color:var(--soft);margin:0;max-width:620px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px;position:sticky;top:54px;z-index:15;background:var(--bg);padding:8px 0}
+.pill{border:1px solid #bae6fd;background:#fff;color:var(--soft);border-radius:999px;padding:7px 15px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+.pill:hover{background:#f0f9ff}
+.pill.active{background:linear-gradient(90deg,var(--sky),var(--grape));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(14,165,233,.3)}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 1px 2px rgba(15,23,42,.04);margin-bottom:18px}
+.head .kicker{margin-top:0}
+.kicker{display:block;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sky);margin-bottom:4px}
+.head-band{display:flex;align-items:baseline;gap:12px}
+.big{font-size:56px;font-weight:800;line-height:1}
+.name{font-size:18px;font-weight:700}
+.cefr{display:inline-block;margin-top:8px;background:#f0f9ff;color:#0369a1;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700}
+.portrait{margin:16px 0 0;color:var(--soft);font-size:17px}
+.onething{border:1px solid #bae6fd;background:linear-gradient(135deg,#f0f9ff,rgba(139,92,246,.08));border-radius:18px;padding:20px 22px;margin-bottom:18px}
+.onething p:last-child{margin:6px 0 0;font-size:17px;font-weight:600}
+h3.sec{font-size:23px;font-weight:800;letter-spacing:-.3px;margin:30px 0 6px}
+h3.sec .kicker{margin-bottom:2px}
+.sub{color:var(--soft);margin:0 0 14px}
+.grid2{display:grid;gap:16px}
+@media(min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+.crit-h{display:flex;align-items:center;gap:10px}
+.crit-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#f0f9ff;font-size:19px}
+.crit h4{margin:0;font-size:17px}
+.examiner{margin:12px 0;background:rgba(139,92,246,.08);border-radius:11px;padding:10px 14px;font-style:italic;color:var(--soft);font-size:14px}
+.crit-cols{display:grid;gap:16px}
+@media(min-width:560px){.crit-cols{grid-template-columns:1fr 1fr}}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px}
+.lbl.ok{color:#059669}.lbl.warn{color:#d97706}.lbl.grad{color:#0369a1}
+.crit ul,.vocab,.changes,.blockers{margin:0;padding:0;list-style:none}
+.crit ul li{font-size:14px;color:var(--soft);margin-bottom:6px;padding-left:2px}
+.topic{margin:0 0 12px;color:var(--soft);font-size:14px}
+.ba{display:grid;gap:14px;margin-bottom:14px}
+@media(min-width:640px){.ba{grid-template-columns:1fr 1fr}}
+.before,.after{border-radius:14px;padding:14px}
+.before{border:1px solid #e2e8f0;background:#f8fafc}
+.after{border:1px solid #bae6fd;background:linear-gradient(135deg,#f0f9ff,rgba(139,92,246,.06))}
+.before p,.after p{margin:8px 0 0;font-size:15px}
+.before p{color:#475569}
+.tag{display:inline-block;border-radius:999px;padding:3px 11px;font-size:11px;font-weight:800}
+.tag-grey{background:#e2e8f0;color:#475569}
+.tag-grad{background:linear-gradient(90deg,var(--sky),var(--grape));color:#fff}
+.changes li{font-size:14px;color:var(--soft);margin-bottom:6px;padding-left:20px;position:relative}
+.changes li:before{content:"✦";position:absolute;left:0;color:var(--sky)}
+.sky{color:#0369a1;margin:0 0 12px;font-size:16px}
+.vocab li{margin-bottom:10px;font-size:14px}
+.word{background:rgba(139,92,246,.14);color:#7c3aed;font-weight:700;border-radius:6px;padding:1px 7px}
+.note{color:var(--soft)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid #bae6fd;background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500}
+.struct-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.goal{color:var(--soft);font-size:14px;margin:0}
+.frame{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+@media(min-width:640px){.frame{flex-direction:row}}
+.frame li{flex:1;display:flex;gap:8px;align-items:flex-start;background:rgba(14,165,233,.07);border-radius:12px;padding:11px;font-size:14px}
+.num{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:999px;background:var(--sky);color:#fff;font-size:11px;font-weight:800}
+.blockers li{display:flex;gap:10px;color:var(--soft);margin-bottom:9px}
+.warn-i{color:#f59e0b}
+.next{display:flex;align-items:center;justify-content:space-between;gap:14px;text-decoration:none;margin-top:8px}
+.next-t{font-size:20px;font-weight:800;margin:2px 0 0}
+.arrow{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:linear-gradient(90deg,var(--sky),var(--grape));color:#fff;font-size:18px}
+footer{text-align:center;color:#94a3b8;font-size:13px;padding:30px 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><span class="brand">Sky<span class="grad-text">IELTS</span> · Writing</span><a class="back" href="/">← Back to Ventra</a></div></header>
+<div class="wrap">
+  <div class="hero">
+    <h1>What score did you <span class="grad-text">get?</span></h1>
+    <p>Tap your current IELTS Writing band. Each guide shows the four grading criteria, the vocabulary and structures examiners reward, and a before/after that makes the jump to the next band concrete — so going from a 5.0 to a 6.0 stops being guesswork.</p>
+  </div>
+  <div class="pills"><button class="pill active" data-go="5">5.0</button><button class="pill " data-go="5-5">5.5</button><button class="pill " data-go="6">6.0</button><button class="pill " data-go="6-5">6.5</button><button class="pill " data-go="7">7.0</button><button class="pill " data-go="7-5">7.5</button><button class="pill " data-go="8">8.0</button></div>
+  
+  <section class="band" id="band-5" >
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">5.0</span><span class="name">Modest user</span></div>
+      <span class="cefr">CEFR B1</span>
+      <p class="portrait">You can write a response that is on topic and the reader gets your general meaning, but ideas are underdeveloped or repeated, paragraphing is unclear, and you rely on simple sentences with frequent errors. Linking words are basic or mechanical ('Firstly, Secondly'), and word choice is limited. The essay often runs under length or doesn't fully address every part of the task.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 5.5</p>
+        <p>Develop ONE idea per body paragraph: state it, explain why, give one specific example. Depth beats a long list of shallow points.</p>
+      </div>
+
+    
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Did you answer the whole question, with a clear position?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Addresses the task, though some parts more than others</li><li>Has a position, but it can be unclear or repetitive</li><li>Presents some main ideas</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Ideas are underdeveloped or just repeated in other words</li><li>Sometimes misses part of the question (e.g. answers 'why' but not 'solutions')</li><li>Often under 250 words (Task 2) — an automatic penalty</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Can the reader follow your argument from paragraph to paragraph?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Some organisation into paragraphs</li><li>Uses basic linkers: firstly, also, but, because</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Linkers are mechanical, missing, or over-used</li><li>Paragraphs lack one clear central idea</li><li>Referencing (it, this, they) is sometimes unclear</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Do you have enough words, used accurately?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Enough vocabulary for the topic at a basic level</li><li>Attempts some less common words</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Frequent wrong word choices and collocations</li><li>Noticeable spelling and word-form errors</li><li>Repeats the same words from the prompt</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: Do you go beyond simple sentences, and how often are they correct?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Produces simple sentences with reasonable control</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Few complex sentences, and they usually contain errors</li><li>Frequent errors in tense, articles, plurals, prepositions</li><li>Punctuation errors (commas, run-ons) blur meaning</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Replacing 'good / bad / a lot'</h4>
+        <ul class="vocab"><li><span class="word">beneficial / harmful</span> <span class="note">Instead of 'good/bad' for effects.</span></li><li><span class="word">a significant number of</span> <span class="note">Instead of 'a lot of people'.</span></li><li><span class="word">important</span> <span class="note">Stretch to 'plays a key role'.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Linkers to use correctly (not just list them)</h4>
+        <div class="chips"><span class="chip">because</span><span class="chip">for example</span><span class="chip">however</span><span class="chip">as a result</span><span class="chip">in addition</span><span class="chip">for instance</span></div>
+      </div>
+      <div class="card">
+        <h4 class="sky">Opinion frames</h4>
+        <div class="chips"><span class="chip">I think that…</span><span class="chip">In my opinion…</span><span class="chip">I agree that…</span><span class="chip">There are two sides to this.</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — essay (the safe 4 paragraphs)</h4><p class="goal">Answer every part of the prompt and reach 250+ words.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Intro: paraphrase the question + state your position</span></li><li><span class="num">2</span><span>Body 1: first main idea + explain + example</span></li><li><span class="num">3</span><span>Body 2: second main idea + explain + example</span></li><li><span class="num">4</span><span>Conclusion: restate your position</span></li></ol>
+      </div>
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 1 — report/letter</h4><p class="goal">Cover the key information; don't describe every number.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Intro: paraphrase what the chart shows</span></li><li><span class="num">2</span><span>Overview: 2 biggest trends</span></li><li><span class="num">3</span><span>Details in 1–2 grouped paragraphs</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 5.0</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Writing under 250 words (Task 2) or under 150 (Task 1)</li><li><span class="warn-i">⚠</span>Listing ideas instead of developing one with a reason + example</li><li><span class="warn-i">⚠</span>Memorised linkers ('Firstly, Secondly') with no real argument behind them</li><li><span class="warn-i">⚠</span>Copying phrases straight from the question prompt</li></ul></div>
+
+    <a class="card next" href="#" data-go="5-5"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 5.5</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-5-5" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">5.5</span><span class="name">Modest+ user</span></div>
+      <span class="cefr">CEFR B1+</span>
+      <p class="portrait">Your essays are recognisably structured and address the task, and the reader rarely gets lost. But your ideas are still developed only briefly, your range of grammar and vocabulary is narrow, and errors — though not blocking meaning — are frequent enough to be noticeable in almost every sentence. You're doing the right things; you're just not yet doing them with enough range or control.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 6.0</p>
+        <p>Pick fewer ideas and go deeper. Two well-explained reasons beat five mentioned ones — and depth is exactly what separates 5.5 from 6.0.</p>
+      </div>
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 5.0 into a 5.5</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Do the advantages of city living outweigh the disadvantages?</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 5.0</span><p>“City has many advantages. There are many jobs and good hospitals. But there is also pollution and it is expensive. So there are advantages and disadvantages.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 5.5</span><p>“City living offers clear practical advantages, the most important being opportunity. Cities concentrate employers, universities and hospitals in one place, which means a resident can change jobs or access specialist care without relocating. Although this convenience comes at the cost of higher rents and pollution, for most working people the access to opportunity outweighs these drawbacks.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>Commits to a position ('outweighs') instead of sitting on the fence</li><li>Develops the advantage with a mechanism ('concentrate… which means…')</li><li>Uses concession ('Although…') to weigh both sides, not just list them</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Is every part of the task addressed and developed, not just mentioned?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Addresses all parts of the task, at least briefly</li><li>Presents a clear overall position</li><li>Main ideas are relevant</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Ideas are developed in one or two sentences, then dropped</li><li>Some points are general or not fully supported</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Are paragraphs logical and is cohesion more than just linking words?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Organises ideas into clear paragraphs</li><li>Uses a range of basic cohesive devices</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Cohesion within a paragraph is weak — sentences feel listed</li><li>Over-uses or mislabels linkers (e.g. 'Moreover' where contrast is meant)</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Enough range to avoid repetition, with some less common words?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Adequate range for the topic</li><li>Tries less common vocabulary and some collocation</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Errors in word choice/form are frequent</li><li>Less common attempts often misfire</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: A mix of simple and complex forms, with errors that don't block meaning?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Mixes simple with a few complex sentences</li><li>Errors rarely prevent understanding</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Complex sentences frequently contain errors</li><li>Limited range — the same patterns repeat</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Cause &amp; effect</h4>
+        <ul class="vocab"><li><span class="word">leads to / results in</span> <span class="note">Replaces 'makes' for consequences.</span></li><li><span class="word">contribute to</span> <span class="note">'Cars contribute to air pollution.'</span></li><li><span class="word">a key factor</span> <span class="note">Replaces 'an important reason'.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Cohesion beyond linkers (reference &amp; substitution)</h4>
+        <div class="chips"><span class="chip">this trend</span><span class="chip">such measures</span><span class="chip">the former / the latter</span><span class="chip">doing so</span><span class="chip">which means that</span></div>
+      </div>
+      <div class="card">
+        <h4 class="sky">Concession (shows balance)</h4>
+        <div class="chips"><span class="chip">Although…</span><span class="chip">While it is true that…</span><span class="chip">Admittedly,…</span><span class="chip">Despite this,…</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — body paragraph (PEEL)</h4><p class="goal">Make each paragraph one developed idea, not a list.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Point: the topic sentence (one clear idea)</span></li><li><span class="num">2</span><span>Explain: why it's true / how it works</span></li><li><span class="num">3</span><span>Example: a specific instance or evidence</span></li><li><span class="num">4</span><span>Link: tie it back to the question</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 5.5</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Each paragraph lists 3 ideas instead of developing 1</li><li><span class="warn-i">⚠</span>Frequent small errors in nearly every sentence</li><li><span class="warn-i">⚠</span>Sitting on the fence — never clearly answering 'to what extent'</li></ul></div>
+
+    <a class="card next" href="#" data-go="6"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 6.0</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-6" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">6.0</span><span class="name">Competent user</span></div>
+      <span class="cefr">CEFR B2</span>
+      <p class="portrait">You address all parts of the task with a clear position, organise information logically, and the reader follows you with no real effort. You use a mix of sentence types and an adequate vocabulary. What holds you at 6 is consistency: ideas can still be over-generalised, cohesion is sometimes mechanical, and although you produce complex sentences, errors in them are still frequent and your range of vocabulary stays 'safe'. This is the band most undergraduate courses ask for.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 6.5</p>
+        <p>Make your support specific and accurate. Trade one 'safe' generalisation for a concrete example, and proofread your complex sentences — accurate complexity is the heart of the jump to 7.</p>
+      </div>
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 5.5 into a 6.0</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Some say governments should tax unhealthy food. To what extent do you agree?</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 5.5</span><p>“I agree that governments should tax unhealthy food because it is bad for health. If food is expensive, people will not buy it. This will make people more healthy and reduce diseases.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 6.0</span><p>“I largely agree that taxing unhealthy food is justified, primarily as a tool to shift behaviour. When the price of sugary drinks rises, consumption tends to fall, particularly among younger buyers who are most price-sensitive. Mexico's 2014 soda tax, for instance, led to a measurable drop in sales, which suggests that fiscal pressure can nudge diets in a healthier direction without an outright ban.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>Adds a real-world example (Mexico) instead of a circular claim</li><li>'price-sensitive', 'fiscal pressure', 'nudge' — precise, academic range</li><li>'which suggests that…' develops the consequence rather than asserting it</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Position clear throughout, all parts addressed and supported?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Addresses all parts; position is clear throughout</li><li>Presents relevant main ideas with some support</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Some ideas are over-generalised or not fully developed</li><li>Support is sometimes a restatement rather than real evidence</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Logical progression, with cohesion that isn't mechanical?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Arranges information coherently with clear progression</li><li>Uses cohesive devices effectively, with clear central topics per paragraph</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Cohesion can be faulty or mechanical at times</li><li>Referencing is not always clear or well-managed</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Enough range for some flexibility and precision?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Adequate range with some flexibility and precision</li><li>Uses some less common vocabulary and collocation</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Errors in spelling/word choice occur but don't impede communication</li><li>Less common vocabulary used with limited awareness of style</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: A mix of simple and complex forms with reasonable accuracy?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Uses a mix of simple and complex sentence forms</li><li>Makes some errors, but they rarely reduce communication</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Complex structures are less accurate than simple ones</li><li>Range of structures is still somewhat limited</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Academic verbs</h4>
+        <ul class="vocab"><li><span class="word">address / tackle</span> <span class="note">'tackle the problem' instead of 'solve'.</span></li><li><span class="word">undermine</span> <span class="note">'This can undermine motivation.'</span></li><li><span class="word">enhance / boost</span> <span class="note">Precise upgrade for 'improve/increase'.</span></li><li><span class="word">mitigate</span> <span class="note">'measures to mitigate climate change'.</span></li></ul>
+      </div>
+      <div class="card">
+        <h4 class="sky">Nuance &amp; quantity</h4>
+        <ul class="vocab"><li><span class="word">a substantial proportion</span> <span class="note">Instead of 'a lot'.</span></li><li><span class="word">to some extent</span> <span class="note">Calibrated agreement in the intro.</span></li><li><span class="word">arguably</span> <span class="note">Hedges a strong claim, sounds academic.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Precise connectors (use the right relationship)</h4>
+        <div class="chips"><span class="chip">consequently</span><span class="chip">nevertheless</span><span class="chip">in contrast</span><span class="chip">by comparison</span><span class="chip">in particular</span><span class="chip">to this end</span></div>
+      </div>
+      <div class="card">
+        <h4 class="sky">Developing an idea</h4>
+        <div class="chips"><span class="chip">This is largely because…</span><span class="chip">A clear example of this is…</span><span class="chip">The implication is that…</span><span class="chip">What this means in practice is…</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — introduction</h4><p class="goal">Paraphrase + clear thesis the examiner can find instantly.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Paraphrase the prompt (don't copy it)</span></li><li><span class="num">2</span><span>State your position directly</span></li><li><span class="num">3</span><span>Signpost your two main reasons</span></li></ol>
+      </div>
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 1 — overview</h4><p class="goal">The overview is worth the most — make it explicit.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>'Overall, …' sentence with the 2–3 biggest features</span></li><li><span class="num">2</span><span>No specific numbers in the overview</span></li><li><span class="num">3</span><span>Group similar data in the body paragraphs</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 6.0</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Complex sentences are attempted but still carry errors</li><li><span class="warn-i">⚠</span>Examples are invented vaguely ('studies show…') instead of specific</li><li><span class="warn-i">⚠</span>Mechanical cohesion — a linker glued to the start of every sentence</li><li><span class="warn-i">⚠</span>Playing it safe with vocabulary to avoid mistakes</li></ul></div>
+
+    <a class="card next" href="#" data-go="6-5"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 6.5</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-6-5" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">6.5</span><span class="name">Competent+ user</span></div>
+      <span class="cefr">CEFR B2+</span>
+      <p class="portrait">Your best paragraphs read like a 7: well-developed ideas, flexible vocabulary, accurate complex sentences. But it isn't sustained across the whole essay — one body paragraph is sharp, the next is general; some sentences are error-free, others slip. The examiner can see the higher band in you. What's missing is doing it consistently from the first word to the last.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 7.0</p>
+        <p>Aim for consistency, not peaks. Hold every paragraph to the standard of your best one — and leave 3 minutes to proofread. Consistency is the whole gap to 7.</p>
+      </div>
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 6.0 into a 6.5</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Many believe technology has made people less social. Discuss.</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 6.0</span><p>“Technology has made people less social in some ways. People spend a lot of time on their phones and they don't talk to each other face to face. However, technology also helps people stay connected with friends who live far away.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 6.5</span><p>“The claim that technology erodes social life is only half the picture. It is true that constant phone use can crowd out face-to-face interaction, particularly at the dinner table. Yet the same tools sustain relationships that distance would otherwise dissolve — a grandparent video-calling grandchildren abroad is more connected, not less. The real shift, then, is not less socialising but a change in its form.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>Reframes instead of listing 'for' and 'against' — shows synthesis</li><li>'crowd out', 'dissolve', 'erodes' — flexible, precise lexis</li><li>Closes with an analytical conclusion ('not less… but a change in its form')</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Are all ideas extended and well supported, consistently?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Clear, well-developed position throughout</li><li>Most main ideas are extended and supported</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>One idea or paragraph is noticeably thinner than the rest</li><li>Occasionally over-generalises under time pressure</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Does it flow naturally, with well-judged cohesion?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Logical, easy-to-follow progression</li><li>Uses cohesion flexibly; clear central topic in each paragraph</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional faulty or mechanical cohesion remains</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Less common vocabulary used with growing precision?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Uses a range of less common vocabulary and collocation</li><li>Some awareness of style and register</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional inaccuracy in word choice or collocation</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: Are error-free complex sentences becoming the norm?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Range of complex structures; frequent error-free sentences</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Errors still appear, just less systematically than at 6</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Less common collocations</h4>
+        <ul class="vocab"><li><span class="word">a pressing issue</span> <span class="note">Instead of 'a big problem'.</span></li><li><span class="word">far-reaching consequences</span> <span class="note">For effects that spread widely.</span></li><li><span class="word">strike a balance between</span> <span class="note">'balance growth and sustainability'.</span></li><li><span class="word">a viable alternative</span> <span class="note">Precise framing of an option.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Cohesion that flows (not glued on)</h4>
+        <div class="chips"><span class="chip">A further consideration is…</span><span class="chip">This is not to say that…</span><span class="chip">Herein lies the problem:</span><span class="chip">It follows that…</span><span class="chip">In much the same way,…</span></div>
+      </div>
+      <div class="card">
+        <h4 class="sky">Calibrating your stance</h4>
+        <div class="chips"><span class="chip">to a large extent</span><span class="chip">on balance</span><span class="chip">while there is some merit in…</span><span class="chip">the more compelling argument is…</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — argument paragraph</h4><p class="goal">Extend every idea to the same high standard, end to end.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Topic sentence with a precise claim</span></li><li><span class="num">2</span><span>Explain the mechanism, not just the outcome</span></li><li><span class="num">3</span><span>Specific example or data</span></li><li><span class="num">4</span><span>A sentence of consequence/implication</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 6.5</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Inconsistency — one strong paragraph, one general one</li><li><span class="warn-i">⚠</span>Forcing in 'big' words that don't quite fit the context</li><li><span class="warn-i">⚠</span>Running out of time and rushing the conclusion</li></ul></div>
+
+    <a class="card next" href="#" data-go="7"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 7.0</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-7" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">7.0</span><span class="name">Good user</span></div>
+      <span class="cefr">CEFR C1</span>
+      <p class="portrait">You address the task fully with a well-developed, clearly extended position; you organise ideas logically and use a range of cohesive devices appropriately; your vocabulary is varied and precise with some less common items, and you produce a range of complex structures with frequent error-free sentences. Mistakes still occur, but they are minor and don't define your writing. This is the band most postgraduate courses and many professional registrations require.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 7.5</p>
+        <p>Add genuine analysis. Beyond 'for and against', show a consequence or insight the average answer misses — that depth of thought is what 7.5+ rewards.</p>
+      </div>
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 6.5 into a 7.0</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Should higher education be free for everyone?</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 6.5</span><p>“There is a compelling case for free higher education, mainly because it widens access. When tuition is free, students from poor families can attend university, which reduces inequality. However, it is expensive for governments, so taxes may need to rise.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 7.0</span><p>“There is a compelling case for free higher education, though it rests on a trade-off that is easy to overlook. Removing tuition undeniably widens access: talented students from low-income households no longer self-select out of university for fear of debt. What is often overlooked, however, is who ultimately pays — funded through general taxation, 'free' degrees can transfer wealth from non-graduates to a largely middle-class student body. The fairer model, therefore, may be not abolition of fees but a repayment system tied to later income.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>Goes beyond pro/con to a genuine analytical insight (who pays)</li><li>'self-select out', 'transfer wealth', 'tied to later income' — precise, low-frequency</li><li>Conclusion proposes a synthesised position, not a restatement</li><li>Error-free complex sentences with embedded clauses</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Is the position clear, developed and fully supported throughout?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Addresses all parts; clear, well-developed position</li><li>Extends and supports main ideas with relevant, specific detail</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Detail can occasionally over-generalise</li><li>Not yet the seamless, fully-extended development of Band 8</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Logical sequencing with a range of well-managed cohesion?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Logical progression throughout</li><li>Range of cohesive devices used appropriately, with clear referencing</li><li>Each paragraph has a clear central topic</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional under- or over-use of a cohesive device</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Sufficient range for precision and some less common, idiomatic use?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Sufficient range to convey precise meaning</li><li>Uses less common items with awareness of style and collocation</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional errors in word choice, spelling or collocation</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: A variety of complex structures, frequently error-free?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Variety of complex structures used with flexibility</li><li>Frequently produces error-free sentences</li><li>Good control of grammar and punctuation</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>A few errors persist, often in the most ambitious sentences</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Precise &amp; evaluative</h4>
+        <ul class="vocab"><li><span class="word">a double-edged sword</span> <span class="note">For genuinely two-sided issues.</span></li><li><span class="word">disproportionately</span> <span class="note">'It affects the poor disproportionately.'</span></li><li><span class="word">a compelling case</span> <span class="note">'There is a compelling case for…'.</span></li><li><span class="word">exacerbate</span> <span class="note">Precise upgrade for 'make worse'.</span></li><li><span class="word">underpin</span> <span class="note">'Education underpins economic growth.'</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Sophisticated cohesion</h4>
+        <div class="chips"><span class="chip">Crucially,…</span><span class="chip">This distinction matters because…</span><span class="chip">Far from solving the problem,…</span><span class="chip">What is often overlooked is…</span><span class="chip">Therein lies the tension:</span></div>
+      </div>
+      <div class="card">
+        <h4 class="sky">Complex grammar to deploy (correctly)</h4>
+        <div class="chips"><span class="chip">Cleft: 'What drives this is…'</span><span class="chip">Inversion: 'Not only does it…, it also…'</span><span class="chip">Conditional: 'Were governments to act, …'</span><span class="chip">Reduced relative: 'Policies designed to…'</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — full essay</h4><p class="goal">Sustain developed, precise argument from intro to conclusion.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Intro: paraphrase + a thesis that genuinely answers the question</span></li><li><span class="num">2</span><span>Body: 2 paragraphs, each one fully-extended idea + specific support</span></li><li><span class="num">3</span><span>Address the counter-argument or 'to what extent' explicitly</span></li><li><span class="num">4</span><span>Conclusion: synthesise — don't just restate</span></li></ol>
+      </div>
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 1 — academic report</h4><p class="goal">Clear overview + accurately grouped, compared data.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Paraphrased intro</span></li><li><span class="num">2</span><span>'Overall,' overview of main trends</span></li><li><span class="num">3</span><span>Two body paragraphs grouping and comparing figures</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 7.0</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Sounding rehearsed — template phrases that don't fit the specific prompt</li><li><span class="warn-i">⚠</span>A strong claim with support that's general rather than specific</li><li><span class="warn-i">⚠</span>Over-using one cohesive device ('Moreover' five times)</li></ul></div>
+
+    <a class="card next" href="#" data-go="7-5"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 7.5</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-7-5" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">7.5</span><span class="name">Good+ user</span></div>
+      <span class="cefr">CEFR C1+</span>
+      <p class="portrait">Your essays are fully developed, tightly organised and a pleasure to read. Cohesion is natural rather than signposted, your vocabulary is precise and stylistically aware, and the majority of your sentences are error-free with a wide range of structures. The occasional slip happens, but it is clearly an exception. You're at the door of advanced proficiency.</p>
+    </div>
+
+    <div class="onething">
+        <p class="kicker">Do this first — fastest way to 8.0</p>
+        <p>Polish precision and let cohesion disappear. At this level, the gap to 8 is the odd word-choice slip and fully sustained development — read like an editor, not a writer.</p>
+      </div>
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 7.0 into a 7.5</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Some argue economic growth is the only way to end poverty. Discuss.</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 7.0</span><p>“Economic growth is important for reducing poverty because it creates jobs and raises incomes. However, growth alone is not enough; governments also need good policies to distribute wealth fairly, such as healthcare and education.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 7.5</span><p>“Economic growth is a powerful engine for reducing poverty, but treating it as the only route conflates a necessary condition with a sufficient one. Growth that bypasses the poorest — concentrated in capital-intensive sectors, say — can lift national income while leaving the bottom decile untouched. The decisive factor is therefore distributional: targeted investment in health and schooling determines whether growth trickles down or merely pools at the top.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>'conflates a necessary condition with a sufficient one' — sophisticated reasoning</li><li>'capital-intensive sectors', 'bottom decile', 'distributional' — precise register</li><li>Cohesion is carried by ideas, not glued-on connectors</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Is every part fully addressed with well-extended, relevant ideas?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Fully addresses all parts with a well-developed response</li><li>Ideas are relevant, extended and well supported throughout</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Just short of the fully sustained, nuanced development of Band 8</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Is cohesion managed so well it's barely noticeable?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Sequences information skilfully; cohesion attracts no attention</li><li>Paragraphing is logical and well-judged</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Very occasional lapse in an otherwise seamless flow</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Precise, with skilful less common and idiomatic vocabulary?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Wide range used precisely</li><li>Skilful use of less common and idiomatic items</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional inaccuracy in the most idiomatic language</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: Wide range, with the majority of sentences error-free?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Wide range of structures used flexibly</li><li>Majority of sentences are error-free</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>A few non-systematic slips remain</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Abstract &amp; analytical</h4>
+        <ul class="vocab"><li><span class="word">a misconception</span> <span class="note">'A common misconception is that…'.</span></li><li><span class="word">counterproductive</span> <span class="note">Precise, not generic 'bad'.</span></li><li><span class="word">inherently</span> <span class="note">'It is not inherently harmful.'</span></li><li><span class="word">a nuanced view</span> <span class="note">Signals balanced critical thinking.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Precision &amp; stance</h4>
+        <div class="chips"><span class="chip">It is not so much X as Y</span><span class="chip">There is a strong case to be made that…</span><span class="chip">This, however, is a false dichotomy.</span><span class="chip">By and large, though not invariably,…</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">Task 2 — sustained argument</h4><p class="goal">Calibrated, nuanced argument with effortless cohesion.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Thesis that takes a precise, calibrated position</span></li><li><span class="num">2</span><span>Develop the stronger side with depth</span></li><li><span class="num">3</span><span>Concede the counter-argument fairly, then refute or qualify</span></li><li><span class="num">4</span><span>Synthesise into a conclusion that adds, not repeats</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 7.5</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>Treating every prompt with maximum formality — losing natural precision</li><li><span class="warn-i">⚠</span>Over-engineering a simple point until it reads as padded</li><li><span class="warn-i">⚠</span>A single ambitious sentence carrying an avoidable error</li></ul></div>
+
+    <a class="card next" href="#" data-go="8"><div><p class="sub">Ready for the next step?</p><p class="next-t">See what <b class="grad-text">Band 8.0</b> takes</p></div><span class="arrow">→</span></a>
+  </section>
+  <section class="band" id="band-8" hidden>
+    <div class="card head">
+      <p class="kicker">Writing band</p>
+      <div class="head-band"><span class="big grad-text">8.0</span><span class="name">Very good user</span></div>
+      <span class="cefr">CEFR C2</span>
+      <p class="portrait">You address all parts of the task with a fully extended, well-supported response; you sequence information so skilfully that cohesion attracts no attention and paragraphing is faultless; you use a wide range of vocabulary fluently and flexibly to convey precise meaning, including skilful less common and idiomatic language; and you use a wide range of structures with the majority of sentences error-free — any slips are rare and non-systematic. The writing reads as that of an educated native user.</p>
+    </div>
+
+    
+
+    <h3 class="sec"><span class="kicker">The jump</span>What turns a 7.5 into a 8.0</h3>
+      <div class="card">
+        <p class="topic">Topic · <b>Do the benefits of globalisation outweigh its drawbacks?</b></p>
+        <div class="ba">
+          <div class="before"><span class="tag tag-grey">Band 7.5</span><p>“Globalisation brings clear benefits such as cheaper goods and access to global markets, but it also has drawbacks, including job losses in some industries and a loss of local culture. On balance, the benefits are greater for most countries.”</p></div>
+          <div class="after"><span class="tag tag-grad">Band 8.0</span><p>“Whether globalisation's benefits outweigh its costs is, in truth, the wrong question; the answer depends entirely on who is asked. For a consumer in a wealthy economy, cheaper goods and integrated markets are an unambiguous gain. For a factory worker whose job migrates to a lower-wage country, the same process is corrosive. Globalisation has not produced a single ledger of winners and losers so much as redistributed advantage — and any honest verdict has to begin there, rather than with a tally.”</p></div>
+        </div>
+        <p class="lbl grad">What changed ↑</p>
+        <ul class="changes"><li>Rejects the premise intelligently rather than tallying pros and cons</li><li>'an unambiguous gain', 'corrosive', 'redistributed advantage' — exact and vivid</li><li>Sustained, fully-developed reasoning with effortless cohesion and no errors</li></ul>
+      </div>
+
+    <h3 class="sec"><span class="kicker">How it's graded</span>The four criteria at this band</h3>
+    <p class="sub">Your Writing score is the average of these four, each worth 25%. Find the one capping you and target it.</p>
+    
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🎯</span><h4>Task Response</h4></div>
+        <p class="examiner">Examiner asks: Fully extended, well-supported, and consistently relevant?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Sufficiently addresses all parts with a well-developed response</li><li>Ideas are relevant, fully extended and well supported</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasionally a point could be even more fully extended (Band 9 territory)</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧭</span><h4>Coherence &amp; Cohesion</h4></div>
+        <p class="examiner">Examiner asks: Effortless to follow, with faultless paragraphing?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Sequences information and ideas logically and skilfully</li><li>Manages all aspects of cohesion well</li><li>Paragraphing is used sufficiently and appropriately</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Nothing of note — the rare slip is invisible to most readers</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">📚</span><h4>Lexical Resource</h4></div>
+        <p class="examiner">Examiner asks: Wide range, fluent and flexible, with skilful uncommon use?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Wide resource used fluently and flexibly to convey precise meaning</li><li>Skilful use of uncommon and idiomatic items</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Occasional inaccuracy in word choice/collocation — non-systematic</li></ul></div>
+        </div>
+      </div>
+      <div class="card crit">
+        <div class="crit-h"><span class="crit-ico">🧱</span><h4>Grammatical Range &amp; Accuracy</h4></div>
+        <p class="examiner">Examiner asks: Wide range with the majority of sentences error-free?</p>
+        <div class="crit-cols">
+          <div><p class="lbl ok">✓ At this band you can</p><ul><li>Wide range of structures</li><li>Majority of sentences are error-free</li></ul></div>
+          <div><p class="lbl warn">↑ Still holding you back</p><ul><li>Only very occasional errors or inappropriacies</li></ul></div>
+        </div>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Words</span>Vocabulary that signals this band</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Subtle &amp; exact</h4>
+        <ul class="vocab"><li><span class="word">to gloss over</span> <span class="note">'Critics gloss over the costs.'</span></li><li><span class="word">a trade-off</span> <span class="note">Exact framing of a compromise.</span></li><li><span class="word">ostensibly</span> <span class="note">'an ostensibly simple solution'.</span></li><li><span class="word">by no means</span> <span class="note">'It is by no means certain that…'.</span></li></ul>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Phrases</span>Connectors &amp; phrases to deploy</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4 class="sky">Native-like signalling</h4>
+        <div class="chips"><span class="chip">Granted, …, but ultimately…</span><span class="chip">It is tempting to assume…, yet…</span><span class="chip">There is something to be said for…</span><span class="chip">The truth, as so often, lies in between.</span></div>
+      </div></div>
+
+    <h3 class="sec"><span class="kicker">Structure</span>How to build your answer</h3>
+    
+      <div class="card">
+        <div class="struct-h"><h4 class="sky">All tasks</h4><p class="goal">Let structure serve the idea — flexibility is the skill.</p></div>
+        <ol class="frame"><li><span class="num">1</span><span>Match register and depth to the exact prompt</span></li><li><span class="num">2</span><span>Develop fully without padding</span></li><li><span class="num">3</span><span>Cohesion carried by logic, not labels</span></li><li><span class="num">4</span><span>Conclude with genuine synthesis</span></li></ol>
+      </div>
+
+    <h3 class="sec"><span class="kicker">Watch out</span>What keeps students stuck just below 8.0</h3>
+    <div class="card"><ul class="blockers"><li><span class="warn-i">⚠</span>The gap to 9 is full, effortless extension under timed pressure</li><li><span class="warn-i">⚠</span>Reaching for complexity where a precise simple sentence would score the same</li></ul></div>
+
+    
+  </section>
+  <footer>SkyIELTS Writing Band Guide · built for Ventra</footer>
+</div>
+<script>
+(function(){
+  function show(slug){
+    document.querySelectorAll('.band').forEach(function(s){ s.hidden = s.id !== 'band-'+slug; });
+    document.querySelectorAll('.pill').forEach(function(p){ p.classList.toggle('active', p.dataset.go===slug); });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-go]');
+    if(!t) return;
+    e.preventDefault();
+    show(t.dataset.go);
+  });
+})();
+</script>
+</body>
+</html>
