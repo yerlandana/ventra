@@ -1320,6 +1320,11 @@ function AdminPanel({ session, logout, setPage }) {
     refresh();
   };
 
+  const toggleSpeaking = async (email, on) => {
+    await FB.updateStudent(email, { speaking: !on });
+    refresh();
+  };
+
   const remove = async (email) => {
     if (!window.confirm(`Remove ${email}?`)) return;
     await FB.deleteStudent(email); refresh();
@@ -1339,7 +1344,7 @@ function AdminPanel({ session, logout, setPage }) {
       </div>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"14px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:10, marginBottom:14 }}>
-          {[["Total",list.length],["Active",list.filter(([,v])=>v.status==="active").length],["Revoked",list.filter(([,v])=>v.status==="revoked").length]].map(([l,v])=>(
+          {[["Total",list.length],["Active",list.filter(([,v])=>v.status==="active").length],["Revoked",list.filter(([,v])=>v.status==="revoked").length],["🎤 Speaking",list.filter(([,v])=>v.speaking).length]].map(([l,v])=>(
             <div key={l} style={{ background:"white", border:"1px solid #e5e5e5", borderRadius:10, padding:"12px 14px" }}>
               <div style={{ fontSize:11, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>{l}</div>
               <div style={{ fontSize:20, fontWeight:800, color:"#0a0a0a", marginTop:2 }}>{v}</div>
@@ -1377,6 +1382,9 @@ function AdminPanel({ session, logout, setPage }) {
                 <span style={{ fontSize:10, padding:"2px 9px", borderRadius:999, fontWeight:700, background: active ? "#0a0a0a":"#f0f0f0", color: active ? "white":"#666", letterSpacing:"0.3px", textTransform:"uppercase" }}>
                   {active?"Active":"Revoked"}
                 </span>
+                <button onClick={()=>toggleSpeaking(email, !!info.speaking)} title="Paid Speaking World access" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${info.speaking?"#B8860B":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:info.speaking?"#fff7e0":"white", color:info.speaking?"#8a5a12":"#666" }}>
+                  {info.speaking?"🎤 Speaking ✓":"🎤 Open"}
+                </button>
                 <button onClick={()=>toggle(email,info.status)} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   {active?"Revoke":"Restore"}
                 </button>
@@ -1452,6 +1460,7 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
       <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
       <button onClick={() => setPage("admissions")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #1E7A4F", background:"#1E7A4F", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>✈ Universities</button>
       <a href="/skyielts-writing.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid transparent", background:"linear-gradient(90deg,#0ea5e9,#8b5cf6)", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✍️ Writing Bands</a>
+      <button onClick={() => setPage("speaking")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #B8860B", background:"linear-gradient(90deg,#f0c33c,#B8860B)", color:"#3a2a00", cursor:"pointer", fontSize:12, fontWeight:800 }}>🎤 Speaking ✦</button>
       <button onClick={() => setPage("psych")} style={nb("white","#0a0a0a")}>🧘 Mindset</button>
       <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
       <button onClick={() => setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>
@@ -2394,6 +2403,194 @@ function PsychPage({ session, logout, setPage, isAdmin }) {
 // ══════════════════════════════════════════
 // APP (main)
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// SPEAKING WORLD (premium — teacher opens access)
+// ══════════════════════════════════════════
+const spkTime = (s) => `${Math.floor(Math.max(0,s)/60)}:${String(Math.max(0,s)%60).padStart(2,"0")}`;
+const SPK_PART1 = [
+  { icon:"🏙️", topic:"Hometown", qs:["Where is your hometown?","What do you like most about it?","Has it changed much in recent years?","Would you recommend it to a tourist?"], tip:"Add a reason + one small detail to every answer — never reply in a single word." },
+  { icon:"💼", topic:"Work or Studies", qs:["Do you work or are you a student?","Why did you choose this field?","What is the most difficult part of it?","What would you like to do in the future?"], tip:"Use present tenses for facts and 'would like to' for future plans." },
+  { icon:"🎨", topic:"Hobbies & Free time", qs:["What do you usually do in your free time?","How did you get into it?","Is it popular in your country?","Would you like to try a new hobby?"], tip:"Show enthusiasm — intonation and adjectives ('absolutely love', 'really into') lift your score." },
+  { icon:"🍽️", topic:"Food", qs:["What food is popular in your country?","Do you prefer eating at home or out?","Have your eating habits changed?","Can you cook?"], tip:"Use food collocations: 'a balanced diet', 'home-cooked meal', 'grab a bite'." },
+  { icon:"✈️", topic:"Travel", qs:["Do you like travelling?","What is your favourite place you've visited?","Do you prefer travelling alone or with others?","Where would you like to go next?"], tip:"Mix past ('I went…'), present opinion, and future ('I'd love to…')." },
+  { icon:"📱", topic:"Technology", qs:["How often do you use your phone?","What app do you use most?","Has technology changed how you study?","Could you live without the internet?"], tip:"Great place for a conditional: 'If I didn't have my phone, I'd probably…'." },
+  { icon:"⏰", topic:"Daily routine", qs:["What does a typical day look like for you?","Are you a morning or a night person?","Has your routine changed recently?","What would your ideal day be?"], tip:"Use frequency adverbs: 'usually', 'tend to', 'every now and then'." },
+  { icon:"🎵", topic:"Music", qs:["What kind of music do you like?","Do you play any instrument?","Has your taste in music changed?","Do you listen while working?"], tip:"Avoid 'I like music' — be specific: genre, artist, when and why." },
+];
+const SPK_CUE = [
+  { title:"Describe a memorable journey you have taken.", bullets:["Where you went","When and why you went there","What happened during the journey","And explain why it was memorable"], tip:"Anchor it in the past; slip in one past perfect ('I had never…')." },
+  { title:"Describe a person who has influenced you.", bullets:["Who the person is","How you know them","What they did","And explain how they influenced you"], tip:"Use character adjectives + a concrete example, not just 'she is kind'." },
+  { title:"Describe a skill you would like to learn.", bullets:["What the skill is","Why you want to learn it","How you would learn it","And explain how it would help you"], tip:"Perfect for modals & conditionals: 'I would', 'it could help me to…'." },
+  { title:"Describe a place where you like to relax.", bullets:["Where it is","How often you go there","What you do there","And explain why it relaxes you"], tip:"Use the senses — what you see, hear, feel — for a vivid, high-band answer." },
+  { title:"Describe an app or website you use a lot.", bullets:["What it is","What you use it for","How often you use it","And explain why it is useful"], tip:"Tech vocabulary: 'user-friendly', 'features', 'save time', 'on the go'." },
+  { title:"Describe a goal you want to achieve.", bullets:["What the goal is","Why it matters to you","What you are doing to reach it","And explain how you'll feel when you achieve it"], tip:"Future forms: 'I'm planning to', 'I'm hoping to', 'once I've…'." },
+  { title:"Describe a time you helped someone.", bullets:["Who you helped","What the situation was","What you did","And explain how you felt afterwards"], tip:"Tell it as a short story with a clear beginning, middle and end." },
+  { title:"Describe something you own that is important to you.", bullets:["What it is","How you got it","How long you've had it","And explain why it matters to you"], tip:"Present perfect for duration: 'I've had it for…', 'ever since…'." },
+];
+const SPK_PART3 = [
+  { theme:"Travel & tourism", qs:["Why do people travel more than in the past?","Does tourism benefit or harm local communities?","How might travel change in the future?"], strategy:"Give a general trend, one benefit AND one drawback, then a prediction." },
+  { theme:"Technology & society", qs:["How has technology changed the way people communicate?","Are people too dependent on their phones?","Will AI create or destroy more jobs?"], strategy:"Balance both sides: 'On one hand… on the other…', then your view." },
+  { theme:"Education", qs:["Should education be free for everyone?","Is it better to study alone or in a group?","How will schools look in 50 years?"], strategy:"Support each claim with a reason and a concrete example." },
+  { theme:"Work & careers", qs:["Is a high salary the most important thing in a job?","Should people change careers during their life?","Will remote work replace offices?"], strategy:"Use hedging: 'it depends', 'in many cases', 'not necessarily'." },
+  { theme:"Environment", qs:["Whose responsibility is it to protect the environment?","Do individuals really make a difference?","How can cities become greener?"], strategy:"Move from individual → community → government level." },
+  { theme:"Culture & tradition", qs:["Why is it important to keep traditions alive?","Is globalisation a threat to local cultures?","How do festivals bring people together?"], strategy:"Contrast past and present; use 'whereas' and 'nowadays'." },
+];
+const SPK_PHRASES = [
+  { group:"Buy thinking time", items:["That's an interesting question…","Let me think for a second…","I've never really thought about it, but…","Off the top of my head,…"] },
+  { group:"Give an opinion", items:["If you ask me,…","I'd say that…","From my point of view,…","Personally, I reckon…"] },
+  { group:"Extend an idea", items:["…, which means that…","for instance,…","the main reason being…","and on top of that,…"] },
+  { group:"Speculate (Part 3)", items:["It could be argued that…","I suppose it's likely that…","There's a good chance that…","It really depends on…"] },
+  { group:"Sound natural (Band 7+)", items:["to be honest,…","it's a bit of a mixed bag","I'm a huge fan of…","that's not really my thing"] },
+];
+const SPK_BANDS = [
+  { crit:"Fluency & Coherence", ico:"🗣️", want:"Speak at length without long pauses and link ideas smoothly.", win:"Don't stop to fix tiny errors — keep the flow going." },
+  { crit:"Lexical Resource", ico:"📚", want:"A range of vocabulary with some idioms used naturally.", win:"Learn 5 topic collocations per theme and use them." },
+  { crit:"Grammatical Range", ico:"🧱", want:"A mix of simple and complex sentences across tenses.", win:"Add one conditional and one relative clause per answer." },
+  { crit:"Pronunciation", ico:"🔊", want:"Clear speech with natural stress and intonation.", win:"Stress the content words; vary your tone to avoid sounding flat." },
+];
+
+function SpeakingWorld({ session, logout, setPage, isAdmin }) {
+  const [access, setAccess] = useState(null); // null = checking
+  const [pts, setPts] = useState(0);
+  const [tab, setTab] = useState("part1");
+  // Part 2 practice
+  const [cueIdx, setCueIdx] = useState(0);
+  const [phase, setPhase] = useState("idle"); // idle | prep | talk | done
+  const [sec, setSec] = useState(0);
+
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => {
+      const prog = p || {};
+      setPts(Object.entries(prog).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0));
+    }).catch(()=>{});
+    if (isAdmin || hasFullAccess(session.email)) { setAccess(true); return; }
+    FB.getStudent(session.email).then(s => setAccess(!!(s && s.speaking))).catch(() => setAccess(false));
+  }, [session.email, isAdmin]);
+
+  useEffect(() => {
+    if (phase !== "prep" && phase !== "talk") return;
+    if (sec <= 0) { if (phase === "prep") { setPhase("talk"); setSec(120); } else { setPhase("done"); } return; }
+    const id = setTimeout(() => setSec(s => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [phase, sec]);
+
+  const startCue = () => { setPhase("prep"); setSec(60); };
+  const resetCue = () => { setPhase("idle"); setSec(0); };
+  const newCue = () => { setCueIdx(i => (i + 1) % SPK_CUE.length); resetCue(); };
+  const cue = SPK_CUE[cueIdx];
+
+  // ── checking / locked ──
+  if (access === null) {
+    return <div style={{ minHeight:"100vh", background:"#0d2540", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontFamily:"sans-serif" }}>Checking access…</div>;
+  }
+  if (!access) {
+    return (
+      <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0d2540,#1A5FAD)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+        <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
+        <div style={{ maxWidth:460, margin:"0 auto", padding:"60px 18px", textAlign:"center", color:"white" }}>
+          <div style={{ fontSize:60 }}>🎤</div>
+          <div style={{ fontSize:12, fontWeight:800, letterSpacing:"2px", color:"#e8b923", textTransform:"uppercase", marginTop:6 }}>Premium · Speaking World</div>
+          <h2 style={{ fontSize:24, fontWeight:800, margin:"6px 0 8px" }}>First-class Speaking lounge 🛫</h2>
+          <p style={{ opacity:0.85, fontSize:14, lineHeight:1.6, margin:"0 0 18px" }}>A full Speaking programme — Part 1, 2 & 3 with a live cue-card practice timer, model phrases and band criteria. This is a <b>paid</b> section.</p>
+          <div style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:14, padding:"16px 18px", textAlign:"left", fontSize:13.5, lineHeight:1.7 }}>
+            <div style={{ fontWeight:800, marginBottom:6 }}>🔒 Access is closed</div>
+            To unlock, ask your teacher to open Speaking access for <b>{session.email}</b>. Once opened, this page turns into your full Speaking World.
+          </div>
+          <button onClick={() => setPage("course")} style={{ marginTop:20, padding:"11px 22px", borderRadius:10, border:"none", background:"#e8b923", color:"#3a2a00", fontWeight:800, cursor:"pointer" }}>← Back to course</button>
+        </div>
+      </div>
+    );
+  }
+
+  const TABS = [["part1","Part 1 · Interview"],["part2","Part 2 · Cue card"],["part3","Part 3 · Discussion"],["phrases","Phrases"],["bands","Band criteria"]];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 240px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
+      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:18, padding:"22px 20px", color:"white", marginBottom:16, background:"linear-gradient(135deg,#070d18,#0d2540 55%,#1A5FAD 135%)", boxShadow:"0 14px 34px rgba(13,37,64,.28)" }}>
+          <div style={{ position:"absolute", top:12, right:16, fontSize:30, opacity:0.18 }}>🛫</div>
+          <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1.6px", textTransform:"uppercase", color:"#e8b923" }}>Premium · Departure lounge</div>
+          <h2 style={{ margin:"3px 0 4px", fontSize:22, fontWeight:800 }}>🎤 Speaking World</h2>
+          <p style={{ margin:0, opacity:0.82, fontSize:13 }}>Everything for IELTS Speaking Parts 1–3 — practise, time yourself, and speak like a Band 7+.</p>
+        </div>
+
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
+          {TABS.map(([k,label]) => (
+            <button key={k} onClick={() => setTab(k)} style={{ padding:"8px 13px", borderRadius:999, border:`1.5px solid ${tab===k?"#1A5FAD":"#dbe6f3"}`, background:tab===k?"#1A5FAD":"white", color:tab===k?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{label}</button>
+          ))}
+        </div>
+
+        {tab==="part1" && SPK_PART1.map(t => (
+          <div key={t.topic} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)", marginBottom:12 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{t.icon} {t.topic}</div>
+            <ul style={{ margin:"10px 0 0", paddingLeft:20, color:"#334155", fontSize:14, lineHeight:1.8 }}>{t.qs.map((q,i)=><li key={i}>{q}</li>)}</ul>
+            <div style={{ marginTop:10, fontSize:12.5, color:"#8a5a12", background:"#fff7e6", borderRadius:10, padding:"9px 12px" }}>💡 {t.tip}</div>
+          </div>
+        ))}
+
+        {tab==="part2" && (
+          <div>
+            <div style={{ background:"white", borderRadius:16, padding:"18px", border:"1px solid #e5edf7", boxShadow:"0 8px 22px rgba(13,37,64,.08)", marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD" }}>Cue card</div>
+              <div style={{ fontSize:18, fontWeight:800, color:"#0d2540", margin:"4px 0 10px" }}>{cue.title}</div>
+              <div style={{ fontSize:13, color:"#64748b", marginBottom:6 }}>You should say:</div>
+              <ul style={{ margin:0, paddingLeft:20, color:"#334155", fontSize:14, lineHeight:1.8 }}>{cue.bullets.map((b,i)=><li key={i}>{b}</li>)}</ul>
+              <div style={{ marginTop:12, fontSize:12.5, color:"#8a5a12", background:"#fff7e6", borderRadius:10, padding:"9px 12px" }}>💡 {cue.tip}</div>
+
+              <div style={{ marginTop:16, textAlign:"center", background:"#0d2540", borderRadius:14, padding:"16px", color:"white" }}>
+                <div style={{ fontSize:12, opacity:0.7, letterSpacing:"0.5px", textTransform:"uppercase" }}>
+                  {phase==="idle" && "Ready when you are"}
+                  {phase==="prep" && "⏳ Preparation — make notes"}
+                  {phase==="talk" && "🎙️ Speak now — keep going!"}
+                  {phase==="done" && "✅ Time! Well done"}
+                </div>
+                {(phase==="prep"||phase==="talk") && <div style={{ fontSize:44, fontWeight:800, fontVariantNumeric:"tabular-nums", color: phase==="talk"?"#e8b923":"#9ED9CF" }}>{spkTime(sec)}</div>}
+                {phase==="idle" && <div style={{ fontSize:13, opacity:0.8, margin:"6px 0 12px" }}>1 min to prepare · 2 min to talk</div>}
+                {phase==="done" && <div style={{ fontSize:13, opacity:0.85, margin:"6px 0 12px" }}>Rate your fluency, vocab, grammar & pronunciation — then try another card.</div>}
+                <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap", marginTop:10 }}>
+                  {phase==="idle" && <button onClick={startCue} style={spkBtn("#e8b923","#3a2a00")}>▶ Start (1 min prep)</button>}
+                  {phase==="prep" && <button onClick={()=>{setPhase("talk");setSec(120);}} style={spkBtn("#e8b923","#3a2a00")}>Skip to talk →</button>}
+                  {(phase==="prep"||phase==="talk") && <button onClick={resetCue} style={spkBtn("rgba(255,255,255,0.15)","white")}>Stop</button>}
+                  <button onClick={newCue} style={spkBtn("rgba(255,255,255,0.15)","white")}>↻ New card</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="part3" && SPK_PART3.map(t => (
+          <div key={t.theme} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)", marginBottom:12 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{t.theme}</div>
+            <ul style={{ margin:"10px 0 0", paddingLeft:20, color:"#334155", fontSize:14, lineHeight:1.8 }}>{t.qs.map((q,i)=><li key={i}>{q}</li>)}</ul>
+            <div style={{ marginTop:10, fontSize:12.5, color:"#0d4f45", background:"#e2ece5", borderRadius:10, padding:"9px 12px" }}>🎯 Strategy: {t.strategy}</div>
+          </div>
+        ))}
+
+        {tab==="phrases" && SPK_PHRASES.map(g => (
+          <div key={g.group} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)", marginBottom:12 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#1A5FAD", marginBottom:10 }}>{g.group}</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>{g.items.map((p,i)=><span key={i} style={{ background:"#eef4fd", color:"#0d2540", borderRadius:999, padding:"6px 13px", fontSize:13, fontWeight:500 }}>{p}</span>)}</div>
+          </div>
+        ))}
+
+        {tab==="bands" && (
+          <div style={{ display:"grid", gap:12 }}>
+            {SPK_BANDS.map(b => (
+              <div key={b.crit} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)" }}>
+                <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{b.ico} {b.crit}</div>
+                <div style={{ marginTop:8, fontSize:13.5, color:"#334155" }}><b style={{ color:"#1E7A4F" }}>Examiner wants:</b> {b.want}</div>
+                <div style={{ marginTop:6, fontSize:13.5, color:"#334155" }}><b style={{ color:"#B8620A" }}>Quick win:</b> {b.win}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+const spkBtn = (bg,c) => ({ padding:"9px 15px", borderRadius:999, border:"none", background:bg, color:c, fontWeight:800, fontSize:13, cursor:"pointer" });
+
 export default function App() {
   const [session, setSession] = useState(getSession);
   const [page, setPage] = useState("course");
@@ -2442,6 +2639,7 @@ export default function App() {
   if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} />;
   if (page === "admissions") return <AdmissionsPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "psych") return <PsychPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
+  if (page === "speaking") return <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "leaderboard") return <Leaderboard session={session} setPage={setPage} />;
   if (page === "dashboard") return <Dashboard session={session} setPage={setPage} modules={modules} />;
   if (page === "lesson" && currentLesson) return <LessonPage lesson={currentLesson} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} refreshModules={refreshModules} modules={modules} />;
