@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IELTS8 — Курсы подготовки к IELTS (B1 → Band 8)</title>
+<meta name="description" content="Онлайн-курсы IELTS8: полный курс подготовки, премиум Speaking, гайд по Writing. Доступ открывает преподаватель после оплаты." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{--navy:#0d2540;--blue:#1A5FAD;--teal:#49BEB6;--gold:#e8b923;--ink:#0d2540;--soft:#475569;--line:#e2e8f0;--bg:#eef5fd;--red:#FF5959;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:inherit}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 18px 70px}
+  .grad{background:linear-gradient(90deg,var(--blue),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+  /* nav */
+  header.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .top-in{max-width:1000px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:12px}
+  .brand{font-weight:800;font-size:19px;letter-spacing:-.4px}
+  .brand .dot{color:var(--teal)}
+  .enter{margin-left:auto;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px}
+  .enter:hover{background:var(--blue)}
+  /* hero */
+  .hero{position:relative;overflow:hidden;border-radius:22px;margin:20px 0;padding:38px 26px;color:#fff;background:linear-gradient(135deg,#070d18 0%,var(--navy) 55%,var(--blue) 135%);box-shadow:0 18px 40px rgba(13,37,64,.3)}
+  .hero:after{content:"✈️";position:absolute;top:20px;right:-30px;font-size:26px;opacity:.5;animation:fly 15s linear infinite}
+  @keyframes fly{0%{transform:translateX(0) rotate(-6deg)}100%{transform:translateX(-680px) translateY(-14px) rotate(-6deg)}}
+  .kick{font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--teal)}
+  .hero h1{font-size:clamp(26px,5vw,40px);line-height:1.08;margin:8px 0 10px;font-weight:800;letter-spacing:-.6px}
+  .hero p{margin:0;max-width:640px;color:rgba(255,255,255,.85);font-size:15px}
+  .hero .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .hero .chips span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600}
+  /* pricing */
+  .sec-t{font-size:24px;font-weight:800;letter-spacing:-.3px;margin:28px 0 4px}
+  .sec-s{color:var(--soft);margin:0 0 18px}
+  .cards{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:760px){.cards{grid-template-columns:1fr 1fr 1fr}}
+  .card{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 8px 22px rgba(13,37,64,.06);display:flex;flex-direction:column}
+  .card.feat{border:2px solid var(--blue);box-shadow:0 16px 38px rgba(26,95,173,.18)}
+  .badge{position:absolute;top:-11px;left:22px;background:linear-gradient(90deg,var(--blue),var(--teal));color:#fff;font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 11px;border-radius:999px}
+  .badge.gold{background:linear-gradient(90deg,var(--gold),#B8860B);color:#3a2a00}
+  .card .ico{font-size:30px}
+  .card h3{font-size:19px;font-weight:800;margin:10px 0 2px}
+  .card .desc{color:var(--soft);font-size:13.5px;margin:0 0 14px;min-height:38px}
+  .price{font-size:32px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+  .price small{font-size:15px;font-weight:700;color:var(--soft)}
+  .price .old{font-size:15px;color:#94a3b8;text-decoration:line-through;font-weight:600;margin-left:6px}
+  ul.feat-list{list-style:none;margin:14px 0 18px;padding:0;flex:1}
+  ul.feat-list li{font-size:13.5px;color:#334155;padding:5px 0 5px 24px;position:relative}
+  ul.feat-list li:before{content:"✓";position:absolute;left:0;color:var(--teal);font-weight:800}
+  .cta{display:block;text-align:center;text-decoration:none;font-weight:800;font-size:14px;padding:12px;border-radius:12px;background:var(--navy);color:#fff}
+  .cta:hover{background:var(--blue)}
+  .cta.gold{background:linear-gradient(90deg,var(--gold),#B8860B);color:#3a2a00}
+  .cta.ghost{background:#fff;color:var(--navy);border:2px solid var(--line)}
+  .free-tag{font-size:12px;font-weight:800;color:var(--teal)}
+  /* how it works */
+  .how{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;margin-top:26px}
+  .steps{display:grid;gap:14px;grid-template-columns:1fr;margin-top:14px}
+  @media(min-width:760px){.steps{grid-template-columns:repeat(4,1fr)}}
+  .step{display:flex;gap:10px;align-items:flex-start}
+  .num{flex:none;width:26px;height:26px;border-radius:999px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800}
+  .step p{margin:0;font-size:13.5px;color:#334155}
+  .note{margin-top:16px;background:#eef4fd;border-radius:12px;padding:12px 14px;font-size:13px;color:var(--navy)}
+  footer{text-align:center;color:#94a3b8;font-size:13px;padding:30px 0 0}
+  .foot-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 6px}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <span class="brand">IELTS<span class="dot">8</span></span>
+  <a class="enter" href="/">Войти в кабинет →</a>
+</div></header>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="kick">✈ Онлайн-подготовка к IELTS</div>
+    <h1>От B1 до <span class="grad">Band 8</span> — по маршруту, а не наугад</h1>
+    <p>Структурированные уроки, мок-тесты, разбор письма по бэндам, психологические советы и подбор зарубежных вузов с грантами. Всё в одном кабинете.</p>
+    <div class="chips"><span>📚 Уроки B1→8</span><span>📝 Мок-тесты</span><span>🎤 Speaking</span><span>🧘 Психо-советы</span><span>🎓 Поступление + гранты</span></div>
+  </section>
+
+  <h2 class="sec-t">Тарифы</h2>
+  <p class="sec-s">Выберите доступ. Оплата разовая, в тенге. После оплаты преподаватель открывает вам вход по email.</p>
+
+  <div class="cards">
+    <!-- Full course -->
+    <div class="card feat">
+      <span class="badge">Хит · всё включено</span>
+      <div class="ico">🚀</div>
+      <h3>Полный курс IELTS 8</h3>
+      <p class="desc">Полная подготовка: уроки, тесты, письмо, психо-советы, поступление — и так далее.</p>
+      <div class="price">39 990 <small>₸</small></div>
+      <ul class="feat-list">
+        <li>Все модули: Listening, Reading, Writing, Speaking</li>
+        <li>Игровые тесты и мок-тесты по таймеру</li>
+        <li>Карта прогресса B1 → Band 8</li>
+        <li>🧘 Психологические советы и техники стресса</li>
+        <li>🎓 Аллея поступления: вузы и гранты по вашему баллу</li>
+      </ul>
+      <a class="cta" href="#how">Оформить доступ</a>
+    </div>
+
+    <!-- Speaking premium -->
+    <div class="card">
+      <span class="badge gold">Премиум</span>
+      <div class="ico">🎤</div>
+      <h3>Speaking — премиум</h3>
+      <p class="desc">Полный материал по говорению: Part 1 / 2 / 3, тренажёр карточек, фразы и критерии.</p>
+      <div class="price">9 990 <small>₸</small></div>
+      <ul class="feat-list">
+        <li>Part 1 · Part 2 · Part 3 с вопросами и стратегиями</li>
+        <li>Тренажёр Cue card: 1 мин подготовка + 2 мин ответ</li>
+        <li>Банк фраз Band 7+ и слов-связок</li>
+        <li>Критерии оценки и быстрые приёмы</li>
+      </ul>
+      <a class="cta gold" href="#how">Открыть Speaking</a>
+    </div>
+
+    <!-- Free writing guide -->
+    <div class="card">
+      <span class="free-tag">Бесплатно</span>
+      <div class="ico">✍️</div>
+      <h3>Гайд по Writing (бэнды)</h3>
+      <p class="desc">Что именно исправить, чтобы поднять балл — от 5.0 до 8.0. Доступно без входа.</p>
+      <div class="price">0 <small>₸</small></div>
+      <ul class="feat-list">
+        <li>4 критерия оценки на каждом бэнде</li>
+        <li>Примеры «до / после» и что изменилось</li>
+        <li>Лексика и структуры, которые ценят экзаменаторы</li>
+        <li>Переключатель EN / RU</li>
+      </ul>
+      <a class="cta ghost" href="/skyielts-writing.html">Открыть гайд →</a>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div class="how" id="how">
+    <h2 class="sec-t" style="margin-top:0">Как получить доступ</h2>
+    <p class="sec-s" style="margin-bottom:0">Логин выдаётся, когда ваш email добавлен в системе. Всё просто:</p>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><p>Выберите курс и оплатите (Kaspi / перевод).</p></div>
+      <div class="step"><span class="num">2</span><p>Пришлите преподавателю свой email и чек об оплате.</p></div>
+      <div class="step"><span class="num">3</span><p>Преподаватель открывает доступ по этому email.</p></div>
+      <div class="step"><span class="num">4</span><p>Нажимаете «Войти», вводите тот же email — и вы в кабинете.</p></div>
+    </div>
+    <div class="note">🔐 Вход работает только если email совпадает с добавленным в админке. Speaking-раздел открывается отдельной кнопкой у вашего аккаунта после оплаты премиума.</div>
+    <div class="foot-cta">
+      <a class="cta" style="display:inline-block;padding:12px 22px" href="mailto:dyerlanova@gmail.com?subject=IELTS8%20—%20доступ%20к%20курсу">✉️ Написать преподавателю</a>
+      <a class="cta ghost" style="display:inline-block;padding:12px 22px" href="/">Войти в кабинет</a>
+    </div>
+  </div>
+
+  <footer>IELTS8 · подготовка к IELTS от B1 до Band 8</footer>
+</div>
+</body>
+</html>
