@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// IELTS8 LMS — Firestore security rules
+// Deploy: paste into Firebase Console → Firestore Database → Rules → Publish
+// (or `firebase deploy --only firestore:rules` if you set up the CLI).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()  { return request.auth != null; }
+    function verified()  { return signedIn() && request.auth.token.email_verified == true; }
+    function userEmail() { return request.auth.token.email.lower(); }
+    function isAdmin()   { return verified() && userEmail() == 'dyerlanova@gmail.com'; }
+    // Hard-coded students who self-provision their own roster doc on first login
+    // (must match FULL_ACCESS in src/App.js).
+    function isFullAccessSelf(studentEmail) {
+      return verified() && userEmail() == studentEmail
+        && userEmail() in ['sabinabekbulat1@gmail.com', 'yedige.kurmanali@gmail.com'];
+    }
+
+    // ── Students roster ──
+    // Any verified user can read (the leaderboard lists every student).
+    // Only the teacher can add/remove/change a student's status.
+    // A student may touch only `lastLogin` on their own document.
+    // Full-access students may create/refresh their own doc.
+    match /students/{studentEmail} {
+      allow read: if verified();
+      allow create: if isAdmin() || isFullAccessSelf(studentEmail);
+      allow delete: if isAdmin();
+      allow update: if isAdmin() || isFullAccessSelf(studentEmail) ||
+        ( verified() && userEmail() == studentEmail
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin']) );
+    }
+
+    // ── Per-student progress ── (read-all for leaderboard; write only your own)
+    match /progress/{studentEmail} {
+      allow read:  if verified();
+      allow write: if isAdmin() || (verified() && userEmail() == studentEmail);
+    }
+
+    // ── Per-student submissions ── (private: only the owner and the teacher)
+    match /submissions/{studentEmail} {
+      allow read:  if isAdmin() || (verified() && userEmail() == studentEmail);
+      allow write: if isAdmin() || (verified() && userEmail() == studentEmail);
+    }
+
+    // ── Course content ── readable by any verified user, editable by teacher only
+    match /config/{docId} {
+      allow read:  if verified();
+      allow write: if isAdmin();
+    }
+    match /lessons/{lessonId} {
+      allow read:  if verified();
+      allow write: if isAdmin();
+    }
+
+    // Everything else: locked down.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

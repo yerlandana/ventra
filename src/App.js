@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
 // ─── FIREBASE CONFIG ───
 const firebaseConfig = {
@@ -17,6 +18,9 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 const ADMIN_EMAIL = "dyerlanova@gmail.com";
 // Students who can log in directly (no DB entry needed) with every module unlocked.
@@ -25,6 +29,25 @@ const FULL_ACCESS = {
   "yedige.kurmanali@gmail.com": "Yedige",
 };
 const hasFullAccess = (email) => !!FULL_ACCESS[(email || "").trim().toLowerCase()];
+
+// ─── AUTH: verify a signed-in Google user and build their session ───
+// Throws "no-access" / "revoked" when the account isn't allowed in.
+async function resolveSession(user) {
+  const email = (user.email || "").trim().toLowerCase();
+  if (!email) throw new Error("no-email");
+  if (email === ADMIN_EMAIL) {
+    return { email, role: "admin", name: user.displayName || "Teacher Dana" };
+  }
+  if (FULL_ACCESS[email]) {
+    try { await FB.setStudent(email, { name: FULL_ACCESS[email], status: "active", fullAccess: true, lastLogin: new Date().toISOString() }); } catch(_) {}
+    return { email, role: "student", name: FULL_ACCESS[email] };
+  }
+  const student = await FB.getStudent(email);
+  if (!student) throw new Error("no-access");
+  if (student.status === "revoked") throw new Error("revoked");
+  await FB.updateStudent(email, { lastLogin: new Date().toISOString() });
+  return { email, role: "student", name: student.name || user.displayName || email };
+}
 
 // ─── FIRESTORE HELPERS ───
 const FB = {
@@ -1401,30 +1424,26 @@ function AdminPanel({ session, logout, setPage }) {
 // ══════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════
-function Login({ login }) {
-  const [email, setEmail] = useState("");
+function Login({ authError }) {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
   const go = async () => {
-    const e = email.trim().toLowerCase();
-    if (!e) { setErr("Enter your email"); return; }
-    setLoading(true);
-    if (e === ADMIN_EMAIL) { login({ email: e, role: "admin", name: "Teacher Dana" }); return; }
-    if (FULL_ACCESS[e]) {
-      try { await FB.setStudent(e, { name: FULL_ACCESS[e], status: "active", fullAccess: true, lastLogin: new Date().toISOString() }); } catch(_) {}
-      login({ email: e, role: "student", name: FULL_ACCESS[e] }); return;
-    }
+    setErr(""); setLoading(true);
     try {
-      const student = await FB.getStudent(e);
-      if (!student) { setErr("No access. Ask your teacher to add your email."); setLoading(false); return; }
-      if (student.status === "revoked") { setErr("Your access has been revoked. Contact your teacher."); setLoading(false); return; }
-      await FB.updateStudent(e, { lastLogin: new Date().toISOString() });
-      login({ email: e, role: "student", name: student.name });
-    } catch(loginErr) {
-      setErr("Connection error. Please try again."); setLoading(false);
+      // On success, App's onAuthStateChanged listener verifies access
+      // and either opens the course or reports authError back here.
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        setLoading(false); return;
+      }
+      setErr("Sign-in failed. Please try again.");
+      setLoading(false);
     }
   };
+
+  const shown = err || authError;
 
   return (
     <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", padding:16 }}>
@@ -1432,15 +1451,17 @@ function Login({ login }) {
         <div style={{ textAlign:"center", marginBottom:24, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
           <BrandLogo size={44} />
           <h2 style={{ margin:0, color:"#0a0a0a", fontSize:20, letterSpacing:"-0.3px" }}>IELTS<span>8</span></h2>
-          <p style={{ color:"#666", margin:0, fontSize:13 }}>Sign in with your email</p>
+          <p style={{ color:"#666", margin:0, fontSize:13 }}>Sign in with your Google account</p>
         </div>
-        <input type="email" placeholder="your@email.com" value={email}
-          onChange={e => { setEmail(e.target.value); setErr(""); }}
-          onKeyDown={e => e.key === "Enter" && go()}
-          style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:"1.5px solid #e5e5e5", fontSize:14, boxSizing:"border-box", outline:"none" }} />
-        {err && <p style={{ color:"#0a0a0a", fontSize:12, margin:"8px 0 0" }}>{err}</p>}
-        <button onClick={go} disabled={loading} style={{ width:"100%", marginTop:14, padding:12, borderRadius:10, border:"none", background:"#0a0a0a", color:"white", fontSize:14, fontWeight:700, cursor:"pointer", opacity: loading ? 0.6 : 1, letterSpacing:"0.2px" }}>
-          {loading ? "Checking…" : "Enter"}
+        {shown && <p style={{ color:"#0a0a0a", fontSize:12, margin:"0 0 12px", textAlign:"center" }}>{shown}</p>}
+        <button onClick={go} disabled={loading} style={{ width:"100%", padding:12, borderRadius:10, border:"1.5px solid #e5e5e5", background:"white", color:"#0a0a0a", fontSize:14, fontWeight:700, cursor:"pointer", opacity: loading ? 0.6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          {loading ? "Signing in…" : "Continue with Google"}
         </button>
       </div>
     </div>
@@ -1509,7 +1530,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
 
   const moduleComplete = (m) => m.lessons.length > 0 && m.lessons.every(l => myProgress[l.id]?.quizDone);
   const hasReflection = (m) => !!reflections[m.id];
-  const fullAccess = hasFullAccess(session.email);
+  const fullAccess = isAdmin || hasFullAccess(session.email);
   const isUnlocked = (i) => fullAccess || i === 0 || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
   const activeIdx = mods.findIndex((m,i) => isUnlocked(i) && !moduleComplete(m));
   const allDone = mods.length > 0 && moduleComplete(mods[mods.length-1]) && hasReflection(mods[mods.length-1]);
@@ -2597,6 +2618,8 @@ export default function App() {
   const [currentLesson, setCurrentLesson] = useState(null);
   const [modules, setModules] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -2611,8 +2634,29 @@ export default function App() {
     load();
   }, []);
 
-  const login = (s) => { saveSession(s); setSession(s); };
-  const logout = () => { saveSession(null); setSession(null); setPage("course"); };
+  // Single source of truth for who's logged in: Firebase Auth.
+  // Verifies access on every load/refresh, so revoked students are kicked out.
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) { saveSession(null); setSession(null); setAuthLoading(false); return; }
+      try {
+        const s = await resolveSession(user);
+        saveSession(s); setSession(s); setAuthError("");
+      } catch (e) {
+        saveSession(null); setSession(null);
+        setAuthError(
+          e.message === "no-access" ? "No access. Ask your teacher to add your email." :
+          e.message === "revoked" ? "Your access has been revoked. Contact your teacher." :
+          "Sign-in error. Please try again."
+        );
+        await signOut(auth);
+      }
+      setAuthLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  const logout = () => { setPage("course"); signOut(auth); };
 
   const refreshModules = async () => {
     const mods = await FB.getModules();
@@ -2624,7 +2668,7 @@ export default function App() {
     }
   };
 
-  if (loading) return (
+  if (loading || authLoading) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#0a0a0a,#0a0a0a)", fontFamily:"sans-serif" }}>
       <div style={{ color:"white", textAlign:"center" }}>
         <div style={{ fontSize:48, marginBottom:16 }}>Loading...</div>
@@ -2632,7 +2676,7 @@ export default function App() {
     </div>
   );
 
-  if (!session) return <Login login={login} />;
+  if (!session) return <Login authError={authError} />;
 
   const isAdmin = session.email === ADMIN_EMAIL;
 
