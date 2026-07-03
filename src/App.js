@@ -2470,6 +2470,15 @@ const SPK_BANDS = [
   { crit:"Pronunciation", ico:"🔊", want:"Clear speech with natural stress and intonation.", win:"Stress the content words; vary your tone to avoid sounding flat." },
 ];
 
+// Band-level speaking guidance. 6.0–6.5 are open; 7.0+ is premium (IELTS8 students only).
+const SPK_LEVELS = [
+  { band:"6.0", ico:"🟢", tag:"Competent",  open:true,  focus:"Keep talking with only occasional hesitation; connect ideas with and / but / because / so.", model:"Give a reason for every answer: \"I usually… because…\"." },
+  { band:"6.5", ico:"🔵", tag:"Competent +", open:true, focus:"Extend each answer with an example and an opinion; add a few complex sentences.", model:"\"For instance, last year I…\" + \"In my opinion…\"." },
+  { band:"7.0", ico:"🟣", tag:"Good",        open:false, focus:"Speak fluently at length, use less common vocabulary and idioms, self-correct smoothly.", model:"Topic collocations + one natural idiom per answer, with clear intonation." },
+  { band:"7.5", ico:"🟠", tag:"Good +",      open:false, focus:"Flexible use of complex structures and precise word choice; only occasional slips.", model:"Hedging (\"I'd say…\", \"It depends on…\") + conditionals and relative clauses." },
+  { band:"8.0", ico:"🔴", tag:"Very good",   open:false, focus:"Fully coherent, wide idiomatic range, effortless pronunciation, stress and rhythm.", model:"Nuanced opinions, paraphrase on the fly, natural emphasis on key words." },
+];
+
 function SpeakingWorld({ session, logout, setPage, isAdmin }) {
   const [access, setAccess] = useState(null); // null = checking
   const [pts, setPts] = useState(0);
@@ -2500,29 +2509,14 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
   const newCue = () => { setCueIdx(i => (i + 1) % SPK_CUE.length); resetCue(); };
   const cue = SPK_CUE[cueIdx];
 
-  // ── checking / locked ──
+  // ── checking ──
   if (access === null) {
     return <div style={{ minHeight:"100vh", background:"#0d2540", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontFamily:"sans-serif" }}>Checking access…</div>;
   }
-  if (!access) {
-    return (
-      <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0d2540,#1A5FAD)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-        <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
-        <div style={{ maxWidth:460, margin:"0 auto", padding:"60px 18px", textAlign:"center", color:"white" }}>
-          <div style={{ fontSize:60 }}>🎤</div>
-          <div style={{ fontSize:12, fontWeight:800, letterSpacing:"2px", color:"#e8b923", textTransform:"uppercase", marginTop:6 }}>Premium · Speaking World</div>
-          <h2 style={{ fontSize:24, fontWeight:800, margin:"6px 0 8px" }}>First-class Speaking lounge 🛫</h2>
-          <p style={{ opacity:0.85, fontSize:14, lineHeight:1.6, margin:"0 0 18px" }}>A full Speaking programme — Part 1, 2 & 3 with a live cue-card practice timer, model phrases and band criteria. This is a <b>paid</b> section.</p>
-          <div style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:14, padding:"16px 18px", textAlign:"left", fontSize:13.5, lineHeight:1.7 }}>
-            <div style={{ fontWeight:800, marginBottom:6 }}>🔒 Access is closed</div>
-            To unlock, ask your teacher to open Speaking access for <b>{session.email}</b>. Once opened, this page turns into your full Speaking World.
-          </div>
-          <button onClick={() => setPage("course")} style={{ marginTop:20, padding:"11px 22px", borderRadius:10, border:"none", background:"#e8b923", color:"#3a2a00", fontWeight:800, cursor:"pointer" }}>← Back to course</button>
-        </div>
-      </div>
-    );
-  }
 
+  // Open preview: everyone sees Speaking World; only Band 7.0+ is gated for IELTS8 students
+  // (admin, full-access, or granted Speaking access).
+  const isIelts8 = isAdmin || hasFullAccess(session.email) || access === true;
   const TABS = [["part1","Part 1 · Interview"],["part2","Part 2 · Cue card"],["part3","Part 3 · Discussion"],["phrases","Phrases"],["bands","Band criteria"]];
 
   return (
@@ -2597,6 +2591,34 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
 
         {tab==="bands" && (
           <div style={{ display:"grid", gap:12 }}>
+            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD", marginBottom:2 }}>Target by band</div>
+            {SPK_LEVELS.map(lv => {
+              const locked = !lv.open && !isIelts8;
+              return (
+                <div key={lv.band} style={{ position:"relative", overflow:"hidden", background:"white", borderRadius:16, padding:"16px 18px", border:`1px solid ${locked ? "#f0d6b0" : "#e5edf7"}`, boxShadow:"0 6px 16px rgba(13,37,64,.05)" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{lv.ico} Band {lv.band}</div>
+                    <span style={{ fontSize:11, fontWeight:800, color:"#64748b" }}>· {lv.tag}</span>
+                    {!lv.open && (
+                      <span style={{ marginLeft:"auto", fontSize:10.5, fontWeight:800, letterSpacing:"0.5px", textTransform:"uppercase", color:"#8a5a12", background:"#fff7e6", border:"1px solid #f0d6b0", borderRadius:999, padding:"2px 9px" }}>{locked ? "🔒 7.0+" : "✦ 7.0+"}</span>
+                    )}
+                  </div>
+                  {locked ? (
+                    <div style={{ marginTop:12, fontSize:13.5, color:"#8a5a12", background:"#fff7e6", borderRadius:10, padding:"12px 14px", lineHeight:1.6 }}>
+                      <b>🔒 Available for students learning at IELTS8.</b><br/>
+                      Band 7.0+ Speaking coaching — advanced fluency, idioms and pronunciation — unlocks when you join the IELTS8 course.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ marginTop:8, fontSize:13.5, color:"#334155" }}><b style={{ color:"#1E7A4F" }}>Focus:</b> {lv.focus}</div>
+                      <div style={{ marginTop:6, fontSize:13.5, color:"#334155" }}><b style={{ color:"#B8620A" }}>Model:</b> {lv.model}</div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+
+            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD", margin:"6px 0 2px" }}>The 4 marking criteria</div>
             {SPK_BANDS.map(b => (
               <div key={b.crit} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)" }}>
                 <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{b.ico} {b.crit}</div>
