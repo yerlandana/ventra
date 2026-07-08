@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IELTS Essay Checker — оценка по баллам</title>
+<style>
+  :root{
+    --ink:#16233B; --ink2:#2C3A54; --paper:#EEF1F7; --paper2:#FBFCFE;
+    --line:#D9DEEA; --grey:#5C6780; --accent:#0E7C86;
+    --good:#2A8C5A; --warn:#C6871F; --bad:#D64550; --info:#3B6FB0;
+    --b40:#D64550; --b50:#E5734D; --b60:#E3A21F; --b65:#B7A62C;
+    --b70:#4B9B4B; --b75:#2A8C7A; --b80:#1F6F8B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);background:var(--paper);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4{font-family:Georgia,"Times New Roman",serif;margin:0;line-height:1.15;text-wrap:balance}
+  .num{font-variant-numeric:tabular-nums}
+  .wrap{width:min(1060px,94vw);margin-inline:auto}
+  .eyebrow{font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:2.5px;font-size:.72rem;font-weight:700;color:var(--accent)}
+
+  header{background:var(--ink);color:#fff;padding:26px 0}
+  header .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header .dot{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;font-weight:800;font-family:system-ui}
+  header h1{font-size:1.35rem}
+  header .sub{color:#AEB9CE;font-size:.86rem;margin-left:auto}
+
+  main{padding:26px 0 60px}
+  .disc{background:#FFF6E6;border:1px solid #F0D9A8;border-left:4px solid var(--warn);border-radius:12px;padding:13px 16px;font-size:.88rem;color:#6A5316;margin-bottom:20px}
+  .disc b{color:#5a4712}
+
+  .panel{background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 10px 30px -24px rgba(22,35,59,.6)}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{border:none;background:none;padding:8px 14px;font-weight:700;font-size:.85rem;cursor:pointer;color:var(--grey)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .wc{margin-left:auto;font-size:.85rem;color:var(--grey);font-weight:600}
+  .wc b{color:var(--ink)}
+  textarea{width:100%;min-height:280px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    font-family:Georgia,serif;font-size:1rem;line-height:1.6;color:var(--ink);background:#fff}
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .btn{display:inline-flex;align-items:center;gap:7px;border:2px solid var(--ink);background:#fff;color:var(--ink);
+    font-weight:700;padding:10px 18px;border-radius:10px;cursor:pointer;font-size:.92rem;transition:transform .12s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.solid{background:var(--ink);color:#fff}
+  .btn.solid:hover{background:#0f1a2e}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* results */
+  #results{margin-top:22px;display:none}
+  #results.on{display:block}
+  .overall{display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;
+    background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  @media(max-width:560px){.overall{grid-template-columns:1fr;text-align:center}}
+  .bigband{border-radius:14px;padding:18px 10px;color:#fff;text-align:center}
+  .bigband .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;opacity:.9;font-weight:700}
+  .bigband .v{font-size:3.4rem;font-weight:900;line-height:.95;font-family:system-ui}
+  .bigband .band{font-size:.82rem;opacity:.95;font-weight:600}
+  .overall .say h2{font-size:1.4rem;margin-bottom:6px}
+  .overall .say p{margin:0;color:var(--ink2);font-size:.95rem}
+
+  .crits{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  @media(max-width:680px){.crits{grid-template-columns:1fr}}
+  .crit{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-top:4px solid var(--cc)}
+  .crit .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .crit .ab{font-family:ui-monospace,monospace;font-weight:800;font-size:.74rem;letter-spacing:.5px;color:var(--cc)}
+  .crit h3{font-size:1.05rem}
+  .crit .ru{font-size:.82rem;color:var(--grey);font-weight:600}
+  .crit .score{font-size:1.7rem;font-weight:900;font-family:system-ui;color:var(--cc)}
+  .bar{height:9px;border-radius:6px;background:#E4E9F2;overflow:hidden;margin:10px 0 12px}
+  .bar span{display:block;height:100%;border-radius:6px;background:var(--cc)}
+  .notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .notes li{display:flex;gap:8px;font-size:.86rem;color:var(--ink2)}
+  .notes li .ic{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:.7rem;font-weight:800;color:#fff;margin-top:2px}
+  .ic.good{background:var(--good)} .ic.warn{background:var(--warn)} .ic.bad{background:var(--bad)} .ic.info{background:var(--info)}
+
+  .stats{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .stats h3{font-size:1.05rem;margin-bottom:12px}
+  .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:680px){.statgrid{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .stat .v{font-size:1.5rem;font-weight:800;font-family:system-ui}
+  .stat .k{font-size:.76rem;color:var(--grey);font-weight:600;margin-top:2px}
+  .stat .k .en{opacity:.7}
+  .flag{color:var(--bad)} .okc{color:var(--good)}
+
+  footer{color:var(--grey);font-size:.86rem;text-align:center;padding-top:8px}
+  footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="dot">✓</div>
+    <div>
+      <h1>IELTS Essay Checker</h1>
+    </div>
+    <div class="sub">Оценка по 4 критериям · Band 4.0–9.0</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="disc">
+    ⚠️ <b>Как читать оценку.</b> Это <b>приблизительная</b> оценка по формальным признакам: объём, структура,
+    лексическое разнообразие, связки, грамматические маркеры и типичные ошибки. Инструмент <b>не оценивает
+    глубину и релевантность идей</b> так, как живой экзаменатор. Используйте как быструю самопроверку черновика,
+    а не как официальный результат.
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Тип задания">
+        <button id="t2" aria-pressed="true">Task 2 · Эссе</button>
+        <button id="t1" aria-pressed="false">Task 1 · Отчёт</button>
+      </div>
+      <span class="wc">Слов: <b id="wc" class="num">0</b> <span id="wcmin" style="color:var(--grey)">/ мин. 250</span></span>
+    </div>
+    <textarea id="essay" placeholder="Вставьте сюда эссе на английском / Paste your IELTS essay here…" aria-label="Текст эссе"></textarea>
+    <div class="actions">
+      <button class="btn solid" id="check">Проверить эссе →</button>
+      <button class="btn" id="sample">Загрузить пример</button>
+      <button class="btn" id="clear">Очистить</button>
+    </div>
+  </div>
+
+  <div id="results" aria-live="polite">
+    <div class="overall">
+      <div class="bigband" id="ovBox">
+        <div class="lbl">Overall Band</div>
+        <div class="v num" id="ovVal">—</div>
+        <div class="band" id="ovName"></div>
+      </div>
+      <div class="say">
+        <h2 id="ovHead"></h2>
+        <p id="ovText"></p>
+      </div>
+    </div>
+
+    <div class="crits" id="crits"></div>
+
+    <div class="stats">
+      <h3>📊 Статистика текста <span style="font-weight:400;font-size:.85rem;color:var(--grey);font-family:Georgia,serif">/ Text metrics</span></h3>
+      <div class="statgrid" id="statgrid"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Оценка по публичным дескрипторам IELTS Writing, переведённым в измеримые признаки. Всегда сверяйтесь с реальным экзаменатором.</p>
+  </footer>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let taskType = 2;
+
+  /* ---------- word lists ---------- */
+  const LINKERS = {
+    "Добавление":["furthermore","moreover","in addition","additionally","besides","also","as well as","not only"],
+    "Контраст":["however","nevertheless","on the other hand","whereas","while","in contrast","conversely","although","despite","in spite of","yet","nonetheless"],
+    "Причина/следствие":["therefore","thus","consequently","as a result","because","since","hence","due to","owing to","for this reason","accordingly"],
+    "Пример":["for example","for instance","such as","namely","to illustrate","in particular"],
+    "Порядок":["firstly","first of all","secondly","thirdly","finally","subsequently","then","next","lastly"],
+    "Вывод":["in conclusion","to conclude","to sum up","overall","in summary","all in all","to summarise","to summarize"]
+  };
+  const REFERENCING = ["this","these","those","such","it","they","their","its","which"];
+  const OPINION = ["i believe","i think","in my opinion","i agree","i disagree","from my perspective","i would argue","in my view","personally","it seems to me"];
+  const ACADEMIC = ("significant substantial considerable crucial essential fundamental prevalent phenomenon tendency implication consequence beneficial detrimental mitigate alleviate exacerbate facilitate undermine advocate proponent opponent controversial inevitable feasible viable comprehensive diverse prominent notable profound gradual drastic alternative perspective aspect factor impact influence contribute enhance diminish acquire allocate generate implement maintain obtain perceive promote restrict sustain undergo arise emerge indicate demonstrate illustrate reveal suggest argue assert emphasise emphasize evidently arguably ultimately predominantly considerably notably albeit sophisticated integral paramount pivotal robust adverse imperative widespread numerous crucially reliance dependence exposure awareness incentive initiative regulation infrastructure sustainable efficiency productivity innovation phenomena scenario correlation criterion nurture foster hinder deteriorate accumulate compensate constitute derive impose reinforce accompany assess adequate coherent explicit incentivise revenue expenditure surplus deficit unprecedented").split(" ");
+  const BASIC = ["good","bad","big","small","thing","things","stuff","people","very","lot","lots","get","got","make","made","nice","many","much","really","kind of","a lot"];
+  const CONTRACTIONS = ["don't","can't","won't","it's","i'm","they're","isn't","aren't","doesn't","didn't","that's","there's","let's","wouldn't","shouldn't","couldn't","we're","you're","hasn't","haven't","wasn't","weren't","i've","we've"];
+  const SUBORD = ["because","although","though","whereas","while","which","that","who","whom","whose","if","unless","since","as","when","whenever","despite","in order to","so that","even though","provided that"];
+  const NAMES_OK = new Set(["i"]); // 'I' allowed capitalised only
+
+  /* ---------- analysis ---------- */
+  function analyse(raw){
+    const text = raw.trim();
+    const low = text.toLowerCase();
+    const paras = text.split(/\n\s*\n/).map(p=>p.trim()).filter(p=>p.length>0);
+    // words
+    const wordTokens = (text.match(/[A-Za-z']+/g)||[]);
+    const words = wordTokens.map(w=>w.toLowerCase());
+    const wc = words.length;
+    // sentences
+    const sentences = text.split(/[.!?]+/).map(s=>s.trim()).filter(s=>s.split(/\s+/).length>1);
+    const sc = sentences.length || 1;
+    const sentLens = sentences.map(s=>(s.match(/[A-Za-z']+/g)||[]).length);
+    const avgSent = wc/sc;
+    const meanL = sentLens.reduce((a,b)=>a+b,0)/(sentLens.length||1);
+    const variance = sentLens.reduce((a,b)=>a+(b-meanL)**2,0)/(sentLens.length||1);
+    const sd = Math.sqrt(variance);
+    // TTR
+    const uniq = new Set(words).size;
+    const ttr = wc ? uniq/wc : 0;
+    // academic
+    const acaCount = words.filter(w=>ACADEMIC.includes(w)).length;
+    const acaPer100 = wc ? (acaCount/wc*100) : 0;
+    // linkers
+    let linkerTotal=0; const cats=new Set();
+    for(const [cat,list] of Object.entries(LINKERS)){
+      let hit=false;
+      for(const ph of list){ const n=countPhrase(low,ph); if(n>0){linkerTotal+=n;hit=true;} }
+      if(hit) cats.add(cat);
+    }
+    const refCount = words.filter(w=>REFERENCING.includes(w)).length;
+    const hasOpinion = OPINION.some(ph=>low.includes(ph));
+    // subordination
+    let subCount=0; for(const ph of SUBORD){ subCount+=countPhrase(low,ph); }
+    const subPerSent = subCount/sc;
+    // errors / informality
+    const lowerI = (text.match(/(^|[^A-Za-z])i([^A-Za-z]|$)/g)||[]).length; // standalone lowercase i
+    const contractions = CONTRACTIONS.reduce((a,c)=>a+countPhrase(low,c),0);
+    const repeatedWord = (text.match(/\b(\w+)\s+\1\b/gi)||[]).length;
+    const runOns = sentLens.filter(l=>l>40).length;
+    const noCapSent = sentences.filter(s=>/^[a-z]/.test(s)).length;
+    const basicHits = BASIC.reduce((a,b)=>a+countPhrase(low,b),0);
+    // repetition: most repeated content word
+    const freq={}; words.forEach(w=>{ if(w.length>4 && !STOP.has(w)) freq[w]=(freq[w]||0)+1; });
+    let topWord="",topN=0; for(const k in freq){ if(freq[k]>topN){topN=freq[k];topWord=k;} }
+
+    return {text,wc,sc,paras:paras.length,paraArr:paras,avgSent,sd,ttr,uniq,acaCount,acaPer100,
+      linkerTotal,cats:[...cats],refCount,hasOpinion,subCount,subPerSent,
+      lowerI,contractions,repeatedWord,runOns,noCapSent,basicHits,topWord,topN};
+  }
+  const STOP=new Set("the and that have this with from they will their would there which about people because should could other more some many such into than then them these those your what when been being also very much most".split(" "));
+  function countPhrase(hay,ph){
+    let n=0,i=0; const p=" "+ph+" "; const h=" "+hay.replace(/[.,;:!?()"]/g," ")+" ";
+    while((i=h.indexOf(p,i))>-1){n++;i+=p.length-1;} return n;
+  }
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  const N=(t)=>({type:t});
+
+  /* ---------- scoring per criterion ---------- */
+  function scoreTR(a){
+    let s=6.0; const notes=[];
+    const min = taskType===2?250:150;
+    if(a.wc>=min){ notes.push(['good',`Объём достаточный (${a.wc} слов, минимум ${min}).`]); if(a.wc>=min+40)s+=0.2; }
+    else { const d=min-a.wc; const pen=d>=100?3:d>=50?2:1; s-=pen;
+      notes.push(['bad',`Недобор объёма: ${a.wc}/${min} слов — это снижает Task Response.`]); }
+    if(a.paras>=4 && a.paras<=5){ s+=0.5; notes.push(['good',`Хорошая структура: ${a.paras} абзаца (intro + body + conclusion).`]); }
+    else if(a.paras===3){ notes.push(['warn','3 абзаца — рабочий минимум; лучше intro + 2 body + conclusion.']); }
+    else if(a.paras<3){ s-=1.0; notes.push(['bad',`Мало абзацев (${a.paras}) — нет чёткой структуры.`]); }
+    else { s-=0.2; notes.push(['warn',`Слишком много абзацев (${a.paras}) — мысль может дробиться.`]); }
+    if(taskType===2){
+      if(a.hasOpinion){ s+=0.3; notes.push(['good','Позиция автора обозначена явно (opinion выражен).']); }
+      else { s-=0.3; notes.push(['warn','Не найдено явной позиции (I believe / in my opinion…). Заявите её.']); }
+    }
+    const devPara = a.paras? a.wc/a.paras : 0;
+    if(devPara<50 && a.paras>=3){ s-=0.3; notes.push(['warn','Абзацы короткие — идеи, вероятно, недостаточно развиты (нужен пример/объяснение).']); }
+    notes.push(['info','Глубину и релевантность идей оценивает только экзаменатор — здесь она не учтена.']);
+    return {band:round(clamp(s,4,8)),notes};
+  }
+  function scoreCC(a){
+    let s=6.0; const notes=[];
+    if(a.paras>=4 && a.paras<=5){ s+=0.5; }
+    else if(a.paras<3){ s-=0.8; notes.push(['bad','Нет деления на абзацы — страдает связность.']); }
+    const nc=a.cats.length;
+    if(nc>=4){ s+=0.5; notes.push(['good',`Разнообразные связки: ${nc} типов (${a.cats.join(', ')}).`]); }
+    else if(nc>=2){ s+=0.2; notes.push(['warn',`Связок маловато (${nc} типа). Добавьте контраст/следствие/пример.`]); }
+    else { s-=0.7; notes.push(['bad','Почти нет связующих слов — добавьте however, therefore, for example…']); }
+    if(a.linkerTotal> a.sc*0.8 || a.linkerTotal>14){ s-=0.5; notes.push(['warn','Связок слишком много / механически — на 7+ они должны быть незаметны.']); }
+    if(a.refCount>=3){ s+=0.3; notes.push(['good','Есть референсы (this/these/such) — помогают избегать повторов.']); }
+    else { notes.push(['warn','Мало отсылок (this trend, such measures) — они повышают связность на 7+.']); }
+    return {band:round(clamp(s,4,8.5)),notes};
+  }
+  function scoreLR(a){
+    let s=5.8; const notes=[];
+    if(a.ttr>=0.55){ s+=0.6; notes.push(['good',`Высокое лексическое разнообразие (${pct(a.ttr)}).`]); }
+    else if(a.ttr>=0.5){ s+=0.35; notes.push(['good',`Неплохое разнообразие лексики (${pct(a.ttr)}).`]); }
+    else if(a.ttr>=0.45){ s+=0.15; notes.push(['warn',`Разнообразие среднее (${pct(a.ttr)}) — меньше повторов.`]); }
+    else { s-=0.5; notes.push(['bad',`Низкое разнообразие (${pct(a.ttr)}) — много повторяющихся слов.`]); }
+    if(a.acaPer100>=6){ s+=0.7; notes.push(['good',`Много продвинутой лексики (${a.acaCount} слов).`]); }
+    else if(a.acaPer100>=3){ s+=0.4; notes.push(['good',`Есть менее частотная лексика (${a.acaCount} слов).`]); }
+    else if(a.acaCount>=1){ s+=0.1; notes.push(['warn',`Мало академической лексики (${a.acaCount}). Добавьте коллокации: significant impact, widely regarded.`]); }
+    else { s-=0.4; notes.push(['bad','Продвинутая лексика почти не найдена — словарь простой.']); }
+    if(a.topN>=5){ s-=0.3; notes.push(['warn',`Слово «${a.topWord}» повторяется ${a.topN} раз — используйте синонимы.`]); }
+    if(a.basicHits>=6){ s-=0.2; notes.push(['warn','Много «простых» слов (good/bad/thing/very) — замените на точные.']); }
+    if(a.contractions>=1){ s-=0.3; notes.push(['bad',`Сокращения (${a.contractions}) — для эссе нужен формальный стиль (do not вместо don't).`]); }
+    return {band:round(clamp(s,4,8.5)),notes};
+  }
+  function scoreGRA(a){
+    let s=5.8; const notes=[];
+    if(a.sd>=5 && a.sd<=13){ s+=0.5; notes.push(['good','Хорошее разнообразие длины предложений (простые + сложные).']); }
+    else if(a.sd<3){ s-=0.4; notes.push(['warn','Предложения однообразны по длине — добавьте сложные конструкции.']); }
+    if(a.subPerSent>=0.6){ s+=0.5; notes.push(['good','Много сложноподчинённых конструкций (which, although, because…).']); }
+    else if(a.subPerSent>=0.3){ s+=0.25; notes.push(['warn','Сложных предложений средне — используйте больше подчинения.']); }
+    else { s-=0.3; notes.push(['bad','Преобладают простые предложения — не хватает грамматического разнообразия.']); }
+    const errs=a.lowerI+a.repeatedWord+a.runOns+a.noCapSent;
+    if(a.lowerI>0) notes.push(['bad',`Местоимение «i» с маленькой буквы: ${a.lowerI} раз.`]);
+    if(a.noCapSent>0) notes.push(['bad',`Предложения с маленькой буквы: ${a.noCapSent}.`]);
+    if(a.repeatedWord>0) notes.push(['warn',`Задвоенные слова: ${a.repeatedWord}.`]);
+    if(a.runOns>0) notes.push(['warn',`Слишком длинные предложения (>40 слов): ${a.runOns} — риск run-on.`]);
+    if(errs===0) notes.push(['good','Явных механических ошибок не обнаружено.']);
+    s-=Math.min(1.5, errs*0.3);
+    return {band:round(clamp(s,4,8.5)),notes};
+  }
+
+  const round=v=>Math.round(v*2)/2;
+  const pct=v=>Math.round(v*100)+"%";
+
+  const BANDNAME={4:"Limited user",5:"Modest user",6:"Competent user",7:"Good user",8:"Very good user",9:"Expert user"};
+  function bandColor(v){
+    if(v<5)return getComputedStyle(document.documentElement).getPropertyValue('--b40');
+    if(v<6)return cssv('--b50'); if(v<6.5)return cssv('--b60'); if(v<7)return cssv('--b65');
+    if(v<7.5)return cssv('--b70'); if(v<8)return cssv('--b75'); return cssv('--b80');
+  }
+  const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  /* ---------- render ---------- */
+  const CRIT=[
+    {k:"TR",name:"Task Response",ru:"Ответ на задание",cc:"--b70",fn:scoreTR},
+    {k:"CC",name:"Coherence & Cohesion",ru:"Связность и логика",cc:"--info",fn:scoreCC},
+    {k:"LR",name:"Lexical Resource",ru:"Словарный запас",cc:"--warn",fn:scoreLR},
+    {k:"GRA",name:"Grammar (Range & Accuracy)",ru:"Грамматика",cc:"--bad",fn:scoreGRA},
+  ];
+  const ICO={good:"✓",warn:"!",bad:"✕",info:"i"};
+
+  function run(){
+    const raw=$('essay').value;
+    if(raw.trim().split(/\s+/).filter(Boolean).length<40){
+      alert("Введите эссе не короче 40 слов для анализа.");return;
+    }
+    const a=analyse(raw);
+    const res=CRIT.map(c=>({...c,...c.fn(a)}));
+    const overall=round(res.reduce((s,r)=>s+r.band,0)/res.length);
+
+    // overall box
+    const col=bandColor(overall);
+    $('ovBox').style.background=col;
+    $('ovVal').textContent=overall.toFixed(1);
+    $('ovName').textContent=BANDNAME[Math.floor(overall)]||"";
+    $('ovHead').textContent=overallHead(overall);
+    $('ovText').textContent=overallText(overall,res);
+
+    // criteria
+    $('crits').innerHTML=res.map(r=>`
+      <div class="crit" style="--cc:${cssv(r.cc)}">
+        <div class="row">
+          <div><div class="ab">${r.k}</div><h3>${r.name}</h3><div class="ru">${r.ru}</div></div>
+          <div class="score num">${r.band.toFixed(1)}</div>
+        </div>
+        <div class="bar"><span style="width:${(r.band/9*100).toFixed(0)}%"></span></div>
+        <ul class="notes">${r.notes.map(([t,txt])=>`<li><span class="ic ${t}">${ICO[t]}</span><span>${txt}</span></li>`).join('')}</ul>
+      </div>`).join('');
+
+    // stats
+    const stat=(v,k,en,flag)=>`<div class="stat"><div class="v num ${flag||''}">${v}</div><div class="k">${k} <span class="en">${en}</span></div></div>`;
+    const min=taskType===2?250:150;
+    $('statgrid').innerHTML=[
+      stat(a.wc,"Слов","words",a.wc>=min?'okc':'flag'),
+      stat(a.paras,"Абзацев","paragraphs",(a.paras>=4&&a.paras<=5)?'okc':''),
+      stat(a.sc,"Предложений","sentences"),
+      stat(a.avgSent.toFixed(0),"Ср. длина предл.","avg length"),
+      stat(pct(a.ttr),"Разнообразие","lexical diversity",a.ttr>=0.5?'okc':a.ttr<0.45?'flag':''),
+      stat(a.acaCount,"Продвинут. слов","advanced words",a.acaCount>=6?'okc':''),
+      stat(a.linkerTotal,"Связок","linking devices"),
+      stat(a.subCount,"Сложных констр.","complex markers"),
+    ].join('');
+
+    $('results').classList.add('on');
+    $('results').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function overallHead(v){
+    if(v>=7.5)return "Очень сильное эссе";
+    if(v>=7)return "Сильное эссе (Band 7)";
+    if(v>=6.5)return "Хороший уровень, близко к 7";
+    if(v>=6)return "Компетентный уровень (Band 6)";
+    if(v>=5.5)return "Средний уровень, есть над чем работать";
+    return "Базовый уровень — нужна работа над формой";
+  }
+  function overallText(v,res){
+    const weak=[...res].sort((x,y)=>x.band-y.band)[0];
+    const strong=[...res].sort((x,y)=>y.band-x.band)[0];
+    return `Оценка по формальным признакам. Сильнее всего — ${strong.ru} (${strong.band.toFixed(1)}), `
+      +`слабее всего — ${weak.ru} (${weak.band.toFixed(1)}). Начните улучшения с самого низкого критерия. `
+      +`Помните: это оценка формы, идеи оценивает экзаменатор.`;
+  }
+
+  /* ---------- events ---------- */
+  const upWC=()=>{
+    const w=($('essay').value.match(/[A-Za-z']+/g)||[]).length;
+    $('wc').textContent=w;
+    const min=taskType===2?250:150;
+    $('wcmin').textContent=`/ мин. ${min}`;
+    $('wcmin').style.color = w>=min ? 'var(--good)' : 'var(--grey)';
+  };
+  $('essay').addEventListener('input',upWC);
+  $('check').addEventListener('click',run);
+  $('clear').addEventListener('click',()=>{$('essay').value="";upWC();$('results').classList.remove('on');});
+  $('t2').addEventListener('click',()=>setTask(2));
+  $('t1').addEventListener('click',()=>setTask(1));
+  function setTask(t){taskType=t;$('t2').setAttribute('aria-pressed',t===2);$('t1').setAttribute('aria-pressed',t===1);upWC();}
+  $('sample').addEventListener('click',()=>{$('essay').value=SAMPLE;upWC();});
+
+  const SAMPLE=`Many people believe that traffic and pollution problems can be solved by making public transport free of charge, while others argue that this measure would not be effective. In my opinion, although free public transport alone cannot solve these problems, it can be an important part of the solution.
+
+On the one hand, offering free buses and trains could encourage some drivers to leave their cars at home. If people did not have to pay for tickets, commuting by public transport would become cheaper than driving, and this financial incentive might reduce the number of private vehicles on the roads. As a result, cities could experience less congestion and lower levels of air pollution. For example, several European cities that have introduced free transport schemes have reported a small increase in the number of passengers.
+
+On the other hand, there are several reasons why this policy might not be enough. Firstly, many people choose to drive because it is more convenient and comfortable, not because of the cost. Therefore, making transport free would not change their habits. Secondly, free services would need to be funded by the government, which could lead to higher taxes or a reduction in the quality of the transport itself.
+
+In conclusion, while free public transport could help to reduce traffic and pollution to some extent, it should be combined with other measures such as investment in infrastructure and restrictions on car use. Only a comprehensive approach is likely to produce a significant and lasting improvement.`;
+
+  upWC();
+})();
+</script>
+
+</body>
+</html>

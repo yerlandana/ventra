@@ -1481,6 +1481,7 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
       <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
       <button onClick={() => setPage("admissions")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #1E7A4F", background:"#1E7A4F", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>✈ Universities</button>
       <a href="/skyielts-writing.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid transparent", background:"linear-gradient(90deg,#0ea5e9,#8b5cf6)", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✍️ Writing Bands</a>
+      <a href="/essay-checker.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #0E7C86", background:"#0E7C86", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✓ Essay Checker</a>
       <button onClick={() => setPage("speaking")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #B8860B", background:"linear-gradient(90deg,#f0c33c,#B8860B)", color:"#3a2a00", cursor:"pointer", fontSize:12, fontWeight:800 }}>🎤 Speaking ✦</button>
       <button onClick={() => setPage("psych")} style={nb("white","#0a0a0a")}>🧘 Mindset</button>
       <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
