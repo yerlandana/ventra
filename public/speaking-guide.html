@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IELTS Speaking — Complete Interactive Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1D7A6B;--teal-l:#E0F4EF;--teal-m:#9ED9CF;--teal-d:#0D4F45;
+  --amber:#B8620A;--amber-l:#FDF0E0;--amber-m:#F5C07A;
+  --blue:#1A5FAD;--blue-l:#E5EEFA;
+  --rose:#B03060;--rose-l:#FAE8EF;
+  --ink:#1A1917;--ink2:#3D3C39;--muted:#7A7870;
+  --border:#E2DED7;--bg:#FAFAF7;--surf:#F2F0EB;--white:#fff;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.7}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:rgba(250,250,247,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.nav-wrap{max-width:980px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:52px}
+.logo{font-family:'Lora',serif;font-size:15px;font-weight:700;color:var(--ink);text-decoration:none}
+.logo em{color:var(--teal);font-style:normal}
+.nav-links{display:flex;gap:3px;list-style:none}
+.nav-links a{font-size:12px;font-weight:500;color:var(--muted);text-decoration:none;padding:5px 11px;border-radius:20px;transition:all .15s}
+.nav-links a:hover{background:var(--surf);color:var(--ink)}
+.nav-links a.active{background:var(--teal-l);color:var(--teal-d)}
+
+/* LAYOUT */
+main{max-width:980px;margin:0 auto;padding:3rem 1.5rem 6rem}
+[id]{scroll-margin-top:64px}
+section{margin-bottom:4.5rem}
+.divider{border:none;border-top:1px solid var(--border);margin:4rem 0}
+
+/* HERO */
+.hero{display:grid;grid-template-columns:5px 1fr;gap:0 1.5rem;margin-bottom:4rem;align-items:center}
+.hero-bar{background:var(--teal);border-radius:3px;min-height:88px}
+.hero h1{font-family:'Lora',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.hero h1 em{color:var(--teal);font-style:normal}
+.hero p{font-size:14px;color:var(--muted);font-weight:300}
+.hero-chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+.chip-t{background:var(--teal-l);color:var(--teal-d)}
+.chip-a{background:var(--amber-l);color:var(--amber)}
+.chip-b{background:var(--blue-l);color:var(--blue)}
+.chip-r{background:var(--rose-l);color:var(--rose)}
+
+/* SECTION LABELS */
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.sec-title{font-family:'Lora',serif;font-size:23px;font-weight:700;margin-bottom:1.25rem}
+.sec-intro{font-size:13.5px;color:var(--muted);line-height:1.7;padding:12px 16px;background:var(--surf);border-radius:8px;border-left:3px solid var(--muted);margin-bottom:1.5rem}
+.highlight{background:var(--teal-l);border-radius:10px;padding:1rem 1.25rem;border-left:4px solid var(--teal);margin:1rem 0}
+.highlight p{font-size:13.5px;color:var(--teal-d);line-height:1.65}
+
+/* CARDS */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:1.5rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.35rem;transition:border-color .15s}
+.card:hover{border-color:var(--teal-m)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.card ul{padding-left:1rem}
+.card li,.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.card-t{border-left:3px solid var(--teal)}
+.card-a{border-left:3px solid var(--amber)}
+.card-b{border-left:3px solid var(--blue)}
+.card-r{border-left:3px solid var(--rose)}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:9px}
+.step{display:flex;gap:13px;align-items:flex-start;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:13px 15px;transition:border-color .15s}
+.step:hover{border-color:var(--teal-m)}
+.step-badge{width:28px;height:28px;border-radius:50%;background:var(--teal-l);color:var(--teal-d);font-family:'Lora',serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body h4{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.step-body p{font-size:13px;color:var(--muted);line-height:1.55}
+.step-phrase{font-size:12.5px;color:var(--teal-d);font-style:italic;margin-top:5px;padding:6px 10px;background:var(--teal-l);border-radius:5px;display:inline-block;line-height:1.5}
+
+/* DO/DON'T */
+.dodont{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+.do-box,.dn-box{border-radius:10px;padding:1rem 1.1rem}
+.do-box{background:var(--teal-l);border:1px solid var(--teal-m)}
+.dn-box{background:var(--rose-l);border:1px solid #F0B8CC}
+.dd-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px}
+.do-box .dd-lbl{color:var(--teal-d)}
+.dn-box .dd-lbl{color:var(--rose)}
+.dd-item{font-size:13px;line-height:1.6;margin-bottom:5px;padding-left:16px;position:relative}
+.dd-item::before{position:absolute;left:0}
+.do-box .dd-item{color:var(--teal-d)}
+.do-box .dd-item::before{content:'✓'}
+.dn-box .dd-item{color:var(--rose)}
+.dn-box .dd-item::before{content:'✗'}
+
+/* TABS */
+.tab-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.1rem}
+.tab-btn{padding:6px 16px;border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-family:'Outfit',sans-serif;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab-btn:hover{border-color:var(--teal);color:var(--teal-d)}
+.tab-btn.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:500}
+.tab-panel{display:none;animation:fadeUp .2s ease}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* PHRASE BANK */
+.phrase-bank{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem}
+.pb-head{background:var(--ink);padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
+.pb-head span{font-size:13px;font-weight:600;color:#F2F0EB}
+.pb-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--teal);color:#fff}
+.phrase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.phrase-item{padding:10px 13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--teal-d);font-style:italic;cursor:pointer;transition:background .1s;line-height:1.5}
+.phrase-item:hover{background:var(--teal-l)}
+.phrase-item .ph-use{display:block;font-size:11px;color:var(--muted);font-style:normal;margin-top:2px}
+
+/* ESSAY TEMPLATE */
+.essay-tmpl{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+.et-head{background:var(--surf);padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.et-head h3{font-size:14px;font-weight:600}
+.et-wc{font-size:11px;font-weight:600;padding:3px 10px;background:var(--teal-l);color:var(--teal-d);border-radius:20px}
+.et-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:10px}
+.et-para{padding:12px 14px;border-radius:8px}
+.et-para-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.et-para p{font-size:13px;line-height:1.7;color:var(--muted);font-style:italic}
+.fill{padding:1px 5px;border-radius:3px;font-style:normal;font-weight:500}
+.fill-t{background:var(--teal-l);color:var(--teal-d)}
+.fill-a{background:var(--amber-l);color:var(--amber)}
+.ep-intro{border-left:3px solid var(--teal)}
+.ep-intro .et-para-lbl{color:var(--teal)}
+.ep-over{border-left:3px solid var(--amber)}
+.ep-over .et-para-lbl{color:var(--amber)}
+.ep-b1{border-left:3px solid var(--blue)}
+.ep-b1 .et-para-lbl{color:var(--blue)}
+.ep-b2{border-left:3px solid var(--rose)}
+.ep-b2 .et-para-lbl{color:var(--rose)}
+
+/* SAMPLE ESSAY */
+.sample-essay{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.se-head{background:var(--ink);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.se-head h3{font-size:14px;font-weight:600;color:#F2F0EB}
+.se-badge{font-size:11px;font-weight:600;padding:3px 10px;background:var(--teal);color:#fff;border-radius:20px}
+.se-body{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:0}
+.se-para{padding:12px 0 12px 14px;border-left:2px solid var(--border);margin-bottom:3px}
+.se-para-tag{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.se-para p{font-size:13.5px;line-height:1.8;color:var(--ink2)}
+.hl-t{background:var(--teal-l);color:var(--teal-d);padding:1px 4px;border-radius:3px}
+.hl-a{background:var(--amber-l);color:var(--amber);padding:1px 4px;border-radius:3px}
+.hl-b{background:var(--blue-l);color:var(--blue);padding:1px 4px;border-radius:3px}
+.hl-r{background:var(--rose-l);color:var(--rose);padding:1px 4px;border-radius:3px}
+
+/* VOCAB TABLE */
+.vocab-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem}
+.vocab-head{background:var(--ink);display:grid;grid-template-columns:1fr 1fr 2fr;padding:10px 14px}
+.vocab-head span{font-size:11px;font-weight:500;color:#ccc;letter-spacing:.3px}
+.vocab-row{display:grid;grid-template-columns:1fr 1fr 2fr;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .1s;cursor:default;align-items:start}
+.vocab-row:last-child{border-bottom:none}
+.vocab-row:hover{background:var(--surf)}
+.vocab-row:nth-child(even){background:#FAFAF8}
+.vocab-row:nth-child(even):hover{background:var(--surf)}
+.v-t{font-size:13.5px;font-weight:600;color:var(--teal-d)}
+.v-d{font-size:13px;color:var(--ink2)}
+.v-e{font-size:12.5px;color:var(--muted);font-style:italic;line-height:1.5}
+
+/* ARGUMENT FLOW */
+.arg-flow{display:flex;flex-direction:column;gap:8px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.4rem;margin-bottom:1.5rem}
+.af-row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:start}
+.af-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:5px 10px;border-radius:6px;text-align:center;margin-top:2px}
+.afl-t{background:var(--teal-l);color:var(--teal-d)}
+.afl-a{background:var(--amber-l);color:var(--amber)}
+.afl-b{background:var(--blue-l);color:var(--blue)}
+.afl-r{background:var(--rose-l);color:var(--rose)}
+.af-content{font-size:13px;color:var(--ink2);line-height:1.6;padding:8px 12px;background:var(--surf);border-radius:7px}
+
+/* PIE CHART */
+.chart-demo{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.4rem;margin-bottom:1.25rem}
+.chart-demo h4{font-size:13px;font-weight:600;color:var(--muted);text-align:center;margin-bottom:1.1rem}
+.pie-wrap{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.pie-legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:150px}
+.leg-item{display:flex;align-items:center;gap:8px}
+.leg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.leg-label{font-size:12.5px;color:var(--ink2)}
+.leg-pct{font-size:12px;font-weight:600;color:var(--muted);margin-left:auto}
+
+/* QUIZ */
+.quiz-wrap{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.quiz-head{background:var(--ink);padding:14px 18px}
+.quiz-head h3{font-size:15px;font-weight:600;color:#F2F0EB}
+.quiz-head p{font-size:12px;color:#999;margin-top:2px}
+.prog-outer{height:4px;background:rgba(255,255,255,.15);margin:10px 0 0}
+.prog-inner{height:100%;background:var(--teal);transition:width .3s ease}
+.quiz-body{padding:1.5rem 1.75rem}
+.q-lbl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.q-text{font-size:15px;font-weight:500;margin-bottom:1rem;line-height:1.6}
+.q-opts{display:flex;flex-direction:column;gap:7px}
+.q-opt{padding:11px 15px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;cursor:pointer;transition:all .12s;background:var(--bg);text-align:left;font-family:'Outfit',sans-serif;line-height:1.5}
+.q-opt:hover:not(:disabled){border-color:var(--teal);background:var(--teal-l)}
+.q-opt.correct{border-color:var(--teal-d);background:var(--teal-l);color:var(--teal-d);font-weight:500}
+.q-opt.wrong{border-color:#E24B4A;background:#FCEBEB;color:#A32D2D}
+.q-opt:disabled{cursor:default}
+.q-fb{margin-top:1rem;padding:12px 15px;border-radius:8px;font-size:13.5px;line-height:1.6;display:none}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.correct{background:var(--teal-l);color:var(--teal-d);border:1px solid var(--teal-m)}
+.q-fb.wrong{background:#FCEBEB;color:#A32D2D;border:1px solid #F7C1C1}
+.q-nav{display:flex;justify-content:flex-end;margin-top:1.25rem}
+.btn-next{padding:9px 22px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13.5px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:500;transition:background .15s;display:none}
+.btn-next:hover{background:var(--teal-d)}
+.btn-next.show{display:inline-block}
+.quiz-score{text-align:center;padding:2.5rem 1.5rem;display:none}
+.quiz-score.show{display:block;animation:fadeUp .3s ease}
+.score-num{font-family:'Lora',serif;font-size:52px;font-weight:700;color:var(--teal)}
+.score-lbl{font-size:15px;color:var(--muted);margin-top:4px}
+.score-msg{font-size:14px;margin:1rem 0;color:var(--ink)}
+.btn-restart{padding:9px 22px;background:transparent;color:var(--teal);border:1.5px solid var(--teal);border-radius:8px;font-size:14px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:500;transition:all .15s}
+.btn-restart:hover{background:var(--teal);color:#fff}
+
+/* FLASHCARDS */
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:9px;margin-bottom:.75rem}
+.fc{height:100px;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform .4s ease;perspective:600px}
+.fc.flipped{transform:rotateY(180deg)}
+.fc-front,.fc-back{position:absolute;inset:0;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:10px;backface-visibility:hidden;text-align:center;font-size:13px;line-height:1.4}
+.fc-front{background:var(--ink);color:#fff;font-weight:500;font-size:13.5px}
+.fc-back{background:var(--teal-l);color:var(--teal-d);transform:rotateY(180deg);font-size:12px}
+.fc-hint{font-size:12px;color:var(--muted);text-align:center}
+
+/* BAND CRITERIA */
+.criteria-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:1.5rem}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  main{padding:2rem 1rem 4rem}
+  .hero h1{font-size:24px}
+  .nav-links{display:none}
+  .dodont{grid-template-columns:1fr}
+  .pie-wrap{flex-direction:column}
+  .af-row{grid-template-columns:1fr;gap:4px}
+  .af-label{width:fit-content}
+  .vocab-head,.vocab-row{grid-template-columns:1fr 1fr}
+  .v-e{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-wrap">
+    <a href="/" class="logo">IELTS <em>Speaking</em></a>
+    <ul class="nav-links">
+      <li><a href="#format">Format</a></li>
+      <li><a href="#part1">Part 1</a></li>
+      <li><a href="#part2">Part 2</a></li>
+      <li><a href="#part3">Part 3</a></li>
+      <li><a href="#bands">Band Criteria</a></li>
+      <li><a href="#vocab">Vocabulary</a></li>
+      <li><a href="#quiz">Quiz</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bar"></div>
+  <div>
+    <h1>IELTS Speaking<br><em>Complete Interactive Guide</em></h1>
+    <p>A full walkthrough of Parts 1, 2 &amp; 3 — with model answers, structures, phrase banks and the exact criteria examiners score you on.</p>
+    <div class="hero-chips">
+      <span class="chip chip-t">Part 1 — Interview</span>
+      <span class="chip chip-a">Part 2 — Cue Card</span>
+      <span class="chip chip-b">Part 3 — Discussion</span>
+      <span class="chip chip-r">Band 7+ Strategies</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FORMAT ═══════════════ -->
+<section id="format">
+  <div class="sec-lbl">The Test</div>
+  <h2 class="sec-title">How IELTS Speaking works</h2>
+  <p class="sec-intro">One examiner, one candidate, 11–14 minutes, recorded. It is a real conversation — there are no "right answers", only how <em>well</em> you speak. You are scored on four equal criteria, not on your opinions.</p>
+  <div class="card-grid">
+    <div class="card card-t">
+      <h3>Part 1 — Interview <span style="color:var(--muted);font-weight:400">· 4–5 min</span></h3>
+      <p>Familiar topics about you: home, work/study, hometown, hobbies, food, weather. Short, natural answers (2–3 sentences).</p>
+    </div>
+    <div class="card card-a">
+      <h3>Part 2 — Cue Card <span style="color:var(--muted);font-weight:400">· 3–4 min</span></h3>
+      <p>You get a card with a topic. <b>1 minute</b> to prepare and make notes, then talk <b>1–2 minutes</b> without interruption.</p>
+    </div>
+    <div class="card card-b">
+      <h3>Part 3 — Discussion <span style="color:var(--muted);font-weight:400">· 4–5 min</span></h3>
+      <p>Abstract questions linked to the Part 2 topic. The examiner pushes you to explain, compare, speculate and justify opinions.</p>
+    </div>
+  </div>
+  <div class="highlight"><p><strong>Golden rule:</strong> never give one-word answers. Always <strong>answer → give a reason → add an example or detail</strong>. That single habit lifts most candidates from Band 5.5 to Band 6.5+.</p></div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ PART 1 ═══════════════ -->
+<section id="part1">
+  <div class="sec-lbl">Part 1 · Interview</div>
+  <h2 class="sec-title">Answering personal questions naturally</h2>
+  <p class="sec-intro">Part 1 warms you up. Keep answers <b>relaxed and extended</b> — two or three sentences. Don't memorise: examiners spot rehearsed speeches instantly and it lowers your Fluency score.</p>
+
+  <div class="card-grid">
+    <div class="card card-t"><h3>🏠 Common topics</h3><ul><li>Hometown &amp; where you live</li><li>Work or studies</li><li>Free time &amp; hobbies</li><li>Food, weather, travel</li></ul></div>
+    <div class="card card-a"><h3>⏱️ Answer length</h3><ul><li>2–3 sentences per answer</li><li>Answer → reason → example</li><li>Don't ramble past ~20 seconds</li></ul></div>
+    <div class="card card-b"><h3>🎯 What's tested</h3><ul><li>Fluency (no long pauses)</li><li>Natural everyday vocabulary</li><li>Correct simple + past tenses</li></ul></div>
+  </div>
+
+  <h3 style="font-family:'Lora',serif;font-size:17px;margin:1.75rem 0 .9rem">Model answers — see the structure</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-badge">Q</div>
+      <div class="step-body"><h4>"Do you enjoy cooking?"</h4>
+        <p>Answer + reason + example, in a natural voice.</p>
+        <span class="step-phrase">"Actually, I do — I find it quite relaxing after a long day. I'm no expert, but I love making pasta from scratch, and there's something satisfying about eating a meal you've made yourself."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">Q</div>
+      <div class="step-body"><h4>"What do you do in your free time?"</h4>
+        <p>Give a couple of activities and a reason — avoid a bare list.</p>
+        <span class="step-phrase">"It depends on my mood, to be honest. If I've got energy I'll go for a run, but more often than not I just curl up with a good book — it's my way of switching off."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">Q</div>
+      <div class="step-body"><h4>"Has your hometown changed much?"</h4>
+        <p>Use a past-to-present comparison — shows tense range.</p>
+        <span class="step-phrase">"Enormously. When I was younger it was a sleepy little town, whereas now it's grown into quite a busy city with cafés and shopping centres popping up everywhere."</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dodont">
+    <div class="do-box"><div class="dd-lbl">DO</div>
+      <div class="dd-item">Extend every answer with a reason</div>
+      <div class="dd-item">Use natural fillers: "to be honest", "actually", "I'd say"</div>
+      <div class="dd-item">Sound interested — vary your intonation</div>
+      <div class="dd-item">Correct yourself smoothly if you slip</div>
+    </div>
+    <div class="dn-box"><div class="dd-lbl">DON'T</div>
+      <div class="dd-item">Give one-word "Yes / No" answers</div>
+      <div class="dd-item">Recite memorised paragraphs</div>
+      <div class="dd-item">Speak in a flat, robotic tone</div>
+      <div class="dd-item">Say "I don't know" and stop</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ PART 2 ═══════════════ -->
+<section id="part2">
+  <div class="sec-lbl">Part 2 · Cue Card (Long Turn)</div>
+  <h2 class="sec-title">The 1-minute plan &amp; 2-minute talk</h2>
+  <p class="sec-intro">This is where most marks are won or lost. Use your <b>1 minute of prep</b> to note keywords for each bullet — not full sentences. Then speak for the full 2 minutes: it is better to keep going than to finish early.</p>
+
+  <!-- Cue card structure template -->
+  <div class="essay-tmpl">
+    <div class="et-head"><h3>Cue-card structure — turn 4 bullets into a talk</h3><span class="et-wc">~2 min · 220–280 words</span></div>
+    <div class="et-body">
+      <div class="et-para ep-intro"><div class="et-para-lbl">Open — restate + choose</div><p>"I'd like to talk about <span class="fill fill-t">[the thing]</span>. The one that springs to mind is <span class="fill fill-t">[specific example]</span>…"</p></div>
+      <div class="et-para ep-over"><div class="et-para-lbl">Bullet 1 &amp; 2 — the facts (what / where / who)</div><p>Cover the descriptive bullets first: <span class="fill fill-a">who, what, when, where</span>. Add one small detail each.</p></div>
+      <div class="et-para ep-b1"><div class="et-para-lbl">Bullet 3 — the story / detail</div><p>Expand the "explain / describe" bullet — this is where you show off tenses and vocabulary. Give a mini-narrative.</p></div>
+      <div class="et-para ep-b2"><div class="et-para-lbl">Close — why it matters (the feeling bullet)</div><p>End on the "and explain why…" bullet with an opinion or emotion. This gives a natural finish if time runs out.</p></div>
+    </div>
+  </div>
+
+  <h3 style="font-family:'Lora',serif;font-size:17px;margin:1.75rem 0 .9rem">Prep-note trick (your 1 minute)</h3>
+  <div class="steps">
+    <div class="step"><div class="step-badge">1</div><div class="step-body"><h4>Pick fast, don't hunt for the "perfect" answer</h4><p>Any real memory works. Choose in ~5 seconds so you have time to plan.</p></div></div>
+    <div class="step"><div class="step-badge">2</div><div class="step-body"><h4>Write ONE keyword per bullet</h4><p>Four bullets → four words. They trigger sentences; full sentences waste your minute.</p><span class="step-phrase">e.g. card "a place you visited" → beach · summer · family · calm</span></div></div>
+    <div class="step"><div class="step-badge">3</div><div class="step-body"><h4>Add 2 "wow" words</h4><p>Note two strong phrases you want to use — a collocation or idiom — so they don't slip your mind.</p></div></div>
+  </div>
+
+  <!-- Phrase bank tabs -->
+  <h3 style="font-family:'Lora',serif;font-size:17px;margin:1.75rem 0 .9rem">Phrase bank for the long turn</h3>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="p2-open">Openers</button>
+    <button class="tab-btn" data-tab="p2-buy">Buying time</button>
+    <button class="tab-btn" data-tab="p2-desc">Describing</button>
+    <button class="tab-btn" data-tab="p2-close">Closing</button>
+  </div>
+  <div class="tab-panel active" id="tab-p2-open">
+    <div class="phrase-bank"><div class="pb-head"><span>Starting your talk</span><span class="pb-tag">Say it in 5 sec</span></div><div class="phrase-grid">
+      <div class="phrase-item">"I'd like to talk about…"<span class="ph-use">Standard opener</span></div>
+      <div class="phrase-item">"The first thing that comes to mind is…"<span class="ph-use">Sounds spontaneous</span></div>
+      <div class="phrase-item">"There are several I could choose, but I'll go with…"<span class="ph-use">Shows range</span></div>
+      <div class="phrase-item">"This happened a couple of years ago, when…"<span class="ph-use">Sets a scene</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-p2-buy">
+    <div class="phrase-bank"><div class="pb-head"><span>Filling pauses naturally</span><span class="pb-tag">Protects fluency</span></div><div class="phrase-grid">
+      <div class="phrase-item">"Let me think for a second…"<span class="ph-use">Buys time, not silence</span></div>
+      <div class="phrase-item">"How can I put this…"<span class="ph-use">Natural hesitation</span></div>
+      <div class="phrase-item">"That's an interesting one, actually…"<span class="ph-use">Warms up an answer</span></div>
+      <div class="phrase-item">"Off the top of my head…"<span class="ph-use">Idiomatic filler</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-p2-desc">
+    <div class="phrase-bank"><div class="pb-head"><span>Adding colour &amp; detail</span><span class="pb-tag">Lifts Lexical Resource</span></div><div class="phrase-grid">
+      <div class="phrase-item">"What struck me most was…"<span class="ph-use">Highlights a feature</span></div>
+      <div class="phrase-item">"It was absolutely stunning / breathtaking."<span class="ph-use">Strong adjectives</span></div>
+      <div class="phrase-item">"I'll never forget the moment when…"<span class="ph-use">Mini-narrative</span></div>
+      <div class="phrase-item">"To give you an idea, …"<span class="ph-use">Introduces an example</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-p2-close">
+    <div class="phrase-bank"><div class="pb-head"><span>Wrapping up</span><span class="pb-tag">Natural finish</span></div><div class="phrase-grid">
+      <div class="phrase-item">"All in all, it's something I really treasure."<span class="ph-use">Emotional close</span></div>
+      <div class="phrase-item">"That's basically why it means so much to me."<span class="ph-use">Answers the 'why' bullet</span></div>
+      <div class="phrase-item">"So yeah, that's the one I'd pick."<span class="ph-use">Casual sign-off</span></div>
+      <div class="phrase-item">"It's an experience I'd happily repeat."<span class="ph-use">Positive ending</span></div>
+    </div></div>
+  </div>
+
+  <!-- Sample Band 7 long turn -->
+  <div style="margin-top:2rem">
+    <div class="sec-title" style="font-size:18px;margin-bottom:.75rem">Full sample Band 7+ long turn</div>
+    <div class="highlight" style="margin-bottom:1rem"><p><strong>Cue card:</strong> "Describe a place you visited that you found memorable. You should say where it is, when you went, who you went with, and explain why it was memorable."</p></div>
+    <div class="sample-essay">
+      <div class="se-head"><h3>Sample — a memorable place</h3><span class="se-badge">~2 min · Band 7</span></div>
+      <div class="se-body">
+        <div class="se-para" style="border-left-color:var(--teal)"><div class="se-para-tag">Open — restate &amp; choose</div><p>"I'd like to talk about a small coastal village called Kabak, in the south of Turkey. <span class="hl-t">The first thing that comes to mind</span> whenever someone mentions a memorable trip is that place."</p></div>
+        <div class="se-para" style="border-left-color:var(--amber)"><div class="se-para-tag">Bullets — where / when / who</div><p>"I went there about three summers ago with a couple of close friends. It's tucked away at the bottom of a steep valley, so you have to hike down through a pine forest to reach the beach — <span class="hl-a">which is exactly what makes it feel so untouched.</span>"</p></div>
+        <div class="se-para" style="border-left-color:var(--blue)"><div class="se-para-tag">Detail — the story</div><p>"What struck me most was the silence. There was no phone signal, no traffic — just the sound of waves. <span class="hl-b">I'll never forget waking up in a little wooden cabin</span> and watching the sun come up over the sea. We spent the days swimming and the evenings sitting around a fire."</p></div>
+        <div class="se-para" style="border-left-color:var(--rose)"><div class="se-para-tag">Close — why it matters</div><p>"<span class="hl-r">All in all, it's somewhere I really treasure</span>, because it was the first time I'd properly disconnected from everything. It reminded me how much I value simplicity — and that's basically why it's stayed with me ever since."</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ PART 3 ═══════════════ -->
+<section id="part3">
+  <div class="sec-lbl">Part 3 · Discussion</div>
+  <h2 class="sec-title">Handling abstract questions</h2>
+  <p class="sec-intro">Part 3 is the hardest — and the biggest chance to reach Band 7+. Questions get abstract ("Why do people…?", "Do you think…?"). Don't answer in one line: use the <b>P-E-E</b> structure — Point, Explain, Example.</p>
+
+  <div class="arg-flow">
+    <div class="af-row"><div class="af-label afl-t">Point</div><div class="af-content">State your opinion clearly. "I'd say that, on the whole, …"</div></div>
+    <div class="af-row"><div class="af-label afl-b">Explain</div><div class="af-content">Give the reasoning — the "because". "This is mainly because…"</div></div>
+    <div class="af-row"><div class="af-label afl-a">Example</div><div class="af-content">Ground it in reality. "For instance, in my country…"</div></div>
+    <div class="af-row"><div class="af-label afl-r">Extend</div><div class="af-content">Compare, speculate or concede. "That said, it might be different for…"</div></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-badge">Q</div><div class="step-body"><h4>"Why do you think people enjoy travelling?"</h4>
+      <span class="step-phrase">"I'd say there are a few reasons. Mainly, people crave a break from routine — a change of scenery recharges them. For instance, a friend of mine saves all year just to travel, because she says it's the only time she truly switches off. That said, some travel purely to learn about other cultures rather than to relax."</span></div></div>
+    <div class="step"><div class="step-badge">Q</div><div class="step-body"><h4>"Do you think tourism can harm local communities?"</h4>
+      <span class="step-phrase">"It can, yes — it's a double-edged sword. On one hand it brings in money and jobs; on the other, mass tourism can drive up housing costs and erode local traditions. Venice is often cited as a place where locals have been priced out. So while the economic benefits are real, they need to be managed carefully."</span></div></div>
+  </div>
+
+  <div class="phrase-bank" style="margin-top:1.25rem"><div class="pb-head"><span>Opinion &amp; speculation phrases</span><span class="pb-tag">Band 7 markers</span></div><div class="phrase-grid">
+    <div class="phrase-item">"I'd argue that… / I'm inclined to think…"<span class="ph-use">Hedged opinion</span></div>
+    <div class="phrase-item">"It's a double-edged sword."<span class="ph-use">Balanced idiom</span></div>
+    <div class="phrase-item">"That said, / Then again, …"<span class="ph-use">Adds a counterpoint</span></div>
+    <div class="phrase-item">"It largely depends on…"<span class="ph-use">Shows nuance</span></div>
+    <div class="phrase-item">"I imagine that, in the future, …"<span class="ph-use">Speculating</span></div>
+    <div class="phrase-item">"There's no denying that…"<span class="ph-use">Emphatic agreement</span></div>
+  </div></div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ BANDS ═══════════════ -->
+<section id="bands">
+  <div class="sec-lbl">Scoring</div>
+  <h2 class="sec-title">The 4 criteria — and how to climb them</h2>
+  <p class="sec-intro">Your Speaking band is the average of four equally-weighted criteria. Know exactly what each one rewards, and you can target the weakest.</p>
+
+  <div class="card-grid">
+    <div class="card card-t"><h3>🗣️ Fluency &amp; Coherence</h3><ul><li>Speak at length without long pauses</li><li>Link ideas smoothly (and, but, so, because)</li><li>Self-correct without stopping the flow</li></ul></div>
+    <div class="card card-b"><h3>📚 Lexical Resource</h3><ul><li>Range of topic vocabulary</li><li>Paraphrase instead of repeating</li><li>Some idioms used naturally</li></ul></div>
+    <div class="card card-a"><h3>🧱 Grammatical Range</h3><ul><li>Mix simple &amp; complex sentences</li><li>Use conditionals, relative clauses, a range of tenses</li><li>Errors don't block meaning</li></ul></div>
+    <div class="card card-r"><h3>🔊 Pronunciation</h3><ul><li>Clear, easy to understand</li><li>Natural word &amp; sentence stress</li><li>Vary intonation — don't sound flat</li></ul></div>
+  </div>
+
+  <h3 style="font-family:'Lora',serif;font-size:17px;margin:1.75rem 0 .9rem">The band ladder — what each level sounds like</h3>
+  <div class="steps">
+    <div class="step"><div class="step-badge">5</div><div class="step-body"><h4>Band 5 — Modest</h4><p>Keeps going but with noticeable pauses and repetition. Simple vocabulary, frequent basic errors. Understandable but effortful.</p></div></div>
+    <div class="step"><div class="step-badge">6</div><div class="step-body"><h4>Band 6 — Competent</h4><p>Willing to speak at length, though coherence sometimes slips. A mix of sentence forms; some errors but meaning is clear.</p></div></div>
+    <div class="step"><div class="step-badge">7</div><div class="step-body"><h4>Band 7 — Good</h4><p>Speaks fluently with only occasional hesitation. Uses less common vocabulary and some idioms; a range of complex structures with good control.</p><span class="step-phrase">Target: extended answers, natural fillers, one idiom per topic.</span></div></div>
+    <div class="step"><div class="step-badge">8</div><div class="step-body"><h4>Band 8 — Very good</h4><p>Fluent and effortless, wide idiomatic range, precise word choice, flexible grammar with only rare slips, natural stress and rhythm.</p></div></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ VOCAB ═══════════════ -->
+<section id="vocab">
+  <div class="sec-lbl">Vocabulary</div>
+  <h2 class="sec-title">High-value speaking phrases</h2>
+  <p class="sec-intro">Flip the cards to test yourself, then scan the table for example sentences. Aim to work 2–3 of these into every practice session until they feel automatic.</p>
+
+  <div class="fc-grid" id="fc-grid"></div>
+  <p class="fc-hint" id="fc-hint">Click a card to flip it</p>
+
+  <div class="vocab-wrap" style="margin-top:1.5rem">
+    <div class="vocab-head"><span>Phrase</span><span>Use</span><span>Example</span></div>
+    <div id="vocab-rows"></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════ QUIZ ═══════════════ -->
+<section id="quiz">
+  <div class="sec-lbl">Test Yourself</div>
+  <h2 class="sec-title">Speaking strategy quiz</h2>
+  <p class="sec-intro">Ten questions on the strategies above. Read the feedback after each one — that's where the real learning is.</p>
+  <div class="quiz-wrap">
+    <div class="quiz-head">
+      <h3>IELTS Speaking Quiz</h3>
+      <p id="q-counter">Question 1 of 10</p>
+      <div class="prog-outer"><div class="prog-inner" id="prog" style="width:10%"></div></div>
+    </div>
+    <div class="quiz-body" id="q-body"></div>
+    <div class="quiz-score" id="q-score"></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── TAB SYSTEM (scoped) ──
+document.querySelectorAll('.tab-bar').forEach(bar => {
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    bar.querySelectorAll('.tab-btn').forEach(b => {
+      const p = document.getElementById('tab-' + b.dataset.tab);
+      if (p) p.classList.remove('active');
+    });
+    const target = document.getElementById('tab-' + btn.dataset.tab);
+    if (target) target.classList.add('active');
+  });
+});
+
+// ── QUIZ ──
+const QS = [
+  {q:'What is the single best habit for lifting a Part 1 answer above Band 5.5?',opts:['Speak as fast as possible','Answer → give a reason → add an example','Use as many idioms as you can','Give one-word answers to save time'],c:1,fb:'Extending every answer with a reason and example is the highest-impact habit across the whole test.'},
+  {q:'How long should a typical Part 1 answer be?',opts:['One word','2–3 sentences','A full 2-minute speech','As long as possible'],c:1,fb:'Part 1 wants natural, extended answers — about 2–3 sentences. Don\'t ramble, but never give one-word replies.'},
+  {q:'In your 1 minute of Part 2 prep, you should write…',opts:['Full sentences for each bullet','One keyword per bullet','Nothing — just think','Your whole talk word for word'],c:1,fb:'One keyword per bullet triggers sentences and saves time. Full sentences waste your precious minute.'},
+  {q:'If you finish your Part 2 talk after only 45 seconds, that is…',opts:['Perfect — short is better','A problem — aim for the full ~2 minutes','Fine, the examiner will stop you','Better for pronunciation'],c:1,fb:'Finishing early loses marks for fluency. Keep going for the full ~2 minutes — the "why" bullet helps you extend.'},
+  {q:'Which phrase naturally "buys time" without an awkward silence?',opts:['"Ummmm…" (long pause)','"Let me think for a second…"','"I don\'t know."','"Next question please."'],c:1,fb:'Natural fillers like "Let me think for a second" protect your fluency score far better than silence.'},
+  {q:'What structure works best for abstract Part 3 answers?',opts:['One-sentence answers','Point → Explain → Example (P-E-E)','Just list facts','Repeat the question back'],c:1,fb:'P-E-E (Point, Explain, Example) turns a thin answer into a developed, Band 7-style response.'},
+  {q:'"It\'s a double-edged sword" is a good phrase for…',opts:['Agreeing completely','Showing something has both pros and cons','Ending Part 1','Describing a place'],c:1,fb:'It signals a balanced, nuanced view — exactly what Part 3 rewards.'},
+  {q:'Which is a Band 7 marker in Grammatical Range?',opts:['Only simple present-tense sentences','A mix of complex structures — conditionals, relative clauses, varied tenses','Speaking very slowly','Avoiding all long sentences'],c:1,fb:'Band 7 needs a range of complex structures used with good control, not just simple sentences.'},
+  {q:'What does the Pronunciation criterion mainly reward?',opts:['A British or American accent','Clear speech with natural stress and intonation','Speaking as quietly as possible','Never pausing at all'],c:1,fb:'Accent doesn\'t matter — clarity, natural word/sentence stress and varied intonation do.'},
+  {q:'Reciting a memorised answer in the test usually…',opts:['Guarantees Band 8','Lowers your score because it sounds unnatural','Is required for Part 2','Improves your fluency mark'],c:1,fb:'Examiners spot rehearsed speeches instantly, and it hurts your Fluency &amp; Coherence score. Speak naturally instead.'},
+];
+
+let qi=0, score=0, answered=false;
+function renderQ(){
+  const qb=document.getElementById('q-body'), qs=document.getElementById('q-score');
+  if(qi>=QS.length){
+    qb.style.display='none'; qs.classList.add('show');
+    const pct=Math.round(score/QS.length*100);
+    const msgs=['Review the guide and try again — focus on the parts you found tricky.',
+      'Decent effort! Re-read the Part 2 and Part 3 sections.',
+      'Solid — you have a good grasp of the strategies.',
+      'Excellent! You are well-prepared for a Band 7+ speaking test.'];
+    const mi=score<=4?0:score<=6?1:score<=8?2:3;
+    qs.innerHTML=`<div class="score-num">${score}/${QS.length}</div><div class="score-lbl">${pct}% correct</div><div class="score-msg">${msgs[mi]}</div><button class="btn-restart" onclick="restartQ()">Try again</button>`;
+    return;
+  }
+  const q=QS[qi];
+  document.getElementById('q-counter').textContent=`Question ${qi+1} of ${QS.length}`;
+  document.getElementById('prog').style.width=`${((qi+1)/QS.length)*100}%`;
+  answered=false;
+  const opts=q.opts.map((o,i)=>`<button class="q-opt" data-i="${i}">${o}</button>`).join('');
+  qb.innerHTML=`<span class="q-lbl">Question ${qi+1}</span><div class="q-text">${q.q}</div><div class="q-opts">${opts}</div><div class="q-fb" id="qfb"></div><div class="q-nav"><button class="btn-next" id="qnext" onclick="nextQ()">Next →</button></div>`;
+  qb.querySelectorAll('.q-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const ch=parseInt(btn.dataset.i), fb=document.getElementById('qfb');
+      qb.querySelectorAll('.q-opt').forEach(b=>b.disabled=true);
+      if(ch===q.c){btn.classList.add('correct');score++;fb.className='q-fb correct show';fb.innerHTML='✓ '+q.fb;}
+      else{btn.classList.add('wrong');qb.querySelectorAll('.q-opt')[q.c].classList.add('correct');fb.className='q-fb wrong show';fb.innerHTML='✗ '+q.fb;}
+      document.getElementById('qnext').classList.add('show');
+    });
+  });
+}
+function nextQ(){qi++;renderQ();}
+function restartQ(){qi=0;score=0;document.getElementById('q-body').style.display='';document.getElementById('q-score').classList.remove('show');renderQ();}
+renderQ();
+
+// ── FLASHCARDS ──
+const VOCAB=[
+  {t:'to switch off',d:'To relax and stop thinking about work',e:'"Reading is my way of switching off."'},
+  {t:'a change of scenery',d:'A new environment/place',e:'"A change of scenery really recharges me."'},
+  {t:'off the top of my head',d:'Without preparation, from memory',e:'"Off the top of my head, I\'d say three."'},
+  {t:'a double-edged sword',d:'Something with good and bad sides',e:'"Tourism is a double-edged sword."'},
+  {t:'to be priced out',d:'Unable to afford (to live/buy)',e:'"Locals were priced out of the city."'},
+  {t:'to recharge',d:'To recover energy',e:'"A weekend away helps me recharge."'},
+  {t:'sleepy little town',d:'A quiet, slow place',e:'"It used to be a sleepy little town."'},
+  {t:'to treasure',d:'To value greatly',e:'"It\'s a memory I really treasure."'},
+  {t:'tucked away',d:'Hidden / hard to find',e:'"The village is tucked away in a valley."'},
+  {t:'more often than not',d:'Usually',e:'"More often than not, I just stay in."'},
+];
+const fcg=document.getElementById('fc-grid');
+let flipped=0;
+if(fcg){
+  VOCAB.forEach((v,i)=>{ fcg.innerHTML+=`<div class="fc" id="fc${i}" onclick="flipFC(${i})"><div class="fc-front">${v.t}</div><div class="fc-back">${v.d}<br><em style="font-size:11px;opacity:.75">${v.e}</em></div></div>`; });
+}
+function flipFC(i){
+  const c=document.getElementById('fc'+i); if(!c)return;
+  c.classList.toggle('flipped');
+  flipped+=c.classList.contains('flipped')?1:-1;
+  const h=document.getElementById('fc-hint');
+  if(h) h.textContent=flipped===VOCAB.length?'All cards revealed — great work!':flipped+' of '+VOCAB.length+' revealed — click to flip';
+}
+
+// ── VOCAB TABLE ──
+const vr=document.getElementById('vocab-rows');
+const VOCAB_TABLE=[
+  ['to switch off','Relax, stop thinking about work','"Reading is my way of switching off after work."'],
+  ['a change of scenery','A new place/environment','"A change of scenery really recharges me."'],
+  ['off the top of my head','From memory, unprepared','"Off the top of my head, I\'d say around three."'],
+  ['a double-edged sword','Has both pros and cons','"Social media is a double-edged sword."'],
+  ['to be priced out','Unable to afford to live/buy','"Local families were priced out of the area."'],
+  ['tucked away','Hidden, hard to reach','"The beach is tucked away below a valley."'],
+  ['to treasure something','To value it greatly','"It\'s an experience I really treasure."'],
+  ['more often than not','Usually, most of the time','"More often than not, I just stay in."'],
+  ['to switch/disconnect','To take a break from technology','"The trip let me properly disconnect."'],
+  ['there\'s no denying that','Emphatic agreement','"There\'s no denying that travel broadens the mind."'],
+];
+if(vr){
+  VOCAB_TABLE.forEach(r=>{ vr.innerHTML+=`<div class="vocab-row"><div class="v-t">${r[0]}</div><div class="v-d">${r[1]}</div><div class="v-e">${r[2]}</div></div>`; });
+}
+</script>
+
+</body>
+</html>

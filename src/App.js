@@ -2529,6 +2529,7 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
           <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1.6px", textTransform:"uppercase", color:"#e8b923" }}>Premium · Departure lounge</div>
           <h2 style={{ margin:"3px 0 4px", fontSize:22, fontWeight:800 }}>🎤 Speaking World</h2>
           <p style={{ margin:0, opacity:0.82, fontSize:13 }}>Everything for IELTS Speaking Parts 1–3 — practise, time yourself, and speak like a Band 7+.</p>
+          <a href="/speaking-guide.html" target="_blank" rel="noreferrer" style={{ display:"inline-block", marginTop:12, padding:"8px 16px", borderRadius:999, background:"#e8b923", color:"#3a2a00", fontWeight:800, fontSize:12.5, textDecoration:"none" }}>📖 Open the full Speaking guide →</a>
         </div>
 
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
