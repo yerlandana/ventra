@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IELTS Writing Guide — Pie Charts, Hybrid & Part 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1D7A6B;--teal-l:#E0F4EF;--teal-m:#9ED9CF;--teal-d:#0D4F45;
+  --amber:#B8620A;--amber-l:#FDF0E0;--amber-m:#F5C07A;
+  --blue:#1A5FAD;--blue-l:#E5EEFA;
+  --rose:#B03060;--rose-l:#FAE8EF;
+  --ink:#1A1917;--ink2:#3D3C39;--muted:#7A7870;
+  --border:#E2DED7;--bg:#FAFAF7;--surf:#F2F0EB;--white:#fff;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.7}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:rgba(250,250,247,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.nav-wrap{max-width:980px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:52px}
+.logo{font-family:'Lora',serif;font-size:15px;font-weight:700;color:var(--ink);text-decoration:none}
+.logo em{color:var(--teal);font-style:normal}
+.nav-links{display:flex;gap:3px;list-style:none}
+.nav-links a{font-size:12px;font-weight:500;color:var(--muted);text-decoration:none;padding:5px 11px;border-radius:20px;transition:all .15s}
+.nav-links a:hover{background:var(--surf);color:var(--ink)}
+.nav-links a.active{background:var(--teal-l);color:var(--teal-d)}
+
+/* LAYOUT */
+main{max-width:980px;margin:0 auto;padding:3rem 1.5rem 6rem}
+[id]{scroll-margin-top:64px}
+section{margin-bottom:4.5rem}
+.divider{border:none;border-top:1px solid var(--border);margin:4rem 0}
+
+/* HERO */
+.hero{display:grid;grid-template-columns:5px 1fr;gap:0 1.5rem;margin-bottom:4rem;align-items:center}
+.hero-bar{background:var(--teal);border-radius:3px;min-height:88px}
+.hero h1{font-family:'Lora',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.hero h1 em{color:var(--teal);font-style:normal}
+.hero p{font-size:14px;color:var(--muted);font-weight:300}
+.hero-chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+.chip-t{background:var(--teal-l);color:var(--teal-d)}
+.chip-a{background:var(--amber-l);color:var(--amber)}
+.chip-b{background:var(--blue-l);color:var(--blue)}
+.chip-r{background:var(--rose-l);color:var(--rose)}
+
+/* SECTION LABELS */
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+.sec-title{font-family:'Lora',serif;font-size:23px;font-weight:700;margin-bottom:1.25rem}
+.sec-intro{font-size:13.5px;color:var(--muted);line-height:1.7;padding:12px 16px;background:var(--surf);border-radius:8px;border-left:3px solid var(--muted);margin-bottom:1.5rem}
+.highlight{background:var(--teal-l);border-radius:10px;padding:1rem 1.25rem;border-left:4px solid var(--teal);margin:1rem 0}
+.highlight p{font-size:13.5px;color:var(--teal-d);line-height:1.65}
+
+/* CARDS */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:1.5rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.35rem;transition:border-color .15s}
+.card:hover{border-color:var(--teal-m)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.card ul{padding-left:1rem}
+.card li,.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.card-t{border-left:3px solid var(--teal)}
+.card-a{border-left:3px solid var(--amber)}
+.card-b{border-left:3px solid var(--blue)}
+.card-r{border-left:3px solid var(--rose)}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:9px}
+.step{display:flex;gap:13px;align-items:flex-start;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:13px 15px;transition:border-color .15s}
+.step:hover{border-color:var(--teal-m)}
+.step-badge{width:28px;height:28px;border-radius:50%;background:var(--teal-l);color:var(--teal-d);font-family:'Lora',serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body h4{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.step-body p{font-size:13px;color:var(--muted);line-height:1.55}
+.step-phrase{font-size:12.5px;color:var(--teal-d);font-style:italic;margin-top:5px;padding:6px 10px;background:var(--teal-l);border-radius:5px;display:inline-block;line-height:1.5}
+
+/* DO/DON'T */
+.dodont{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+.do-box,.dn-box{border-radius:10px;padding:1rem 1.1rem}
+.do-box{background:var(--teal-l);border:1px solid var(--teal-m)}
+.dn-box{background:var(--rose-l);border:1px solid #F0B8CC}
+.dd-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px}
+.do-box .dd-lbl{color:var(--teal-d)}
+.dn-box .dd-lbl{color:var(--rose)}
+.dd-item{font-size:13px;line-height:1.6;margin-bottom:5px;padding-left:16px;position:relative}
+.dd-item::before{position:absolute;left:0}
+.do-box .dd-item{color:var(--teal-d)}
+.do-box .dd-item::before{content:'✓'}
+.dn-box .dd-item{color:var(--rose)}
+.dn-box .dd-item::before{content:'✗'}
+
+/* TABS */
+.tab-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.1rem}
+.tab-btn{padding:6px 16px;border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-family:'Outfit',sans-serif;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.tab-btn:hover{border-color:var(--teal);color:var(--teal-d)}
+.tab-btn.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:500}
+.tab-panel{display:none;animation:fadeUp .2s ease}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* PHRASE BANK */
+.phrase-bank{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem}
+.pb-head{background:var(--ink);padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
+.pb-head span{font-size:13px;font-weight:600;color:#F2F0EB}
+.pb-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--teal);color:#fff}
+.phrase-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.phrase-item{padding:10px 13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--teal-d);font-style:italic;cursor:pointer;transition:background .1s;line-height:1.5}
+.phrase-item:hover{background:var(--teal-l)}
+.phrase-item .ph-use{display:block;font-size:11px;color:var(--muted);font-style:normal;margin-top:2px}
+
+/* ESSAY TEMPLATE */
+.essay-tmpl{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+.et-head{background:var(--surf);padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.et-head h3{font-size:14px;font-weight:600}
+.et-wc{font-size:11px;font-weight:600;padding:3px 10px;background:var(--teal-l);color:var(--teal-d);border-radius:20px}
+.et-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:10px}
+.et-para{padding:12px 14px;border-radius:8px}
+.et-para-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.et-para p{font-size:13px;line-height:1.7;color:var(--muted);font-style:italic}
+.fill{padding:1px 5px;border-radius:3px;font-style:normal;font-weight:500}
+.fill-t{background:var(--teal-l);color:var(--teal-d)}
+.fill-a{background:var(--amber-l);color:var(--amber)}
+.ep-intro{border-left:3px solid var(--teal)}
+.ep-intro .et-para-lbl{color:var(--teal)}
+.ep-over{border-left:3px solid var(--amber)}
+.ep-over .et-para-lbl{color:var(--amber)}
+.ep-b1{border-left:3px solid var(--blue)}
+.ep-b1 .et-para-lbl{color:var(--blue)}
+.ep-b2{border-left:3px solid var(--rose)}
+.ep-b2 .et-para-lbl{color:var(--rose)}
+
+/* SAMPLE ESSAY */
+.sample-essay{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.se-head{background:var(--ink);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.se-head h3{font-size:14px;font-weight:600;color:#F2F0EB}
+.se-badge{font-size:11px;font-weight:600;padding:3px 10px;background:var(--teal);color:#fff;border-radius:20px}
+.se-body{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:0}
+.se-para{padding:12px 0 12px 14px;border-left:2px solid var(--border);margin-bottom:3px}
+.se-para-tag{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.se-para p{font-size:13.5px;line-height:1.8;color:var(--ink2)}
+.hl-t{background:var(--teal-l);color:var(--teal-d);padding:1px 4px;border-radius:3px}
+.hl-a{background:var(--amber-l);color:var(--amber);padding:1px 4px;border-radius:3px}
+.hl-b{background:var(--blue-l);color:var(--blue);padding:1px 4px;border-radius:3px}
+.hl-r{background:var(--rose-l);color:var(--rose);padding:1px 4px;border-radius:3px}
+
+/* VOCAB TABLE */
+.vocab-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem}
+.vocab-head{background:var(--ink);display:grid;grid-template-columns:1fr 1fr 2fr;padding:10px 14px}
+.vocab-head span{font-size:11px;font-weight:500;color:#ccc;letter-spacing:.3px}
+.vocab-row{display:grid;grid-template-columns:1fr 1fr 2fr;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .1s;cursor:default;align-items:start}
+.vocab-row:last-child{border-bottom:none}
+.vocab-row:hover{background:var(--surf)}
+.vocab-row:nth-child(even){background:#FAFAF8}
+.vocab-row:nth-child(even):hover{background:var(--surf)}
+.v-t{font-size:13.5px;font-weight:600;color:var(--teal-d)}
+.v-d{font-size:13px;color:var(--ink2)}
+.v-e{font-size:12.5px;color:var(--muted);font-style:italic;line-height:1.5}
+
+/* ARGUMENT FLOW */
+.arg-flow{display:flex;flex-direction:column;gap:8px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.4rem;margin-bottom:1.5rem}
+.af-row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:start}
+.af-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:5px 10px;border-radius:6px;text-align:center;margin-top:2px}
+.afl-t{background:var(--teal-l);color:var(--teal-d)}
+.afl-a{background:var(--amber-l);color:var(--amber)}
+.afl-b{background:var(--blue-l);color:var(--blue)}
+.afl-r{background:var(--rose-l);color:var(--rose)}
+.af-content{font-size:13px;color:var(--ink2);line-height:1.6;padding:8px 12px;background:var(--surf);border-radius:7px}
+
+/* PIE CHART */
+.chart-demo{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.4rem;margin-bottom:1.25rem}
+.chart-demo h4{font-size:13px;font-weight:600;color:var(--muted);text-align:center;margin-bottom:1.1rem}
+.pie-wrap{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.pie-legend{display:flex;flex-direction:column;gap:8px;flex:1;min-width:150px}
+.leg-item{display:flex;align-items:center;gap:8px}
+.leg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.leg-label{font-size:12.5px;color:var(--ink2)}
+.leg-pct{font-size:12px;font-weight:600;color:var(--muted);margin-left:auto}
+
+/* QUIZ */
+.quiz-wrap{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.quiz-head{background:var(--ink);padding:14px 18px}
+.quiz-head h3{font-size:15px;font-weight:600;color:#F2F0EB}
+.quiz-head p{font-size:12px;color:#999;margin-top:2px}
+.prog-outer{height:4px;background:rgba(255,255,255,.15);margin:10px 0 0}
+.prog-inner{height:100%;background:var(--teal);transition:width .3s ease}
+.quiz-body{padding:1.5rem 1.75rem}
+.q-lbl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.q-text{font-size:15px;font-weight:500;margin-bottom:1rem;line-height:1.6}
+.q-opts{display:flex;flex-direction:column;gap:7px}
+.q-opt{padding:11px 15px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;cursor:pointer;transition:all .12s;background:var(--bg);text-align:left;font-family:'Outfit',sans-serif;line-height:1.5}
+.q-opt:hover:not(:disabled){border-color:var(--teal);background:var(--teal-l)}
+.q-opt.correct{border-color:var(--teal-d);background:var(--teal-l);color:var(--teal-d);font-weight:500}
+.q-opt.wrong{border-color:#E24B4A;background:#FCEBEB;color:#A32D2D}
+.q-opt:disabled{cursor:default}
+.q-fb{margin-top:1rem;padding:12px 15px;border-radius:8px;font-size:13.5px;line-height:1.6;display:none}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.correct{background:var(--teal-l);color:var(--teal-d);border:1px solid var(--teal-m)}
+.q-fb.wrong{background:#FCEBEB;color:#A32D2D;border:1px solid #F7C1C1}
+.q-nav{display:flex;justify-content:flex-end;margin-top:1.25rem}
+.btn-next{padding:9px 22px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13.5px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:500;transition:background .15s;display:none}
+.btn-next:hover{background:var(--teal-d)}
+.btn-next.show{display:inline-block}
+.quiz-score{text-align:center;padding:2.5rem 1.5rem;display:none}
+.quiz-score.show{display:block;animation:fadeUp .3s ease}
+.score-num{font-family:'Lora',serif;font-size:52px;font-weight:700;color:var(--teal)}
+.score-lbl{font-size:15px;color:var(--muted);margin-top:4px}
+.score-msg{font-size:14px;margin:1rem 0;color:var(--ink)}
+.btn-restart{padding:9px 22px;background:transparent;color:var(--teal);border:1.5px solid var(--teal);border-radius:8px;font-size:14px;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:500;transition:all .15s}
+.btn-restart:hover{background:var(--teal);color:#fff}
+
+/* FLASHCARDS */
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:9px;margin-bottom:.75rem}
+.fc{height:100px;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform .4s ease;perspective:600px}
+.fc.flipped{transform:rotateY(180deg)}
+.fc-front,.fc-back{position:absolute;inset:0;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:10px;backface-visibility:hidden;text-align:center;font-size:13px;line-height:1.4}
+.fc-front{background:var(--ink);color:#fff;font-weight:500;font-size:13.5px}
+.fc-back{background:var(--teal-l);color:var(--teal-d);transform:rotateY(180deg);font-size:12px}
+.fc-hint{font-size:12px;color:var(--muted);text-align:center}
+
+/* BAND CRITERIA */
+.criteria-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:1.5rem}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  main{padding:2rem 1rem 4rem}
+  .hero h1{font-size:24px}
+  .nav-links{display:none}
+  .dodont{grid-template-columns:1fr}
+  .pie-wrap{flex-direction:column}
+  .af-row{grid-template-columns:1fr;gap:4px}
+  .af-label{width:fit-content}
+  .vocab-head,.vocab-row{grid-template-columns:1fr 1fr}
+  .v-e{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-wrap">
+    <a href="#" class="logo">IELTS <em>Writing</em></a>
+    <ul class="nav-links">
+      <li><a href="#pie">Pie Charts</a></li>
+      <li><a href="#structure">Essay Structure</a></li>
+      <li><a href="#hybrid">Hybrid</a></li>
+      <li><a href="#quiz">Quiz</a></li>
+      <li><a href="#part2">Part 2</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bar"></div>
+  <div>
+    <h1>IELTS Writing<br><em>Complete Interactive Guide</em></h1>
+    <p>Part 1: Pie charts · Hybrid tasks (pie + graph) · Part 2: People's interaction essays</p>
+    <div class="hero-chips">
+      <span class="chip chip-t">Task 1 — Pie Charts</span>
+      <span class="chip chip-a">Task 1 — Hybrid</span>
+      <span class="chip chip-b">Task 2 — Discussion</span>
+      <span class="chip chip-r">Band 7+ Strategies</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- SECTION 1: PIE BASICS -->
+<!-- ══════════════════════════════════════ -->
+<section id="pie">
+  <div class="sec-lbl">Part 1 — Section 01</div>
+  <div class="sec-title">Understanding pie charts</div>
+  <div class="sec-intro">A pie chart shows proportional data — how a whole is divided into parts. Your job is NOT to list every number. Identify the dominant segment, the smallest, group similar-sized slices, and compare them to each other.</div>
+
+  <div class="chart-demo">
+    <h4>Example: How people in the UK spend leisure time (2022)</h4>
+    <div class="pie-wrap">
+      <svg width="170" height="170" viewBox="0 0 180 180">
+        <path d="M90,90 L90,10 A80,80 0 0,1 167.7,67" fill="#1D7A6B" opacity=".85"/>
+        <path d="M90,90 L167.7,67 A80,80 0 0,1 148.5,148.5" fill="#B8620A" opacity=".8"/>
+        <path d="M90,90 L148.5,148.5 A80,80 0 0,1 60,163.9" fill="#1A5FAD" opacity=".8"/>
+        <path d="M90,90 L60,163.9 A80,80 0 0,1 10,90" fill="#B03060" opacity=".75"/>
+        <path d="M90,90 L10,90 A80,80 0 0,1 90,10" fill="#4A5568" opacity=".75"/>
+        <circle cx="90" cy="90" r="35" fill="#FAFAF7"/>
+      </svg>
+      <div class="pie-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#1D7A6B"></div><span class="leg-label">TV &amp; Streaming</span><span class="leg-pct">34%</span></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#B8620A"></div><span class="leg-label">Social Media</span><span class="leg-pct">22%</span></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#1A5FAD"></div><span class="leg-label">Outdoor Activities</span><span class="leg-pct">18%</span></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#B03060"></div><span class="leg-label">Reading</span><span class="leg-pct">14%</span></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#4A5568"></div><span class="leg-label">Gaming</span><span class="leg-pct">12%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card card-t"><h3>🥇 Dominant segment</h3><p>Find the largest slice first — this goes in your overview. It's your most important data point.</p></div>
+    <div class="card card-t"><h3>🔻 Smallest segment</h3><p>Always contrast it with the largest. That gap is usually the most striking feature to highlight.</p></div>
+    <div class="card card-t"><h3>⚖️ Similar-sized groups</h3><p>Look for slices close in size and group them: "Three categories accounted for roughly equal proportions…"</p></div>
+    <div class="card card-t"><h3>📊 Two charts: compare</h3><p>Identify what changed most and what stayed similar. The overview must cover both charts.</p></div>
+  </div>
+
+  <div class="dodont">
+    <div class="do-box">
+      <div class="dd-lbl">✓ ALWAYS DO THIS</div>
+      <div class="dd-item">Describe the biggest and smallest in your overview</div>
+      <div class="dd-item">Group similar-sized segments together</div>
+      <div class="dd-item">Compare segments ("twice as large as")</div>
+      <div class="dd-item">Paraphrase the chart title in your intro</div>
+      <div class="dd-item">Write at least 150 words</div>
+    </div>
+    <div class="dn-box">
+      <div class="dd-lbl">✗ NEVER DO THIS</div>
+      <div class="dd-item">List every percentage without comparing</div>
+      <div class="dd-item">Copy the chart title word-for-word</div>
+      <div class="dd-item">Give your opinion or explain reasons</div>
+      <div class="dd-item">Write a conclusion paragraph</div>
+      <div class="dd-item">Forget to include units (%)</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════ -->
+<!-- SECTION 2: ESSAY STRUCTURE -->
+<!-- ══════════════════════════════════════ -->
+<section id="structure">
+  <div class="sec-lbl">Part 1 — Section 02</div>
+  <div class="sec-title">Essay structure — step by step</div>
+
+  <div class="steps" style="margin-bottom:2rem">
+    <div class="step">
+      <div class="step-badge">1</div>
+      <div class="step-body">
+        <h4>Introduction — paraphrase the task (2–3 sentences)</h4>
+        <p>Restate what the chart shows using different words. Do NOT copy the title. Mention context: year, country, topic.</p>
+        <span class="step-phrase">"The pie chart illustrates the proportion of…" / "The diagram provides a breakdown of…"</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">2</div>
+      <div class="step-body">
+        <h4>Overview — 2 most striking features (2–3 sentences) ★ Most important</h4>
+        <p>Identify the largest and smallest segment plus one other pattern. No specific figures here — just the big picture.</p>
+        <span class="step-phrase">"Overall, it is clear that… accounted for the largest share, while… represented the smallest proportion."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">3</div>
+      <div class="step-body">
+        <h4>Body paragraph 1 — top segments with figures (3–4 sentences)</h4>
+        <p>Describe the 2–3 largest segments with exact percentages. Use comparison language ("nearly a third," "more than double").</p>
+        <span class="step-phrase">"TV and streaming made up the largest segment at 34%, followed by social media at 22%."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">4</div>
+      <div class="step-body">
+        <h4>Body paragraph 2 — smaller segments with comparisons (3–4 sentences)</h4>
+        <p>Cover remaining segments. Group similar ones together. For two charts, compare the changes here.</p>
+        <span class="step-phrase">"The remaining three categories were more evenly distributed, ranging from 12% to 18%."</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fill-in template -->
+  <div class="essay-tmpl">
+    <div class="et-head">
+      <h3>Fill-in essay template — single pie chart</h3>
+      <span class="et-wc">150–185 words</span>
+    </div>
+    <div class="et-body">
+      <div class="et-para ep-intro">
+        <div class="et-para-lbl">Introduction</div>
+        <p>The pie chart <span class="fill fill-t">[illustrates / presents / shows]</span> the <span class="fill fill-t">[distribution / breakdown / proportion]</span> of <span class="fill fill-t">[topic]</span> in <span class="fill fill-t">[country/context]</span> in <span class="fill fill-t">[year]</span>. The data is divided into <span class="fill fill-t">[number]</span> categories.</p>
+      </div>
+      <div class="et-para ep-over">
+        <div class="et-para-lbl">Overview — most important paragraph</div>
+        <p>Overall, it is evident that <span class="fill fill-a">[largest category]</span> accounted for the greatest share, while <span class="fill fill-a">[smallest category]</span> represented the smallest proportion. <span class="fill fill-a">[Add a second key feature]</span>.</p>
+      </div>
+      <div class="et-para ep-b1">
+        <div class="et-para-lbl">Body paragraph 1 — main segments</div>
+        <p><span class="fill fill-t">[Largest]</span> made up the largest segment at <span class="fill fill-t">[%]</span>, which was <span class="fill fill-t">[nearly / more than / roughly]</span> <span class="fill fill-t">[fraction]</span> of the total. This was followed by <span class="fill fill-t">[2nd]</span> at <span class="fill fill-t">[%]</span>, and <span class="fill fill-t">[3rd]</span> at <span class="fill fill-t">[%]</span>.</p>
+      </div>
+      <div class="et-para ep-b2">
+        <div class="et-para-lbl">Body paragraph 2 — remaining segments</div>
+        <p>The remaining categories were more modest. <span class="fill fill-t">[Category]</span> and <span class="fill fill-t">[category]</span> accounted for <span class="fill fill-t">[%]</span> and <span class="fill fill-t">[%]</span> respectively, while <span class="fill fill-t">[smallest]</span> represented only <span class="fill fill-t">[%]</span> — the smallest share of all.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sample essay -->
+  <div class="sample-essay" style="margin-bottom:1.5rem">
+    <div class="se-head"><h3>Sample Band 7+ answer — leisure time pie chart</h3><span class="se-badge">~160 words</span></div>
+    <div class="se-body">
+      <div class="se-para" style="border-left-color:var(--teal)">
+        <div class="se-para-tag">Introduction</div>
+        <p>The pie chart <span class="hl-t">illustrates the proportion of time</span> that people in the UK devoted to various leisure activities in 2022, divided into five categories.</p>
+      </div>
+      <div class="se-para" style="border-left-color:var(--amber)">
+        <div class="se-para-tag">Overview ★</div>
+        <p><span class="hl-a">Overall, watching television and streaming dominated leisure time</span>, while gaming represented the smallest share. The remaining three categories occupied a combined share of just under half.</p>
+      </div>
+      <div class="se-para" style="border-left-color:var(--blue)">
+        <div class="se-para-tag">Body 1</div>
+        <p>TV and streaming <span class="hl-b">accounted for the largest proportion at 34%</span> — more than one third of total leisure time. Social media was second at 22%, followed by outdoor pursuits at 18%.</p>
+      </div>
+      <div class="se-para" style="border-left-color:var(--rose)">
+        <div class="se-para-tag">Body 2</div>
+        <p>Reading and gaming represented the two smallest categories at 14% and 12% respectively. <span class="hl-r">Gaming was marginally the least popular activity</span>, accounting for just over one tenth of all leisure time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phrase bank -->
+  <div class="sec-title" style="font-size:18px;margin-bottom:.9rem">Phrase bank</div>
+  <div class="tab-bar" id="pb-tabs">
+    <button class="tab-btn active" data-tab="pb-intro">Introduction</button>
+    <button class="tab-btn" data-tab="pb-overview">Overview</button>
+    <button class="tab-btn" data-tab="pb-data">Describing data</button>
+    <button class="tab-btn" data-tab="pb-compare">Comparing</button>
+  </div>
+  <div class="tab-panel active" id="tab-pb-intro">
+    <div class="phrase-bank"><div class="pb-head"><span>Introduction phrases</span><span class="pb-tag">Paraphrase only</span></div><div class="phrase-grid">
+      <div class="phrase-item">"The pie chart illustrates…"<span class="ph-use">Safe neutral opener</span></div>
+      <div class="phrase-item">"The diagram presents a breakdown of…"<span class="ph-use">Good for complex data</span></div>
+      <div class="phrase-item">"The chart shows how… is divided among…"<span class="ph-use">When categories are groups</span></div>
+      <div class="phrase-item">"The data illustrates the distribution of…"<span class="ph-use">Spending / time topics</span></div>
+      <div class="phrase-item">"The chart compares the relative shares of…"<span class="ph-use">Two pie charts</span></div>
+      <div class="phrase-item">"The diagram provides information about…"<span class="ph-use">Formal register</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-pb-overview">
+    <div class="phrase-bank"><div class="pb-head"><span>Overview phrases</span><span class="pb-tag">No figures here</span></div><div class="phrase-grid">
+      <div class="phrase-item">"Overall, it is clear that…"<span class="ph-use">Universal safe opener</span></div>
+      <div class="phrase-item">"In general, … dominated, while … was least significant."<span class="ph-use">Dominant/smallest contrast</span></div>
+      <div class="phrase-item">"The most striking feature is that…"<span class="ph-use">Draws attention to key point</span></div>
+      <div class="phrase-item">"… accounted for the overwhelming majority…"<span class="ph-use">When one slice is 50%+</span></div>
+      <div class="phrase-item">"The remaining categories were broadly similar."<span class="ph-use">Several close-sized slices</span></div>
+      <div class="phrase-item">"A notable difference can be observed…"<span class="ph-use">Two pie chart comparison</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-pb-data">
+    <div class="phrase-bank"><div class="pb-head"><span>Describing percentages</span><span class="pb-tag">Vary your language</span></div><div class="phrase-grid">
+      <div class="phrase-item">"accounted for / made up / represented"<span class="ph-use">Core verbs for pie charts</span></div>
+      <div class="phrase-item">"approximately / roughly / around / nearly"<span class="ph-use">Use when rounding</span></div>
+      <div class="phrase-item">"just over a third" (≈34%)<span class="ph-use">Fraction language — Band 7</span></div>
+      <div class="phrase-item">"less than a quarter" (&lt;25%)<span class="ph-use">Fraction language</span></div>
+      <div class="phrase-item">"the lion's share" / "the bulk of"<span class="ph-use">When one segment dominates</span></div>
+      <div class="phrase-item">"a relatively modest proportion"<span class="ph-use">For small segments</span></div>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="tab-pb-compare">
+    <div class="phrase-bank"><div class="pb-head"><span>Comparison language</span><span class="pb-tag">Essential for Band 7</span></div><div class="phrase-grid">
+      <div class="phrase-item">"…was twice as large as…"<span class="ph-use">Exact ratio</span></div>
+      <div class="phrase-item">"…was significantly higher than…"<span class="ph-use">Clear difference</span></div>
+      <div class="phrase-item">"…and… were almost identical at X% and Y%"<span class="ph-use">Similar segments</span></div>
+      <div class="phrase-item">"by contrast / in contrast"<span class="ph-use">Discourse marker for contrast</span></div>
+      <div class="phrase-item">"This figure was [X] percentage points higher"<span class="ph-use">Precise difference</span></div>
+      <div class="phrase-item">"while… / whereas…"<span class="ph-use">In-sentence contrast</span></div>
+    </div></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════ -->
+<!-- SECTION 3: HYBRID -->
+<!-- ══════════════════════════════════════ -->
+<section id="hybrid">
+  <div class="sec-lbl">Part 1 — Section 03</div>
+  <div class="sec-title">Hybrid task — pie chart + graph</div>
+  <div class="sec-intro">A hybrid task gives you TWO different chart types — most commonly a pie chart with a line graph, bar chart, or table. The key challenge is connecting both. Show how they relate — never write two completely independent descriptions.</div>
+
+  <div class="highlight"><p><strong>Golden rule:</strong> Both charts must appear in your overview. Your body paragraphs either cover each chart separately OR group related information across both thematically. Never treat them as two essays.</p></div>
+
+  <div class="tab-bar" id="hy-tabs" style="margin-top:1.5rem">
+    <button class="tab-btn active" data-tab="hy-a">Option A — Chart by chart</button>
+    <button class="tab-btn" data-tab="hy-b">Option B — Thematic</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-hy-a">
+    <div class="essay-tmpl">
+      <div class="et-head"><h3>Option A: One paragraph per chart (safer)</h3><span class="et-wc">160–185 words</span></div>
+      <div class="et-body">
+        <div class="et-para ep-intro"><div class="et-para-lbl">Introduction</div><p>The <span class="fill fill-t">[pie chart]</span> and <span class="fill fill-t">[line graph / bar chart / table]</span> provide information about <span class="fill fill-t">[overall topic]</span> in <span class="fill fill-t">[context/year]</span>.</p></div>
+        <div class="et-para ep-over"><div class="et-para-lbl">Overview — features from BOTH charts</div><p>Overall, <span class="fill fill-a">[key finding from pie chart]</span>, while the <span class="fill fill-a">[second chart]</span> reveals that <span class="fill fill-a">[key trend]</span>. Together, the charts suggest that <span class="fill fill-a">[broader connection]</span>.</p></div>
+        <div class="et-para ep-b1"><div class="et-para-lbl">Body 1 — pie chart details</div><p><span class="fill fill-t">[Largest segment]</span> accounted for the greatest proportion at <span class="fill fill-t">[%]</span>, followed by <span class="fill fill-t">[second]</span> at <span class="fill fill-t">[%]</span>, while <span class="fill fill-t">[smallest]</span> made up only <span class="fill fill-t">[%]</span>.</p></div>
+        <div class="et-para ep-b2"><div class="et-para-lbl">Body 2 — graph details + link</div><p>The <span class="fill fill-t">[graph]</span> shows that <span class="fill fill-t">[main trend]</span>. <span class="fill fill-t">[Key data points]</span>. This complements the pie chart, as <span class="fill fill-t">[explain the connection]</span>.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-panel" id="tab-hy-b">
+    <div class="essay-tmpl">
+      <div class="et-head"><h3>Option B: Thematic paragraphs — higher band potential</h3><span class="et-wc">170–200 words</span></div>
+      <div class="et-body">
+        <div class="et-para ep-intro"><div class="et-para-lbl">Introduction</div><p>The charts illustrate <span class="fill fill-t">[topic]</span>. The pie chart shows <span class="fill fill-t">[what]</span>, while the <span class="fill fill-t">[graph type]</span> tracks <span class="fill fill-t">[what]</span> over time.</p></div>
+        <div class="et-para ep-over"><div class="et-para-lbl">Overview</div><p>Overall, <span class="fill fill-a">[dominant theme across both charts]</span> emerges as the most significant finding, with <span class="fill fill-a">[secondary theme]</span> also notable.</p></div>
+        <div class="et-para ep-b1"><div class="et-para-lbl">Body 1 — theme 1 drawing from both charts</div><p>In terms of <span class="fill fill-t">[theme]</span>, the pie chart shows that <span class="fill fill-t">[data]</span>, and this is reflected in the <span class="fill fill-t">[graph]</span>, which demonstrates that <span class="fill fill-t">[supporting trend]</span>.</p></div>
+        <div class="et-para ep-b2"><div class="et-para-lbl">Body 2 — theme 2 drawing from both charts</div><p>Conversely, <span class="fill fill-t">[smaller categories]</span> represented a minor share at <span class="fill fill-t">[%]</span>. The <span class="fill fill-t">[graph]</span> similarly indicates that <span class="fill fill-t">[low/declining trend]</span>.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div class="sec-title" style="font-size:17px;margin-bottom:.9rem">Linking both charts — key phrases</div>
+    <div class="phrase-bank"><div class="pb-head"><span>Connection &amp; cross-reference language</span><span class="pb-tag">Hybrid essential</span></div><div class="phrase-grid">
+      <div class="phrase-item">"This is consistent with the data shown in the graph…"<span class="ph-use">Reinforcing link</span></div>
+      <div class="phrase-item">"The graph supports this finding, showing that…"<span class="ph-use">Second chart confirms first</span></div>
+      <div class="phrase-item">"In contrast, the graph reveals a different pattern…"<span class="ph-use">Contradiction between charts</span></div>
+      <div class="phrase-item">"Taken together, the charts suggest that…"<span class="ph-use">Hybrid overview</span></div>
+      <div class="phrase-item">"Both charts indicate that…"<span class="ph-use">Common finding</span></div>
+      <div class="phrase-item">"The graph adds further context, demonstrating that…"<span class="ph-use">Second chart as support</span></div>
+    </div></div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div class="sec-title" style="font-size:17px;margin-bottom:.75rem">Sample Band 7 hybrid answer</div>
+    <div class="highlight" style="margin-bottom:1rem"><p><strong>Task:</strong> The pie chart shows the percentage of household income spent in different categories in the UK in 2020. The line graph shows how spending on housing and food changed between 2010 and 2020.</p></div>
+    <div class="sample-essay">
+      <div class="se-head"><h3>Sample — household spending (pie + line graph)</h3><span class="se-badge">~185 words</span></div>
+      <div class="se-body">
+        <div class="se-para" style="border-left-color:var(--teal)"><div class="se-para-tag">Introduction</div><p>The pie chart and line graph <span class="hl-t">provide complementary information</span> about household expenditure in the UK. While the pie chart shows the distribution of spending across categories in 2020, the line graph illustrates how two specific areas evolved over the preceding decade.</p></div>
+        <div class="se-para" style="border-left-color:var(--amber)"><div class="se-para-tag">Overview ★</div><p><span class="hl-a">Housing was by far the dominant expenditure category in 2020, and the line graph confirms this dominance grew steadily throughout the decade.</span> Food and transport represented the next largest shares, while leisure remained comparatively low.</p></div>
+        <div class="se-para" style="border-left-color:var(--blue)"><div class="se-para-tag">Body 1 — pie chart</div><p>According to the pie chart, housing <span class="hl-b">accounted for the largest share at 38%</span>, nearly double the proportion spent on food (20%). Transport and clothing made up 15% and 12% respectively, while leisure represented the smallest segment at just 8%.</p></div>
+        <div class="se-para" style="border-left-color:var(--rose)"><div class="se-para-tag">Body 2 — line graph + link</div><p>The line graph reveals housing costs rose consistently from 28% in 2010 to 38% by 2020. Food spending remained stable throughout, fluctuating narrowly between 18% and 21%. <span class="hl-t">This supports the pie chart's finding</span> that housing is the most financially burdensome category for UK households.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════ -->
+<!-- SECTION 4: QUIZ -->
+<!-- ══════════════════════════════════════ -->
+<section id="quiz">
+  <div class="sec-lbl">Interactive — Section 04</div>
+  <div class="sec-title">Practice quiz</div>
+  <p style="font-size:13.5px;color:var(--muted);margin-bottom:1.25rem">Test your understanding of Task 1 and Task 2 strategies.</p>
+  <div class="quiz-wrap">
+    <div class="quiz-head">
+      <h3>IELTS Writing strategies</h3>
+      <p id="q-counter">Question 1 of 10</p>
+      <div class="prog-outer"><div class="prog-inner" id="prog" style="width:10%"></div></div>
+    </div>
+    <div class="quiz-body" id="q-body"></div>
+    <div class="quiz-score" id="q-score"></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════ -->
+<!-- SECTION 5: PART 2 -->
+<!-- ══════════════════════════════════════ -->
+<section id="part2">
+  <div class="sec-lbl">Part 2 — Section 05</div>
+  <div class="sec-title">Part 2: People's interaction essay</div>
+  <div class="sec-intro">Questions about how people interact — impact of technology, social isolation, community bonds, online vs. face-to-face relationships — are among the most common Part 2 topics. This section covers Discussion and Opinion essay types.</div>
+
+  <div class="card-grid">
+    <div class="card card-t"><h3>Discussion — both sides</h3><p>"Discuss both views and give your own opinion." Cover both sides AND state your position.</p></div>
+    <div class="card card-a"><h3>Opinion — agree/disagree</h3><p>"To what extent do you agree?" Commit to one position and develop strong arguments for it.</p></div>
+    <div class="card card-b"><h3>Problem + solution</h3><p>"What are the causes? What solutions?" Two-part structure — cover both equally.</p></div>
+    <div class="card card-r"><h3>Advantages + disadvantages</h3><p>"Discuss the advantages and disadvantages." Cover both, then optionally give your view on balance.</p></div>
+  </div>
+
+  <!-- Essay structure steps -->
+  <div class="sec-title" style="font-size:18px;margin-bottom:1rem">4-paragraph essay structure</div>
+  <div class="steps" style="margin-bottom:2rem">
+    <div class="step">
+      <div class="step-badge">1</div>
+      <div class="step-body">
+        <h4>Introduction (~50 words)</h4>
+        <p>Paraphrase the topic. Give a background sentence. State your position clearly — avoid "In this essay I will…"</p>
+        <span class="step-phrase">"While some argue that [view A], others contend that [view B]. This essay examines both before concluding that [your position]."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">2</div>
+      <div class="step-body">
+        <h4>Body paragraph 1 — first view / argument (~100 words)</h4>
+        <p>Topic sentence → Explanation → Example/evidence → Mini-conclusion linking back. ONE clear idea per paragraph.</p>
+        <span class="step-phrase">"On the one hand, [view]. This is because [reason]. For instance, [example]. As a result, [consequence]."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">3</div>
+      <div class="step-body">
+        <h4>Body paragraph 2 — second view / stronger argument (~100 words)</h4>
+        <p>Discussion: present the other side. Opinion: your strongest argument. Open with a contrast marker.</p>
+        <span class="step-phrase">"On the other hand, [view]. [Explanation]. [Example]. Therefore, [mini-conclusion]."</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-badge">4</div>
+      <div class="step-body">
+        <h4>Conclusion (~50 words)</h4>
+        <p>Restate (don't copy) your main points. Give your clear position. Must be 100% consistent with your introduction.</p>
+        <span class="step-phrase">"In conclusion, although [opposing view], I firmly believe that [your position] because [brief reason]."</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PEEL argument flow -->
+  <div class="sec-title" style="font-size:18px;margin-bottom:.9rem">PEEL in practice — worked example</div>
+  <div class="arg-flow">
+    <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:.5rem">Paragraph: "Technology reduces face-to-face interaction"</div>
+    <div class="af-row"><span class="af-label afl-t">Point</span><div class="af-content">Technology has undeniably reduced the frequency of face-to-face social interaction in modern societies.</div></div>
+    <div class="af-row"><span class="af-label afl-a">Explain</span><div class="af-content">This is because digital platforms allow people to maintain relationships remotely, reducing the perceived need to meet in person. Younger generations now prefer the convenience of online communication.</div></div>
+    <div class="af-row"><span class="af-label afl-b">Example</span><div class="af-content">For instance, studies have shown the average person sends over 100 text messages per day, yet meets friends face-to-face only twice a week — a significant shift from pre-smartphone behaviour.</div></div>
+    <div class="af-row"><span class="af-label afl-r">Link back</span><div class="af-content">Consequently, while technology facilitates constant communication, it may simultaneously be eroding the depth of human relationships that can only fully develop through in-person interaction.</div></div>
+  </div>
+
+  <!-- Vocabulary flashcards -->
+  <div class="sec-title" style="font-size:18px;margin-bottom:.9rem">Vocabulary flashcards</div>
+  <p class="fc-hint" style="margin-bottom:.75rem">Click each card to flip it</p>
+  <div class="fc-grid" id="fc-grid"></div>
+  <p class="fc-hint" id="fc-hint">0 of 10 revealed</p>
+
+  <!-- Vocab table -->
+  <div style="margin-top:1.75rem">
+    <div class="sec-title" style="font-size:18px;margin-bottom:.9rem">Full vocabulary reference</div>
+    <div class="vocab-wrap">
+      <div class="vocab-head"><span>Term</span><span>Meaning</span><span>Example sentence</span></div>
+      <div id="vocab-rows"></div>
+    </div>
+  </div>
+
+  <!-- Part 2 phrase bank -->
+  <div style="margin-top:1.75rem">
+    <div class="sec-title" style="font-size:18px;margin-bottom:.9rem">Part 2 phrase bank</div>
+    <div class="tab-bar" id="p2-tabs">
+      <button class="tab-btn active" data-tab="p2-intro">Introduction</button>
+      <button class="tab-btn" data-tab="p2-arg">Building arguments</button>
+      <button class="tab-btn" data-tab="p2-con">Concession</button>
+      <button class="tab-btn" data-tab="p2-conc">Conclusion</button>
+    </div>
+    <div class="tab-panel active" id="tab-p2-intro">
+      <div class="phrase-bank"><div class="pb-head"><span>Introduction</span><span class="pb-tag">Paraphrase + position</span></div><div class="phrase-grid">
+        <div class="phrase-item">"It is widely argued that…"<span class="ph-use">Neutral topic introduction</span></div>
+        <div class="phrase-item">"There is considerable debate about whether…"<span class="ph-use">Discussion essay opener</span></div>
+        <div class="phrase-item">"I largely / completely / partially agree that…"<span class="ph-use">State degree of agreement</span></div>
+        <div class="phrase-item">"While there is merit in this view, I believe…"<span class="ph-use">Partial agreement — sophisticated</span></div>
+        <div class="phrase-item">"This essay will examine both perspectives…"<span class="ph-use">Discussion roadmap</span></div>
+        <div class="phrase-item">"In recent decades, [topic] has become a pressing issue."<span class="ph-use">Background sentence</span></div>
+      </div></div>
+    </div>
+    <div class="tab-panel" id="tab-p2-arg">
+      <div class="phrase-bank"><div class="pb-head"><span>Argument development</span><span class="pb-tag">PEEL connectors</span></div><div class="phrase-grid">
+        <div class="phrase-item">"The primary reason for this is that…"<span class="ph-use">Opens explanation</span></div>
+        <div class="phrase-item">"This is largely due to the fact that…"<span class="ph-use">Causal connector</span></div>
+        <div class="phrase-item">"For instance / For example / To illustrate…"<span class="ph-use">Introducing evidence</span></div>
+        <div class="phrase-item">"Research suggests / Studies indicate that…"<span class="ph-use">Academic weight</span></div>
+        <div class="phrase-item">"As a result / Consequently / Therefore…"<span class="ph-use">Showing consequence</span></div>
+        <div class="phrase-item">"Furthermore / Moreover / In addition…"<span class="ph-use">Adding within paragraph</span></div>
+      </div></div>
+    </div>
+    <div class="tab-panel" id="tab-p2-con">
+      <div class="phrase-bank"><div class="pb-head"><span>Concession language</span><span class="pb-tag">Band 7 marker</span></div><div class="phrase-grid">
+        <div class="phrase-item">"Admittedly, / It must be acknowledged that…"<span class="ph-use">Concedes a point</span></div>
+        <div class="phrase-item">"While it is true that… , this does not mean…"<span class="ph-use">Classic concede-counter</span></div>
+        <div class="phrase-item">"Proponents of this view might argue that…"<span class="ph-use">Voices opposing side</span></div>
+        <div class="phrase-item">"However, this argument overlooks the fact that…"<span class="ph-use">Counter after concession</span></div>
+        <div class="phrase-item">"On balance, the disadvantages seem to outweigh…"<span class="ph-use">Weighing both sides</span></div>
+        <div class="phrase-item">"There is some validity to the argument that…"<span class="ph-use">Partial acknowledgement</span></div>
+      </div></div>
+    </div>
+    <div class="tab-panel" id="tab-p2-conc">
+      <div class="phrase-bank"><div class="pb-head"><span>Conclusion</span><span class="pb-tag">Restate + position</span></div><div class="phrase-grid">
+        <div class="phrase-item">"In conclusion, / To conclude, / To summarise…"<span class="ph-use">Standard openers</span></div>
+        <div class="phrase-item">"I firmly believe that… because…"<span class="ph-use">Clear opinion restatement</span></div>
+        <div class="phrase-item">"While [opposing view] has merit, [your view] is ultimately more convincing."<span class="ph-use">Nuanced conclusion</span></div>
+        <div class="phrase-item">"It is therefore essential that [individuals / governments]…"<span class="ph-use">Recommendation ending</span></div>
+        <div class="phrase-item">"Only by [action] can we hope to [positive outcome]."<span class="ph-use">Emphatic ending — Band 7.5+</span></div>
+        <div class="phrase-item">"Unless action is taken, [negative consequence] is likely."<span class="ph-use">Forward-looking warning</span></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Full sample essay Part 2 -->
+  <div style="margin-top:2rem">
+    <div class="sec-title" style="font-size:18px;margin-bottom:.75rem">Full sample Band 7+ essay</div>
+    <div class="highlight" style="margin-bottom:1rem"><p><strong>Question:</strong> "Some people believe that modern technology is making it harder for people to have meaningful relationships with others. To what extent do you agree or disagree?"</p></div>
+    <div class="sample-essay">
+      <div class="se-head"><h3>Sample — technology &amp; meaningful relationships</h3><span class="se-badge">~265 words · Band 7</span></div>
+      <div class="se-body">
+        <div class="se-para" style="border-left-color:var(--teal)"><div class="se-para-tag">Introduction</div><p>There is growing concern that the rise of digital technology is <span class="hl-t">fundamentally altering the nature of human relationships</span>, making them shallower and less emotionally fulfilling. While technology undeniably offers new ways to connect, I largely agree that it presents significant challenges to the development of truly meaningful bonds.</p></div>
+        <div class="se-para" style="border-left-color:var(--blue)"><div class="se-para-tag">Body 1 — main argument</div><p>The primary reason is that digital communication <span class="hl-b">lacks the non-verbal cues</span> essential to deep human connection — eye contact, tone of voice, and body language all play a critical role. Research in social psychology suggests over 70% of emotional communication is non-verbal, meaning digital channels convey less than a third of what a face-to-face conversation does. <span class="hl-t">As a result, online relationships tend to remain superficial and transactional.</span></p></div>
+        <div class="se-para" style="border-left-color:var(--amber)"><div class="se-para-tag">Body 2 — concession + counter</div><p>Supporters might argue that video calling and social media <span class="hl-a">enable people to maintain long-distance relationships</span> that would otherwise be impossible — a valid point. However, this convenience can encourage people to substitute screen-based contact for in-person meetings even when the latter is possible. Over time, <span class="hl-b">the habit of choosing digital convenience may erode the interpersonal skills</span> needed to sustain meaningful bonds.</p></div>
+        <div class="se-para" style="border-left-color:var(--rose)"><div class="se-para-tag">Conclusion</div><p>In conclusion, while technology has expanded the reach of human communication, <span class="hl-r">I firmly believe it poses a genuine threat to the quality of our relationships.</span> Individuals and communities should prioritise face-to-face interaction and ensure digital tools remain supplementary rather than primary channels of human connection.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Band criteria -->
+  <div class="sec-title" style="font-size:18px;margin-top:2rem;margin-bottom:.9rem">What examiners look for</div>
+  <div class="criteria-grid">
+    <div class="card card-t"><h3>Task Achievement</h3><ul><li>Fully answers all parts</li><li>Clear consistent position</li><li>Well-developed ideas with examples</li><li>Part 1: overview + accurate data</li></ul></div>
+    <div class="card card-a"><h3>Coherence &amp; Cohesion</h3><ul><li>Logical paragraph sequence</li><li>Clear topic sentences</li><li>Varied cohesive devices</li><li>Each paragraph has ONE idea</li></ul></div>
+    <div class="card card-b"><h3>Lexical Resource</h3><ul><li>Topic-specific vocabulary</li><li>Paraphrasing, not repeating</li><li>Less common vocabulary used accurately</li><li>Rare spelling errors</li></ul></div>
+    <div class="card card-r"><h3>Grammar Range &amp; Accuracy</h3><ul><li>Mix of simple and complex sentences</li><li>Conditionals, passives, relative clauses</li><li>Accurate tenses and punctuation</li><li>Errors don't impede meaning</li></ul></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── TAB SYSTEM (scoped) ────────────────────────────
+document.querySelectorAll('.tab-bar').forEach(bar => {
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tid = 'tab-' + btn.dataset.tab;
+    // deactivate sibling panels
+    bar.querySelectorAll('.tab-btn').forEach(b => {
+      const p = document.getElementById('tab-' + b.dataset.tab);
+      if (p) p.classList.remove('active');
+    });
+    const target = document.getElementById(tid);
+    if (target) target.classList.add('active');
+  });
+});
+
+// ── QUIZ ──────────────────────────────────────────
+const QS = [
+  {q:'What is the most important paragraph in a Task 1 pie chart essay?',opts:['Introduction','Overview','Body paragraph 1','Conclusion'],c:1,fb:'The overview is essential — it shows the examiner you can identify the key patterns, and examiners specifically look for it.'},
+  {q:'Which phrase correctly describes 34% using fraction language?',opts:['"about a fifth"','"just over a third"','"nearly half"','"exactly one quarter"'],c:1,fb:'"Just over a third" (≈33.3%) is perfect for 34%. Fraction language is a key Band 7 skill.'},
+  {q:'What should you NOT include in your pie chart overview?',opts:['The largest segment','Specific percentages','The smallest segment','A second key pattern'],c:1,fb:'Overview paragraphs state key features WITHOUT specific figures — those go in the body paragraphs.'},
+  {q:'In a hybrid task (pie chart + line graph), where must BOTH charts appear?',opts:['Introduction only','Body paragraphs only','The overview','The conclusion'],c:2,fb:'Both charts must feature in your overview — this is the key to a well-integrated hybrid response.'},
+  {q:'Which phrase best links two charts in a hybrid task?',opts:['"In conclusion"','"Taken together, the charts suggest that…"','"For example"','"On the other hand"'],c:1,fb:'"Taken together…" is perfect for hybrid tasks — it shows you are synthesising both data sources, not describing them separately.'},
+  {q:'In a Part 2 discussion essay, what must you include?',opts:['Only your own opinion','Both views AND your own opinion','Only facts, no opinions','A recommendation to the government'],c:1,fb:'A discussion essay requires BOTH sides to be presented AND your own clear position. Missing either loses Task Achievement marks.'},
+  {q:'What does "social isolation" mean?',opts:['Being very sociable','Being cut off from social contact','Using social media too much','Living in a rural area'],c:1,fb:'"Social isolation" = being cut off from meaningful social contact. Common in questions about technology and elderly people.'},
+  {q:'Which opening is strongest for a Part 2 opinion essay?',opts:['"In this essay I will talk about…"','"I think technology is bad."','"While technology offers benefits, I largely agree it threatens meaningful relationships."','"Technology is a big topic nowadays."'],c:2,fb:'The third option paraphrases the topic, signals partial agreement (nuanced), and positions the essay direction — all in one sentence.'},
+  {q:'What is "recidivism"? (Bonus vocabulary question)',opts:['A type of community service','Re-offending after punishment','A legal appeal process','A form of social isolation'],c:1,fb:'Recidivism = committing a crime again after being punished. Key vocabulary for crime-related Part 2 questions.'},
+  {q:'Which connective signals a concession before a counter-argument?',opts:['"Furthermore"','"As a result"','"Admittedly, / While it is true that…"','"In conclusion"'],c:2,fb:'Concession language like "Admittedly" or "While it is true that…" followed by a counter is a hallmark of Band 7 analytical writing.'},
+];
+
+let qi=0, score=0, answered=false;
+
+function renderQ() {
+  const qb = document.getElementById('q-body');
+  const qs = document.getElementById('q-score');
+  if (qi >= QS.length) {
+    qb.style.display='none'; qs.classList.add('show');
+    const pct = Math.round(score/QS.length*100);
+    const msgs = ['Review the guide and try again — focus on sections you found tricky.',
+      'Decent effort! Re-read the overview and phrase bank sections.',
+      'Solid performance! You have a good grasp of the strategies.',
+      'Excellent! You are well-prepared for Band 7+ writing.'];
+    const mi = score<=4?0:score<=6?1:score<=8?2:3;
+    qs.innerHTML=`<div class="score-num">${score}/${QS.length}</div><div class="score-lbl">${pct}% correct</div><div class="score-msg">${msgs[mi]}</div><button class="btn-restart" onclick="restartQ()">Try again</button>`;
+    return;
+  }
+  const q = QS[qi];
+  document.getElementById('q-counter').textContent=`Question ${qi+1} of ${QS.length}`;
+  document.getElementById('prog').style.width=`${((qi+1)/QS.length)*100}%`;
+  answered=false;
+  const opts = q.opts.map((o,i)=>`<button class="q-opt" data-i="${i}">${o}</button>`).join('');
+  qb.innerHTML=`<span class="q-lbl">Question ${qi+1}</span><div class="q-text">${q.q}</div><div class="q-opts">${opts}</div><div class="q-fb" id="qfb"></div><div class="q-nav"><button class="btn-next" id="qnext" onclick="nextQ()">Next →</button></div>`;
+  qb.querySelectorAll('.q-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(answered)return; answered=true;
+      const ch=parseInt(btn.dataset.i);
+      const fb=document.getElementById('qfb');
+      qb.querySelectorAll('.q-opt').forEach(b=>b.disabled=true);
+      if(ch===q.c){btn.classList.add('correct');score++;fb.className='q-fb correct show';fb.innerHTML='✓ '+q.fb;}
+      else{btn.classList.add('wrong');qb.querySelectorAll('.q-opt')[q.c].classList.add('correct');fb.className='q-fb wrong show';fb.innerHTML='✗ '+q.fb;}
+      document.getElementById('qnext').classList.add('show');
+    });
+  });
+}
+function nextQ(){qi++;renderQ();}
+function restartQ(){qi=0;score=0;document.getElementById('q-body').style.display='';document.getElementById('q-score').classList.remove('show');renderQ();}
+renderQ();
+
+// ── FLASHCARDS ────────────────────────────────────
+const VOCAB=[
+  {t:'face-to-face interaction',d:'Meeting and communicating in person',e:'"Face-to-face interaction fosters deeper bonds."'},
+  {t:'social isolation',d:'Being cut off from social contact',e:'"Social isolation worsened after smartphone adoption."'},
+  {t:'digital connectivity',d:'Being connected via technology',e:'"Digital connectivity expanded global social networks."'},
+  {t:'interpersonal skills',d:'Ability to communicate and relate to others',e:'"Screen overuse may weaken interpersonal skills."'},
+  {t:'community cohesion',d:'The bonds holding a community together',e:'"Urban anonymity weakened community cohesion."'},
+  {t:'virtual relationships',d:'Friendships maintained only online',e:'"Virtual relationships lack emotional depth."'},
+  {t:'erode / undermine',d:'To gradually weaken something',e:'"Technology can erode the ability to read social cues."'},
+  {t:'foster / cultivate',d:'To encourage something to grow',e:'"Community events foster a sense of belonging."'},
+  {t:'superficial / meaningful',d:'Shallow vs. deep (relationships)',e:'"Online friendships are often superficial."'},
+  {t:'sense of belonging',d:'Feeling connected to a group',e:'"Isolation diminishes people\'s sense of belonging."'},
+];
+const fcg=document.getElementById('fc-grid');
+let flipped=0;
+VOCAB.forEach((v,i)=>{
+  fcg.innerHTML+=`<div class="fc" id="fc${i}" onclick="flipFC(${i})"><div class="fc-front">${v.t}</div><div class="fc-back">${v.d}<br><em style="font-size:11px;opacity:.75">${v.e}</em></div></div>`;
+});
+function flipFC(i){
+  const c=document.getElementById('fc'+i);
+  c.classList.toggle('flipped');
+  flipped+=c.classList.contains('flipped')?1:-1;
+  const h=document.getElementById('fc-hint');
+  h.textContent=flipped===VOCAB.length?'All cards revealed — great work!':flipped+' of '+VOCAB.length+' revealed — click to flip';
+}
+
+// ── VOCAB TABLE ───────────────────────────────────
+const vr=document.getElementById('vocab-rows');
+const VOCAB_TABLE=[
+  ['face-to-face interaction','Meeting in person','"Face-to-face interaction fosters deeper bonds than online."'],
+  ['social isolation','Being cut off from others','"Social isolation among the elderly has worsened."'],
+  ['digital connectivity','Being connected via technology','"Digital connectivity expanded people\'s networks globally."'],
+  ['interpersonal skills','Ability to communicate and relate','"Children may fail to develop strong interpersonal skills."'],
+  ['community cohesion','Bonds holding a community together','"Urban anonymity weakened community cohesion."'],
+  ['virtual relationships','Friendships maintained only online','"Virtual relationships lack the emotional depth of real ones."'],
+  ['erode / undermine','To gradually weaken','"Social media can erode the ability to read social cues."'],
+  ['foster / cultivate','To encourage growth','"Community events foster a sense of belonging."'],
+  ['superficial / meaningful','Shallow vs. deep','"Online friendships are often superficial."'],
+  ['sense of belonging','Feeling connected to a group','"Isolation diminishes people\'s sense of belonging."'],
+];
+VOCAB_TABLE.forEach(r=>{
+  vr.innerHTML+=`<div class="vocab-row"><div class="v-t">${r[0]}</div><div class="v-d">${r[1]}</div><div class="v-e">${r[2]}</div></div>`;
+});
+
+// ── NAV HIGHLIGHT ─────────────────────────────────
+const secs=document.querySelectorAll('section[id]');
+const navAs=document.querySelectorAll('.nav-links a');
+new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)navAs.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));});
+},{rootMargin:'-35% 0px -55% 0px'}).observe && secs.forEach(s=>new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)navAs.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));});
+},{rootMargin:'-35% 0px -55% 0px'}).observe(s));
+</script>
+</body>
+</html>
