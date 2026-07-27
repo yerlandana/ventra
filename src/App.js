@@ -1314,13 +1314,15 @@ function Leaderboard({ session, setPage }) {
 // ══════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════
-function AdminPanel({ session, logout, setPage }) {
+function AdminPanel({ session, logout, setPage, modules }) {
   const [students, setStudents] = useState({});
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [msg, setMsg] = useState("");
   const [allProgress, setAllProgress] = useState({});
   const [loadingStudents, setLoadingStudents] = useState(true);
+  const [modulesFor, setModulesFor] = useState(null); // email whose module panel is open
+  const mods = modules || [];
 
   const refresh = async () => {
     const [s, p] = await Promise.all([FB.getStudents(), FB.getAllProgress()]);
@@ -1345,6 +1347,14 @@ function AdminPanel({ session, logout, setPage }) {
 
   const toggleSpeaking = async (email, on) => {
     await FB.updateStudent(email, { speaking: !on });
+    refresh();
+  };
+
+  // Manually open/close a single module for a lagging student
+  const toggleModule = async (email, moduleId, current) => {
+    const list = Array.isArray(current) ? current : [];
+    const next = list.includes(moduleId) ? list.filter(id => id !== moduleId) : [...list, moduleId];
+    await FB.updateStudent(email, { unlockedModules: next });
     refresh();
   };
 
@@ -1395,8 +1405,11 @@ function AdminPanel({ session, logout, setPage }) {
             const pts = Object.values(allProgress[email]||{}).reduce((s,v)=>s+(v.points||0),0);
             const done = Object.values(allProgress[email]||{}).filter(v=>v.quizDone).length;
             const active = info.status==="active";
+            const unlocked = info.unlockedModules || [];
+            const panelOpen = modulesFor === email;
             return (
-              <div key={email} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderBottom:"1px solid #f0f0f0", flexWrap:"wrap" }}>
+              <div key={email} style={{ borderBottom:"1px solid #f0f0f0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", flexWrap:"wrap" }}>
                 <div style={{ flex:1, minWidth:130 }}>
                   <div style={{ fontWeight:600, fontSize:13, color:"#0a0a0a" }}>{info.name}</div>
                   <div style={{ fontSize:11, color:"#666" }}>{email}</div>
@@ -1405,6 +1418,9 @@ function AdminPanel({ session, logout, setPage }) {
                 <span style={{ fontSize:10, padding:"2px 9px", borderRadius:999, fontWeight:700, background: active ? "#0a0a0a":"#f0f0f0", color: active ? "white":"#666", letterSpacing:"0.3px", textTransform:"uppercase" }}>
                   {active?"Active":"Revoked"}
                 </span>
+                <button onClick={()=>setModulesFor(panelOpen?null:email)} title="Open individual modules for this student" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${unlocked.length?"#1A5FAD":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:unlocked.length?"#e8f0fb":"white", color:unlocked.length?"#154a86":"#666" }}>
+                  🔓 Modules{unlocked.length?` (${unlocked.length})`:""} {panelOpen?"▲":"▼"}
+                </button>
                 <button onClick={()=>toggleSpeaking(email, !!info.speaking)} title="Paid Speaking World access" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${info.speaking?"#B8860B":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:info.speaking?"#fff7e0":"white", color:info.speaking?"#8a5a12":"#666" }}>
                   {info.speaking?"🎤 Speaking ✓":"🎤 Open"}
                 </button>
@@ -1412,6 +1428,23 @@ function AdminPanel({ session, logout, setPage }) {
                   {active?"Revoke":"Restore"}
                 </button>
                 <button onClick={()=>remove(email)} aria-label="Delete" style={{ padding:"5px 9px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#666", cursor:"pointer", fontSize:11 }}>×</button>
+              </div>
+              {panelOpen && (
+                <div style={{ padding:"4px 14px 14px", background:"#f7f9fc" }}>
+                  <div style={{ fontSize:11, color:"#666", margin:"6px 0 8px" }}>Открой модули для <b>{info.name}</b> — они станут доступны сразу, минуя прохождение предыдущих:</div>
+                  {mods.length===0 && <div style={{ fontSize:12, color:"#888" }}>Модули ещё не загружены.</div>}
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                    {mods.map((m,i)=>{
+                      const on = unlocked.includes(m.id);
+                      return (
+                        <button key={m.id} onClick={()=>toggleModule(email, m.id, unlocked)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"left", maxWidth:260 }}>
+                          {on?"✓ ":"＋ "}{i+1}. {m.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               </div>
             );
           })}
@@ -1501,6 +1534,7 @@ const BAND_OPTS = [4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9];
 
 function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modules }) {
   const [myProgress, setMyProgress] = useState({});
+  const [myUnlocked, setMyUnlocked] = useState([]); // modules the teacher opened manually
   const [expanded, setExpanded] = useState(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalSel, setGoalSel] = useState(7);
@@ -1519,6 +1553,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
       if (!(prog.__meta && prog.__meta.goal)) setGoalOpen(true);
       else { setGoalSel(prog.__meta.goal); setCertBand(prog.__meta.goal); }
     });
+    FB.getStudent(session.email).then(s => setMyUnlocked((s && s.unlockedModules) || [])).catch(() => setMyUnlocked([]));
   }, [session.email]);
 
   const meta = myProgress.__meta || {};
@@ -1532,7 +1567,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const moduleComplete = (m) => m.lessons.length > 0 && m.lessons.every(l => myProgress[l.id]?.quizDone);
   const hasReflection = (m) => !!reflections[m.id];
   const fullAccess = isAdmin || hasFullAccess(session.email);
-  const isUnlocked = (i) => fullAccess || i === 0 || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
+  const isUnlocked = (i) => fullAccess || i === 0 || myUnlocked.includes(mods[i].id) || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
   const activeIdx = mods.findIndex((m,i) => isUnlocked(i) && !moduleComplete(m));
   const allDone = mods.length > 0 && moduleComplete(mods[mods.length-1]) && hasReflection(mods[mods.length-1]);
   const cert = meta.certificate;
@@ -2704,7 +2739,7 @@ export default function App() {
 
   const isAdmin = session.email === ADMIN_EMAIL;
 
-  if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} />;
+  if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} modules={modules} />;
   if (page === "admissions") return <AdmissionsPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "psych") return <PsychPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "speaking") return <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
