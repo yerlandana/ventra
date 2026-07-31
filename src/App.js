@@ -1889,8 +1889,8 @@ function embedSrc(url) {
 }
 
 function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refreshModules, modules }) {
-  const [tab, setTab] = useState("materials");
   const [addType, setAddType] = useState("link");
+  const [addSection, setAddSection] = useState("topic"); // topic | discussion | hometask
   const [addUrl, setAddUrl] = useState("");
   const [addTitle, setAddTitle] = useState("");
   const [addText, setAddText] = useState("");
@@ -1916,7 +1916,7 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     setSaving(true);
     try {
       const current = await FB.getLessonMaterials(lesson.id);
-      const newMat = { type: addType, url: addUrl, title: addTitle, text: addText.trim(), id: Date.now() };
+      const newMat = { type: addType, section: addSection, url: addUrl, title: addTitle, text: addText.trim(), id: Date.now() };
       const updated = [...(current || []), newMat];
       await FB.setLessonMaterials(lesson.id, updated);
       setMaterials(updated);
@@ -1954,6 +1954,73 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     } catch(e) {}
   };
 
+  // Mark the whole lesson as completed (replaces the old quiz as the "done" signal).
+  const DONE_POINTS = 30;
+  const markDone = async () => {
+    if (lp.quizDone) return;
+    try {
+      const cur = await FB.getProgress(session.email);
+      const lpc = cur[lesson.id] || {};
+      if (lpc.quizDone) return;
+      const updated = { ...lpc, quizDone: true, points: (lpc.points || 0) + DONE_POINTS, completedAt: new Date().toISOString() };
+      await FB.setProgress(session.email, { [lesson.id]: updated });
+      setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
+      setOpenToast(`+${DONE_POINTS} pts · lesson completed! 🎉`);
+      setTimeout(() => setOpenToast(""), 2600);
+    } catch(e) {}
+  };
+
+  const SECTIONS = [
+    { key:"topic",      label:"IELTS Topic", icon:"📚", accent:"#1A5FAD", bg:"#eaf2fb" },
+    { key:"discussion", label:"Discussion",  icon:"💬", accent:"#B8620A", bg:"#fdf0e0" },
+    { key:"hometask",   label:"Hometask",    icon:"📝", accent:"#1E7A4F", bg:"#e2ece5" },
+  ];
+
+  // one material card (shared across the three sections)
+  const renderMat = (mat, idx) => {
+    const isVideo = mat.type==="video" && mat.url && (mat.url.includes("youtube") || mat.url.includes("youtu.be"));
+    const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
+    const tall = mat.type==="pdf";
+    const opened = isOpened(mat);
+    return (
+      <div key={mat.id} className="matCard matFly" style={{ animationDelay:`${idx*70}ms`, background:"white", borderRadius:20, padding:16, marginBottom:14, border:"1px solid rgba(0,0,0,.06)", boxShadow:"0 6px 18px rgba(13,37,64,.06)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <span className="iconBadge" style={{ width:44, height:44, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:"linear-gradient(145deg,#eef5fd,#d9e8f8)", flexShrink:0 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:15.5, fontWeight:700, color:"#0a0a0a", letterSpacing:"-0.2px", lineHeight:1.25 }}>{mat.title}</div>
+            <div style={{ fontSize:12, color:"#9aa3b2", marginTop:1, textTransform:"capitalize" }}>{mat.type}{opened ? " · opened" : ""}</div>
+          </div>
+          {opened
+            ? <span style={{ fontSize:12, fontWeight:700, color:"#1E7A4F", background:"#e8f3ec", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>✓ +{OPEN_POINTS}</span>
+            : <span style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", background:"#eaf2fb", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>+{OPEN_POINTS} pts</span>}
+          <a className="openBtn" href={mat.url} target="_blank" rel="noreferrer" onClick={() => awardOpen(mat)}
+            style={{ padding:"8px 16px", borderRadius:999, background:"linear-gradient(180deg,#2a7fe6,#1559c0)", color:"white", textDecoration:"none", fontSize:13, fontWeight:700, flexShrink:0, boxShadow:"0 5px 14px rgba(21,89,192,.32)" }}>Open</a>
+          {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ width:32, height:32, borderRadius:10, border:"none", background:"#f4f4f6", color:"#9aa3b2", cursor:"pointer", flexShrink:0, fontSize:14 }}>✕</button>}
+        </div>
+
+        {(isVideo || preview) && (
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase", color:"#2a7fe6", marginTop:14, marginBottom:7 }}>{presentLabel(mat.type)}</div>
+        )}
+        {isVideo && (
+          <div style={{ borderRadius:16, overflow:"hidden" }}>
+            <iframe width="100%" height="250" title={mat.title||"Lesson video"}
+              src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
+              frameBorder="0" allowFullScreen style={{ display:"block" }} />
+          </div>
+        )}
+        {preview && (
+          <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(0,0,0,.06)" }}>
+            <iframe width="100%" height={tall?520:360} title={mat.title||"Preview"}
+              src={preview} frameBorder="0" allowFullScreen style={{ display:"block", background:"#f6f9fd" }} />
+          </div>
+        )}
+        {mat.text && (
+          <div style={{ marginTop:12, fontSize:14, color:"#475569", lineHeight:1.7, whiteSpace:"pre-line" }}>{mat.text}</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
@@ -1964,14 +2031,7 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
         </div>
         <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[lesson.tag]||"#94a3b8", color:TT(lesson.tag), fontWeight:700, letterSpacing:"0.2px", flexShrink:0 }}>{lesson.tag}</span>
       </div>
-      <div style={{ maxWidth:740, margin:"0 auto", padding:"14px" }}>
-        <div style={{ display:"flex", gap:4, marginBottom:14, background:"white", borderRadius:10, padding:4, border:"1px solid #e5e5e5" }}>
-          {["materials","quiz","assignment"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ flex:1, padding:"8px", borderRadius:8, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:tab===t?"#0a0a0a":"transparent", color:tab===t?"white":"#666", letterSpacing:"0.2px" }}>
-              {t==="materials"?"Materials":t==="quiz"?"Quiz":"Assignment"}
-            </button>
-          ))}
-        </div>
+      <div style={{ maxWidth:1080, margin:"0 auto", padding:"14px" }}>
 
         {lesson.guideUrl && (
           <a href={lesson.guideUrl} target="_blank" rel="noreferrer"
@@ -1985,152 +2045,112 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
           </a>
         )}
 
-        {tab==="materials" && (
-          <div>
-            {isAdmin && (
-              <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e5e5e5" }}>
-                <div style={{ fontWeight:700, marginBottom:12 }}>Add Material</div>
-                <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-                  {["link","video","presentation","pdf"].map(t => (
-                    <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#0a0a0a":"#e5e5e5", color:addType===t?"white":"#475569" }}>
-                      {t==="link"?"Link":t==="video"?"Video":t==="presentation"?"Slides":"PDF"}
-                    </button>
-                  ))}
-                </div>
-                <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <input placeholder="URL (Google Slides / Drive / Canva / PDF / .pptx)" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-                <textarea placeholder="Text / notes shown under the preview (optional)" value={addText} onChange={e=>setAddText(e.target.value)} rows={3}
-                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8, resize:"vertical", fontFamily:"inherit" }} />
-                <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
-                  {saving ? "Saving..." : "Add"}
-                </button>
-              </div>
-            )}
-            <style>{`
-              @keyframes flyIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:none}}
-              @keyframes birdFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(7deg)}}
-              .matFly{animation:flyIn .55s cubic-bezier(.2,.85,.25,1) both}
-              .matCard{transition:transform .3s cubic-bezier(.2,.85,.25,1),box-shadow .3s cubic-bezier(.2,.85,.25,1)}
-              .matCard:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 22px 48px rgba(13,37,64,.16)}
-              .iconBadge{transition:transform .35s cubic-bezier(.2,.85,.25,1)}
-              .matCard:hover .iconBadge{transform:scale(1.14) rotate(-7deg)}
-              .openBtn{transition:transform .2s cubic-bezier(.2,.85,.25,1),filter .2s}
-              .openBtn:hover{transform:scale(1.07);filter:brightness(1.08)}
-              .birdFloat{animation:birdFloat 5s ease-in-out infinite;display:inline-block}
-            `}</style>
+        <style>{`
+          @keyframes flyIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:none}}
+          @keyframes birdFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(7deg)}}
+          .matFly{animation:flyIn .55s cubic-bezier(.2,.85,.25,1) both}
+          .matCard{transition:transform .3s cubic-bezier(.2,.85,.25,1),box-shadow .3s cubic-bezier(.2,.85,.25,1)}
+          .matCard:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 22px 48px rgba(13,37,64,.16)}
+          .iconBadge{transition:transform .35s cubic-bezier(.2,.85,.25,1)}
+          .matCard:hover .iconBadge{transform:scale(1.14) rotate(-7deg)}
+          .openBtn{transition:transform .2s cubic-bezier(.2,.85,.25,1),filter .2s}
+          .openBtn:hover{transform:scale(1.07);filter:brightness(1.08)}
+          .birdFloat{animation:birdFloat 5s ease-in-out infinite;display:inline-block}
+        `}</style>
 
-            {/* header */}
-            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"2px 4px 16px" }}>
-              <span className="birdFloat" style={{ fontSize:26 }}>🕊️</span>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:22, fontWeight:800, color:"#0a0a0a", letterSpacing:"-0.4px" }}>Materials</div>
-                <div style={{ fontSize:13, color:"#8a94a6", marginTop:1 }}>{pickMotivation(lesson.id)}</div>
-              </div>
+        {/* completion bar (replaces the old quiz) */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", background:"white", borderRadius:14, padding:"12px 16px", marginBottom:16, border:"1px solid #e5e5e5" }}>
+          <span className="birdFloat" style={{ fontSize:24 }}>🕊️</span>
+          <div style={{ flex:1, minWidth:150 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#0a0a0a" }}>{pickMotivation(lesson.id)}</div>
+            <div style={{ fontSize:12, color:"#8a94a6", marginTop:1 }}>{lp.quizDone ? "Lesson completed ✓" : "Work through the sections below, then mark the lesson done."}</div>
+          </div>
+          {!isAdmin && (
+            <button onClick={markDone} disabled={!!lp.quizDone} style={{ padding:"9px 18px", borderRadius:999, border:"none", cursor: lp.quizDone?"default":"pointer", fontWeight:800, fontSize:13, background: lp.quizDone?"#e8f3ec":"#1E7A4F", color: lp.quizDone?"#1E7A4F":"white" }}>
+              {lp.quizDone ? "✓ Completed" : "Mark lesson complete"}
+            </button>
+          )}
+        </div>
+
+        {isAdmin && (
+          <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e5e5e5" }}>
+            <div style={{ fontWeight:700, marginBottom:12 }}>Add Material</div>
+            <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+              {[["topic","📚 IELTS Topic"],["discussion","💬 Discussion"],["hometask","📝 Hometask"]].map(([k,l]) => (
+                <button key={k} onClick={() => setAddSection(k)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, background:addSection===k?"#1A5FAD":"#eef2f7", color:addSection===k?"white":"#475569" }}>{l}</button>
+              ))}
             </div>
-
-            {materials.length === 0 ? (
-              <div style={{ textAlign:"center", padding:44, color:"#aab2c0", background:"white", borderRadius:20, border:"1px solid rgba(0,0,0,.06)", fontSize:14 }}>{isAdmin ? "No materials yet. Add above!" : "No materials yet. Check back soon!"}</div>
-            ) : materials.map((mat, idx) => {
-              const isVideo = mat.type==="video" && mat.url && (mat.url.includes("youtube") || mat.url.includes("youtu.be"));
-              const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
-              const tall = mat.type==="pdf";
-              const opened = isOpened(mat);
-              return (
-              <div key={mat.id} className="matCard matFly" style={{ animationDelay:`${idx*70}ms`, background:"white", borderRadius:20, padding:16, marginBottom:14, border:"1px solid rgba(0,0,0,.06)", boxShadow:"0 6px 18px rgba(13,37,64,.06)" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <span className="iconBadge" style={{ width:44, height:44, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:"linear-gradient(145deg,#eef5fd,#d9e8f8)", flexShrink:0 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:15.5, fontWeight:700, color:"#0a0a0a", letterSpacing:"-0.2px", lineHeight:1.25 }}>{mat.title}</div>
-                    <div style={{ fontSize:12, color:"#9aa3b2", marginTop:1, textTransform:"capitalize" }}>{mat.type}{opened ? " · opened" : ""}</div>
-                  </div>
-                  {opened
-                    ? <span style={{ fontSize:12, fontWeight:700, color:"#1E7A4F", background:"#e8f3ec", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>✓ +{OPEN_POINTS}</span>
-                    : <span style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", background:"#eaf2fb", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>+{OPEN_POINTS} pts</span>}
-                  <a className="openBtn" href={mat.url} target="_blank" rel="noreferrer" onClick={() => awardOpen(mat)}
-                    style={{ padding:"8px 16px", borderRadius:999, background:"linear-gradient(180deg,#2a7fe6,#1559c0)", color:"white", textDecoration:"none", fontSize:13, fontWeight:700, flexShrink:0, boxShadow:"0 5px 14px rgba(21,89,192,.32)" }}>Open</a>
-                  {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ width:32, height:32, borderRadius:10, border:"none", background:"#f4f4f6", color:"#9aa3b2", cursor:"pointer", flexShrink:0, fontSize:14 }}>✕</button>}
-                </div>
-
-                {(isVideo || preview) && (
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase", color:"#2a7fe6", marginTop:14, marginBottom:7 }}>{presentLabel(mat.type)}</div>
-                )}
-                {isVideo && (
-                  <div style={{ borderRadius:16, overflow:"hidden" }}>
-                    <iframe width="100%" height="250" title={mat.title||"Lesson video"}
-                      src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
-                      frameBorder="0" allowFullScreen style={{ display:"block" }} />
-                  </div>
-                )}
-                {preview && (
-                  <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(0,0,0,.06)" }}>
-                    <iframe width="100%" height={tall?520:360} title={mat.title||"Preview"}
-                      src={preview} frameBorder="0" allowFullScreen style={{ display:"block", background:"#f6f9fd" }} />
-                  </div>
-                )}
-
-                {mat.text && (
-                  <div style={{ marginTop:12, fontSize:14, color:"#475569", lineHeight:1.7, whiteSpace:"pre-line" }}>{mat.text}</div>
-                )}
-              </div>
-              );
-            })}
-
-            {openToast && (
-              <div style={{ position:"fixed", bottom:22, left:"50%", transform:"translateX(-50%)", background:"#1d1d1f", color:"white", padding:"11px 20px", borderRadius:999, fontWeight:700, fontSize:13.5, boxShadow:"0 12px 30px rgba(0,0,0,.3)", zIndex:300 }}>{openToast}</div>
-            )}
+            <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+              {["link","video","presentation","pdf"].map(t => (
+                <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#0a0a0a":"#e5e5e5", color:addType===t?"white":"#475569" }}>
+                  {t==="link"?"Link":t==="video"?"Video":t==="presentation"?"Slides":"PDF"}
+                </button>
+              ))}
+            </div>
+            <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
+              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
+            <input placeholder="URL (Google Slides / Drive / Canva / PDF / .pptx)" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
+              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
+            <textarea placeholder="Text / notes shown under the preview (optional)" value={addText} onChange={e=>setAddText(e.target.value)} rows={3}
+              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8, resize:"vertical", fontFamily:"inherit" }} />
+            <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
+              {saving ? "Saving..." : `Add to ${addSection==="topic"?"IELTS Topic":addSection==="discussion"?"Discussion":"Hometask"}`}
+            </button>
           </div>
         )}
 
-        {tab==="quiz" && (() => {
-          const nq = lesson.quiz.questions.length;
-          const isTimed = nq >= 20;
-          return (
-          <div>
-            <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
-              <div style={{ fontSize:14, fontWeight:700 }}>{isTimed ? "Timed Test" : "Quiz"} · {nq} questions{isTimed ? " · 30 min" : ""}</div>
-              <div style={{ marginTop:6, fontSize:12, opacity:0.75 }}>
-                {isTimed ? "One attempt clock: the test auto-submits when time runs out." : "Short practice quiz."}
-                {lp.quizDone ? ` · Last score: ${lp.quizScore} pts` : ""}
-              </div>
-            </div>
-            <button onClick={() => setPage("quiz")} style={{ width:"100%", padding:13, borderRadius:10, border:"none", background:lp.quizDone?"white":"#0a0a0a", color:lp.quizDone?"#0a0a0a":"white", fontWeight:700, fontSize:14, cursor:"pointer", borderWidth:1, borderStyle:"solid", borderColor:lp.quizDone?"#e5e5e5":"#0a0a0a" }}>
-              {lp.quizDone ? (isTimed ? "Retake Test" : "Retake Quiz") : (isTimed ? "Start Test (30 min)" : "Start Quiz")}
-            </button>
-          </div>
-          );
-        })()}
-
-        {tab==="assignment" && (() => {
-          const aType = lesson.assignment.type;
-          const desc = aType === "essay"    ? "Essay · 60-min timer · self-assessment"
-                     : aType === "speaking" ? "Speaking task · self-assessment"
-                                            : "Short written response";
-          const done = !!submission;
-          const band = submission?.rubric?.overall;
-          return (
-            <div>
-              <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:12 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-                  <div>
-                    <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
-                    <div style={{ fontSize:12, opacity:0.75, marginTop:2 }}>{desc}</div>
-                  </div>
-                  {band != null && (
-                    <div style={{ background:"white", color:"#0a0a0a", borderRadius:8, padding:"6px 12px", textAlign:"center", minWidth:54 }}>
-                      <div style={{ fontSize:18, fontWeight:800, lineHeight:1 }}>{band}</div>
-                      <div style={{ fontSize:9, letterSpacing:"0.4px", textTransform:"uppercase", color:"#666", marginTop:2 }}>Band</div>
-                    </div>
-                  )}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:16, alignItems:"start" }}>
+          {SECTIONS.map(sec => {
+            const items = materials.filter(m => (m.section||"topic")===sec.key);
+            const isHome = sec.key==="hometask";
+            return (
+              <div key={sec.key}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 13px", borderRadius:12, background:sec.bg, marginBottom:12 }}>
+                  <span style={{ fontSize:18 }}>{sec.icon}</span>
+                  <span style={{ fontWeight:800, fontSize:14.5, color:sec.accent }}>{sec.label}</span>
+                  <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:sec.accent, opacity:.7 }}>{items.length}</span>
                 </div>
+
+                {isHome && lesson.assignment && (() => {
+                  const aType = lesson.assignment.type;
+                  const desc = aType === "essay"    ? "Essay · 60-min timer · self-assessment"
+                             : aType === "speaking" ? "Speaking task · self-assessment"
+                                                    : "Short written response";
+                  const done = !!submission;
+                  const band = submission?.rubric?.overall;
+                  return (
+                    <div style={{ background:"#0a0a0a", borderRadius:18, padding:16, marginBottom:14, color:"white" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
+                        <div>
+                          <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
+                          <div style={{ fontSize:12, opacity:0.75, marginTop:2 }}>{desc}</div>
+                        </div>
+                        {band != null && (
+                          <div style={{ background:"white", color:"#0a0a0a", borderRadius:8, padding:"6px 12px", textAlign:"center", minWidth:54 }}>
+                            <div style={{ fontSize:18, fontWeight:800, lineHeight:1 }}>{band}</div>
+                            <div style={{ fontSize:9, letterSpacing:"0.4px", textTransform:"uppercase", color:"#666", marginTop:2 }}>Band</div>
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:12, borderRadius:10, border:"1px solid white", background: done ? "white" : "transparent", color: done ? "#0a0a0a" : "white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                        {done ? "Open · review or retry" : "Open Assignment"}
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {items.length === 0 && !(isHome && lesson.assignment) && (
+                  <div style={{ textAlign:"center", padding:"26px 12px", color:"#aab2c0", background:"white", borderRadius:16, border:"1px dashed #e0e5ec", fontSize:13 }}>{isAdmin ? "Add material to this section above." : "Nothing here yet."}</div>
+                )}
+                {items.map((mat, idx) => renderMat(mat, idx))}
               </div>
-              <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:13, borderRadius:10, border:"1px solid #0a0a0a", background: done ? "white" : "#0a0a0a", color: done ? "#0a0a0a" : "white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
-                {done ? "Open · review or retry" : "Open Assignment"}
-              </button>
-            </div>
-          );
-        })()}
+            );
+          })}
+        </div>
+
+        {openToast && (
+          <div style={{ position:"fixed", bottom:22, left:"50%", transform:"translateX(-50%)", background:"#1d1d1f", color:"white", padding:"11px 20px", borderRadius:999, fontWeight:700, fontSize:13.5, boxShadow:"0 12px 30px rgba(0,0,0,.3)", zIndex:300 }}>{openToast}</div>
+        )}
       </div>
     </div>
   );
