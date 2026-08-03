@@ -1312,6 +1312,190 @@ function Leaderboard({ session, setPage }) {
 }
 
 // ══════════════════════════════════════════
+// COURSE SCHEDULE / TRACKER
+// ══════════════════════════════════════════
+const COURSE_TOTAL = 24;
+// weekday chips (label, JS getDay value: Sun=0..Sat=6)
+const WEEKDAYS = [["Пн",1],["Вт",2],["Ср",3],["Чт",4],["Пт",5],["Сб",6],["Вс",0]];
+const MONTH_RU = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parseISO = (iso) => new Date(iso + "T00:00:00");
+const fmtDay = (iso) => parseISO(iso).toLocaleDateString("ru-RU", { day:"numeric", month:"short", year:"numeric" });
+
+// Generate the 24 lesson dates from a schedule config, skipping cancelled days
+// (so the course simply shifts later — no lesson is lost).
+function courseSchedule(cfg) {
+  if (!cfg || !cfg.courseStart || !Array.isArray(cfg.days) || !cfg.days.length) return null;
+  const cancelled = new Set(cfg.cancellations || []);
+  const lessons = [];
+  const d = parseISO(cfg.courseStart);
+  let guard = 0;
+  while (lessons.length < COURSE_TOTAL && guard < 4000) {
+    guard++;
+    if (cfg.days.includes(d.getDay())) {
+      const iso = isoDate(d);
+      if (!cancelled.has(iso)) lessons.push({ n: lessons.length + 1, date: iso });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return {
+    total: COURSE_TOTAL,
+    startISO: cfg.courseStart,
+    endISO: lessons.length ? lessons[lessons.length - 1].date : cfg.courseStart,
+    lessons,
+    cancelledDates: [...cancelled],
+    perWeek: cfg.perWeek,
+    days: cfg.days,
+  };
+}
+
+// Calendar view of the course. editable → teacher can click future lessons to cancel.
+function CourseTracker({ cfg, editable, onToggleCancel }) {
+  const sch = courseSchedule(cfg);
+  if (!sch) return <div style={{ fontSize:12, color:"#888" }}>Расписание не задано.</div>;
+  const today = isoDate(new Date());
+  const lessonByDate = {}; sch.lessons.forEach(l => { lessonByDate[l.date] = l; });
+  const cancelled = new Set(sch.cancelledDates);
+  const freeLeft = Math.max(0, 3 - sch.cancelledDates.length);
+
+  const start = parseISO(sch.startISO), end = parseISO(sch.endISO);
+  const months = [];
+  let c = new Date(start.getFullYear(), start.getMonth(), 1);
+  const last = new Date(end.getFullYear(), end.getMonth(), 1);
+  let g = 0;
+  while (c <= last && g < 36) { months.push(new Date(c)); c.setMonth(c.getMonth() + 1); g++; }
+  const chip = { fontSize:11.5, fontWeight:700, padding:"3px 10px", borderRadius:999, background:"#f0f3f8", color:"#0d2540" };
+
+  return (
+    <div>
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+        <span style={chip}>📅 {fmtDay(sch.startISO)} → {fmtDay(sch.endISO)}</span>
+        <span style={chip}>{sch.total} уроков</span>
+        <span style={chip}>{cfg.perWeek}×/нед</span>
+        <span style={{ ...chip, background: freeLeft>0?"#e8f3ec":"#fdecec", color: freeLeft>0?"#1E7A4F":"#b3261e" }}>Бесплатных отмен: {freeLeft}/3</span>
+      </div>
+      <div style={{ fontSize:12, color:"#1E7A4F", marginBottom:12 }}>Вы можете без потерь отменить 3 дня — уроки не теряются, курс просто сдвигается на более поздний срок.</div>
+      <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+        {months.map((m, mi) => {
+          const year = m.getFullYear(), mon = m.getMonth();
+          const firstDow = (new Date(year, mon, 1).getDay() + 6) % 7; // Monday-first
+          const daysIn = new Date(year, mon + 1, 0).getDate();
+          const cells = [];
+          for (let i = 0; i < firstDow; i++) cells.push(null);
+          for (let d = 1; d <= daysIn; d++) cells.push(d);
+          return (
+            <div key={mi} style={{ width:206 }}>
+              <div style={{ fontWeight:800, fontSize:12.5, marginBottom:6, color:"#0a0a0a" }}>{MONTH_RU[mon]} {year}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
+                {["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(dn => <div key={dn} style={{ fontSize:9, color:"#aaa", textAlign:"center", fontWeight:700 }}>{dn}</div>)}
+                {cells.map((d, ci) => {
+                  if (d === null) return <div key={ci} />;
+                  const iso = isoDate(new Date(year, mon, d));
+                  const lesson = lessonByDate[iso];
+                  const isCancelled = cancelled.has(iso);
+                  const isToday = iso === today;
+                  const isPast = iso < today;
+                  let bg = "transparent", col = "#c7c7c7", deco = "none", weight = 500, title = "";
+                  if (isCancelled) { bg = "#f3f4f6"; col = "#b0b0b0"; deco = "line-through"; title = "Отменён — можно вернуть"; }
+                  else if (lesson) {
+                    if (isToday) { bg = "#0a0a0a"; col = "white"; weight = 800; title = `Урок ${lesson.n} · сегодня`; }
+                    else if (isPast) { bg = "#e8f3ec"; col = "#1E7A4F"; weight = 800; title = `Урок ${lesson.n} · прошёл`; }
+                    else { bg = "#eaf2fb"; col = "#1A5FAD"; weight = 800; title = `Урок ${lesson.n}`; }
+                  }
+                  const canCancel = editable && lesson && !isPast && !isCancelled && freeLeft > 0;
+                  const canRestore = editable && isCancelled;
+                  const clickable = canCancel || canRestore;
+                  return (
+                    <div key={ci} title={title}
+                      onClick={() => clickable && onToggleCancel(iso)}
+                      style={{ height:24, borderRadius:6, background:bg, color:col, fontSize:11, fontWeight:weight, textDecoration:deco, display:"flex", alignItems:"center", justifyContent:"center", cursor: clickable ? "pointer" : "default" }}>
+                      {d}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {editable && <div style={{ fontSize:11, color:"#888", marginTop:10 }}>Клик по будущему уроку — отменить (осталось {freeLeft}). Клик по отменённому — вернуть.</div>}
+    </div>
+  );
+}
+
+// Teacher panel to set / edit a student's schedule and cancel days.
+function SchedulePanel({ email, info, refresh }) {
+  const existing = info.schedule || null;
+  const [editing, setEditing] = useState(!existing);
+  const [start, setStart] = useState((existing && existing.courseStart) || isoDate(new Date()));
+  const [per, setPer] = useState((existing && existing.perWeek) || 3);
+  const [days, setDays] = useState((existing && existing.days) || [1,3,5]);
+  const [saving, setSaving] = useState(false);
+
+  const setPerWeek = (p) => { setPer(p); setDays(p === 3 ? [1,3,5] : [2,4]); };
+  const toggleDay = (wd) => setDays(ds => ds.includes(wd) ? ds.filter(x => x !== wd) : [...ds, wd]);
+
+  const save = async () => {
+    if (!start || !days.length) { alert("Укажите дату старта и хотя бы один день."); return; }
+    setSaving(true);
+    const schedule = { courseStart: start, perWeek: per, days: [...days].sort((a,b)=>a-b), cancellations: (existing && existing.cancellations) || [] };
+    await FB.updateStudent(email, { schedule });
+    setSaving(false); setEditing(false); refresh();
+  };
+
+  const toggleCancel = async (iso) => {
+    const cfg = info.schedule; if (!cfg) return;
+    const list = cfg.cancellations || [];
+    let next;
+    if (list.includes(iso)) next = list.filter(x => x !== iso);
+    else { if (list.length >= 3) { alert("Достигнут лимит: 3 бесплатные отмены."); return; } next = [...list, iso]; }
+    await FB.updateStudent(email, { schedule: { ...cfg, cancellations: next } });
+    refresh();
+  };
+
+  const fld = { padding:"8px 10px", borderRadius:8, border:"1px solid #dbe0e8", fontSize:13, outline:"none" };
+
+  if (editing || !existing) {
+    return (
+      <div>
+        <div style={{ display:"flex", gap:14, flexWrap:"wrap", alignItems:"flex-end", marginBottom:12 }}>
+          <label style={{ fontSize:11, fontWeight:700, color:"#555" }}>Начало курса<br/>
+            <input type="date" value={start} onChange={e=>setStart(e.target.value)} style={{ ...fld, marginTop:4 }} />
+          </label>
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:4 }}>Раз в неделю</div>
+            <div style={{ display:"inline-flex", border:"1px solid #dbe0e8", borderRadius:8, overflow:"hidden" }}>
+              {[2,3].map(p => (
+                <button key={p} onClick={()=>setPerWeek(p)} style={{ padding:"8px 16px", border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:per===p?"#1A5FAD":"white", color:per===p?"white":"#555" }}>{p}×</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:6 }}>Дни занятий (выбери {per})</div>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+          {WEEKDAYS.map(([lbl, wd]) => {
+            const on = days.includes(wd);
+            return <button key={wd} onClick={()=>toggleDay(wd)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{lbl}</button>;
+          })}
+        </div>
+        {days.length !== per && <div style={{ fontSize:11, color:"#B8620A", marginBottom:8 }}>Выбрано {days.length} дн., а частота {per}×/нед — обычно они совпадают.</div>}
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={save} disabled={saving} style={{ padding:"9px 18px", borderRadius:9, border:"none", background:"#0a0a0a", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", opacity:saving?0.6:1 }}>{saving?"Сохранение…":"Сохранить расписание"}</button>
+          {existing && <button onClick={()=>setEditing(false)} style={{ padding:"9px 16px", borderRadius:9, border:"1px solid #dbe0e8", background:"white", color:"#555", fontWeight:700, fontSize:13, cursor:"pointer" }}>Отмена</button>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <CourseTracker cfg={info.schedule} editable onToggleCancel={toggleCancel} />
+      <button onClick={()=>setEditing(true)} style={{ marginTop:12, padding:"7px 14px", borderRadius:9, border:"1px solid #dbe0e8", background:"white", color:"#0a0a0a", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>✎ Изменить расписание</button>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════
 function AdminPanel({ session, logout, setPage, modules }) {
@@ -1322,6 +1506,10 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [allProgress, setAllProgress] = useState({});
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [modulesFor, setModulesFor] = useState(null); // email whose module panel is open
+  const [scheduleFor, setScheduleFor] = useState(null); // email whose schedule panel is open
+  const [newStart, setNewStart] = useState(isoDate(new Date()));
+  const [newPer, setNewPer] = useState(3);
+  const [newDays, setNewDays] = useState([1,3,5]);
   const mods = modules || [];
 
   const refresh = async () => {
@@ -1331,12 +1519,17 @@ function AdminPanel({ session, logout, setPage, modules }) {
 
   useEffect(() => { refresh(); }, []);
 
+  const setAddPer = (p) => { setNewPer(p); setNewDays(p === 3 ? [1,3,5] : [2,4]); };
+  const toggleAddDay = (wd) => setNewDays(ds => ds.includes(wd) ? ds.filter(x => x !== wd) : [...ds, wd]);
+
   const add = async () => {
     const e = newEmail.trim().toLowerCase(), n = newName.trim();
     if (!e||!n) { setMsg("⚠️ Fill both fields"); return; }
+    if (!newStart || !newDays.length) { setMsg("⚠️ Set start date and lesson days"); return; }
     const existing = await FB.getStudent(e);
     if (existing) { setMsg("⚠️ Already exists"); return; }
-    await FB.setStudent(e, { name:n, status:"active", added:new Date().toISOString(), lastLogin:null });
+    const schedule = { courseStart: newStart, perWeek: newPer, days: [...newDays].sort((a,b)=>a-b), cancellations: [] };
+    await FB.setStudent(e, { name:n, status:"active", added:new Date().toISOString(), lastLogin:null, schedule });
     setNewEmail(""); setNewName(""); setMsg(`✅ ${n} added!`); refresh();
   };
 
@@ -1392,7 +1585,29 @@ function AdminPanel({ session, logout, setPage, modules }) {
               style={{ flex:1, minWidth:130, padding:"9px 11px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
             <input placeholder="email@example.com" value={newEmail} onChange={e=>setNewEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}
               style={{ flex:2, minWidth:180, padding:"9px 11px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
-            <button onClick={add} style={{ padding:"9px 16px", borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>Add</button>
+          </div>
+
+          {/* schedule for the new student */}
+          <div style={{ display:"flex", gap:16, flexWrap:"wrap", alignItems:"flex-end", marginTop:10 }}>
+            <label style={{ fontSize:11, fontWeight:700, color:"#666" }}>Начало курса<br/>
+              <input type="date" value={newStart} onChange={e=>setNewStart(e.target.value)} style={{ marginTop:4, padding:"8px 10px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
+            </label>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Раз в неделю</div>
+              <div style={{ display:"inline-flex", border:"1px solid #e5e5e5", borderRadius:8, overflow:"hidden" }}>
+                {[2,3].map(p => <button key={p} onClick={()=>setAddPer(p)} style={{ padding:"8px 15px", border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:newPer===p?"#1A5FAD":"white", color:newPer===p?"white":"#555" }}>{p}×</button>)}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Дни (выбери {newPer})</div>
+              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                {WEEKDAYS.map(([lbl, wd]) => {
+                  const on = newDays.includes(wd);
+                  return <button key={wd} onClick={()=>toggleAddDay(wd)} style={{ padding:"7px 10px", borderRadius:8, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer" }}>{lbl}</button>;
+                })}
+              </div>
+            </div>
+            <button onClick={add} style={{ padding:"9px 18px", borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>Add student</button>
           </div>
           {msg && <div style={{ marginTop:8, fontSize:12, color:"#0a0a0a" }}>{msg}</div>}
         </div>
@@ -1407,6 +1622,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
             const active = info.status==="active";
             const unlocked = info.unlockedModules || [];
             const panelOpen = modulesFor === email;
+            const scheduleOpen = scheduleFor === email;
+            const hasSchedule = !!info.schedule;
             return (
               <div key={email} style={{ borderBottom:"1px solid #f0f0f0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", flexWrap:"wrap" }}>
@@ -1418,6 +1635,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <span style={{ fontSize:10, padding:"2px 9px", borderRadius:999, fontWeight:700, background: active ? "#0a0a0a":"#f0f0f0", color: active ? "white":"#666", letterSpacing:"0.3px", textTransform:"uppercase" }}>
                   {active?"Active":"Revoked"}
                 </span>
+                <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
+                  📅 Schedule {scheduleOpen?"▲":"▼"}
+                </button>
                 <button onClick={()=>setModulesFor(panelOpen?null:email)} title="Open individual modules for this student" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${unlocked.length?"#1A5FAD":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:unlocked.length?"#e8f0fb":"white", color:unlocked.length?"#154a86":"#666" }}>
                   🔓 Modules{unlocked.length?` (${unlocked.length})`:""} {panelOpen?"▲":"▼"}
                 </button>
@@ -1429,6 +1649,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 </button>
                 <button onClick={()=>remove(email)} aria-label="Delete" style={{ padding:"5px 9px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#666", cursor:"pointer", fontSize:11 }}>×</button>
               </div>
+              {scheduleOpen && (
+                <div style={{ padding:"8px 14px 16px", background:"#f7fbf8" }}>
+                  <SchedulePanel email={email} info={info} refresh={refresh} />
+                </div>
+              )}
               {panelOpen && (
                 <div style={{ padding:"4px 14px 14px", background:"#f7f9fc" }}>
                   <div style={{ fontSize:11, color:"#666", margin:"6px 0 8px" }}>Открой модули для <b>{info.name}</b> — они станут доступны сразу, минуя прохождение предыдущих:</div>
@@ -1535,6 +1760,8 @@ const BAND_OPTS = [4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9];
 function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modules }) {
   const [myProgress, setMyProgress] = useState({});
   const [myUnlocked, setMyUnlocked] = useState([]); // modules the teacher opened manually
+  const [mySchedule, setMySchedule] = useState(null);
+  const [schedOpen, setSchedOpen] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalSel, setGoalSel] = useState(7);
@@ -1553,7 +1780,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
       if (!(prog.__meta && prog.__meta.goal)) setGoalOpen(true);
       else { setGoalSel(prog.__meta.goal); setCertBand(prog.__meta.goal); }
     });
-    FB.getStudent(session.email).then(s => setMyUnlocked((s && s.unlockedModules) || [])).catch(() => setMyUnlocked([]));
+    FB.getStudent(session.email).then(s => { setMyUnlocked((s && s.unlockedModules) || []); setMySchedule((s && s.schedule) || null); }).catch(() => { setMyUnlocked([]); setMySchedule(null); });
   }, [session.email]);
 
   const meta = myProgress.__meta || {};
@@ -1603,6 +1830,29 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
       <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
       <style>{"@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}"}</style>
       <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+
+        {mySchedule && (() => {
+          const sch = courseSchedule(mySchedule);
+          if (!sch) return null;
+          const freeLeft = Math.max(0, 3 - ((mySchedule.cancellations||[]).length));
+          const today = isoDate(new Date());
+          const next = sch.lessons.find(l => l.date >= today);
+          return (
+            <div style={{ background:"white", borderRadius:16, padding:"14px 16px", marginBottom:18, border:"1px solid #e5edf7", boxShadow:cloudShadow }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                <span style={{ fontSize:20 }}>📅</span>
+                <div style={{ flex:1, minWidth:150 }}>
+                  <div style={{ fontWeight:800, fontSize:14.5, color:"#0d2540" }}>Your course schedule</div>
+                  <div style={{ fontSize:12, color:"#64748b", marginTop:1 }}>{fmtDay(sch.startISO)} → {fmtDay(sch.endISO)} · {sch.total} уроков · {mySchedule.perWeek}×/нед</div>
+                </div>
+                <button onClick={()=>setSchedOpen(o=>!o)} style={{ padding:"6px 12px", borderRadius:999, border:"1px solid #dbe6f3", background:"white", color:"#1A5FAD", fontWeight:700, fontSize:12, cursor:"pointer" }}>{schedOpen?"Скрыть календарь":"Показать календарь"}</button>
+              </div>
+              {next && <div style={{ fontSize:12.5, color:"#1A5FAD", fontWeight:700, marginTop:8 }}>Ближайший урок {next.n}: {fmtDay(next.date)}</div>}
+              <div style={{ fontSize:12, color:"#1E7A4F", marginTop:6 }}>Вы можете без потерь отменить 3 дня — осталось {freeLeft}. Для отмены напишите преподавателю.</div>
+              {schedOpen && <div style={{ marginTop:14 }}><CourseTracker cfg={mySchedule} editable={false} /></div>}
+            </div>
+          );
+        })()}
 
         {/* ── HERO · IELTS8.KZ boarding pass ── */}
         <style>{"@keyframes heroFly{0%{transform:translateX(-50px) translateY(0) rotate(-8deg)}100%{transform:translateX(640px) translateY(-16px) rotate(-8deg)}} @keyframes heroDrift{0%{transform:translateX(0)}100%{transform:translateX(-40px)}}"}</style>
