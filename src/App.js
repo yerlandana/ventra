@@ -1314,9 +1314,15 @@ function Leaderboard({ session, setPage }) {
 // ══════════════════════════════════════════
 // COURSE SCHEDULE / TRACKER
 // ══════════════════════════════════════════
-const COURSE_TOTAL = 24;
+const COURSE_TOTAL = 24; // default lesson count (overridable per student via cfg.total)
 // weekday chips (label, JS getDay value: Sun=0..Sat=6)
 const WEEKDAYS = [["Пн",1],["Вт",2],["Ср",3],["Чт",4],["Пт",5],["Сб",6],["Вс",0]];
+// quick frequency presets → weekday sets
+const FREQ_PRESETS = { 2:[2,4], 3:[1,3,5], 5:[1,2,3,4,5] };
+const matchesPreset = (days, p) => {
+  const a = [...(days||[])].sort((x,y)=>x-y), b = [...FREQ_PRESETS[p]].sort((x,y)=>x-y);
+  return a.length===b.length && a.every((x,i)=>x===b[i]);
+};
 const MONTH_RU = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
 const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const parseISO = (iso) => new Date(iso + "T00:00:00");
@@ -1326,11 +1332,12 @@ const fmtDay = (iso) => parseISO(iso).toLocaleDateString("ru-RU", { day:"numeric
 // (so the course simply shifts later — no lesson is lost).
 function courseSchedule(cfg) {
   if (!cfg || !cfg.courseStart || !Array.isArray(cfg.days) || !cfg.days.length) return null;
+  const total = Math.max(1, Math.min(200, cfg.total || COURSE_TOTAL));
   const cancelled = new Set(cfg.cancellations || []);
   const lessons = [];
   const d = parseISO(cfg.courseStart);
   let guard = 0;
-  while (lessons.length < COURSE_TOTAL && guard < 4000) {
+  while (lessons.length < total && guard < 4000) {
     guard++;
     if (cfg.days.includes(d.getDay())) {
       const iso = isoDate(d);
@@ -1339,7 +1346,7 @@ function courseSchedule(cfg) {
     d.setDate(d.getDate() + 1);
   }
   return {
-    total: COURSE_TOTAL,
+    total,
     startISO: cfg.courseStart,
     endISO: lessons.length ? lessons[lessons.length - 1].date : cfg.courseStart,
     lessons,
@@ -1428,17 +1435,18 @@ function SchedulePanel({ email, info, refresh }) {
   const existing = info.schedule || null;
   const [editing, setEditing] = useState(!existing);
   const [start, setStart] = useState((existing && existing.courseStart) || isoDate(new Date()));
-  const [per, setPer] = useState((existing && existing.perWeek) || 3);
   const [days, setDays] = useState((existing && existing.days) || [1,3,5]);
+  const [total, setTotal] = useState((existing && existing.total) || COURSE_TOTAL);
   const [saving, setSaving] = useState(false);
 
-  const setPerWeek = (p) => { setPer(p); setDays(p === 3 ? [1,3,5] : [2,4]); };
+  const applyPreset = (p) => setDays(FREQ_PRESETS[p]);
   const toggleDay = (wd) => setDays(ds => ds.includes(wd) ? ds.filter(x => x !== wd) : [...ds, wd]);
 
   const save = async () => {
     if (!start || !days.length) { alert("Укажите дату старта и хотя бы один день."); return; }
+    const t = Math.max(1, Math.min(200, parseInt(total, 10) || COURSE_TOTAL));
     setSaving(true);
-    const schedule = { courseStart: start, perWeek: per, days: [...days].sort((a,b)=>a-b), cancellations: (existing && existing.cancellations) || [] };
+    const schedule = { courseStart: start, perWeek: days.length, total: t, days: [...days].sort((a,b)=>a-b), cancellations: (existing && existing.cancellations) || [] };
     await FB.updateStudent(email, { schedule });
     setSaving(false); setEditing(false); refresh();
   };
@@ -1462,23 +1470,27 @@ function SchedulePanel({ email, info, refresh }) {
           <label style={{ fontSize:11, fontWeight:700, color:"#555" }}>Начало курса<br/>
             <input type="date" value={start} onChange={e=>setStart(e.target.value)} style={{ ...fld, marginTop:4 }} />
           </label>
+          <label style={{ fontSize:11, fontWeight:700, color:"#555" }}>Всего уроков<br/>
+            <input type="number" min="1" max="200" value={total} onChange={e=>setTotal(e.target.value)} style={{ ...fld, marginTop:4, width:80 }} />
+          </label>
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:4 }}>Раз в неделю</div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:4 }}>Частота (пресет)</div>
             <div style={{ display:"inline-flex", border:"1px solid #dbe0e8", borderRadius:8, overflow:"hidden" }}>
-              {[2,3].map(p => (
-                <button key={p} onClick={()=>setPerWeek(p)} style={{ padding:"8px 16px", border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:per===p?"#1A5FAD":"white", color:per===p?"white":"#555" }}>{p}×</button>
-              ))}
+              {[2,3,5].map(p => {
+                const on = matchesPreset(days, p);
+                return <button key={p} onClick={()=>applyPreset(p)} style={{ padding:"8px 14px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#1A5FAD":"white", color:on?"white":"#555" }}>{p}×</button>;
+              })}
+              <span style={{ padding:"8px 14px", fontWeight:800, fontSize:13, background: (!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"#1A5FAD":"white", color:(!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"white":"#999" }}>Свой</span>
             </div>
           </div>
         </div>
-        <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:6 }}>Дни занятий (выбери {per})</div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:6 }}>Дни занятий — выбери любые ({days.length}×/нед)</div>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
           {WEEKDAYS.map(([lbl, wd]) => {
             const on = days.includes(wd);
             return <button key={wd} onClick={()=>toggleDay(wd)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{lbl}</button>;
           })}
         </div>
-        {days.length !== per && <div style={{ fontSize:11, color:"#B8620A", marginBottom:8 }}>Выбрано {days.length} дн., а частота {per}×/нед — обычно они совпадают.</div>}
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={save} disabled={saving} style={{ padding:"9px 18px", borderRadius:9, border:"none", background:"#0a0a0a", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", opacity:saving?0.6:1 }}>{saving?"Сохранение…":"Сохранить расписание"}</button>
           {existing && <button onClick={()=>setEditing(false)} style={{ padding:"9px 16px", borderRadius:9, border:"1px solid #dbe0e8", background:"white", color:"#555", fontWeight:700, fontSize:13, cursor:"pointer" }}>Отмена</button>}
@@ -1508,8 +1520,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [modulesFor, setModulesFor] = useState(null); // email whose module panel is open
   const [scheduleFor, setScheduleFor] = useState(null); // email whose schedule panel is open
   const [newStart, setNewStart] = useState(isoDate(new Date()));
-  const [newPer, setNewPer] = useState(3);
   const [newDays, setNewDays] = useState([1,3,5]);
+  const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
   const mods = modules || [];
 
   const refresh = async () => {
@@ -1519,7 +1531,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
 
   useEffect(() => { refresh(); }, []);
 
-  const setAddPer = (p) => { setNewPer(p); setNewDays(p === 3 ? [1,3,5] : [2,4]); };
+  const applyAddPreset = (p) => setNewDays(FREQ_PRESETS[p]);
   const toggleAddDay = (wd) => setNewDays(ds => ds.includes(wd) ? ds.filter(x => x !== wd) : [...ds, wd]);
 
   const add = async () => {
@@ -1528,7 +1540,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (!newStart || !newDays.length) { setMsg("⚠️ Set start date and lesson days"); return; }
     const existing = await FB.getStudent(e);
     if (existing) { setMsg("⚠️ Already exists"); return; }
-    const schedule = { courseStart: newStart, perWeek: newPer, days: [...newDays].sort((a,b)=>a-b), cancellations: [] };
+    const t = Math.max(1, Math.min(200, parseInt(newTotal, 10) || COURSE_TOTAL));
+    const schedule = { courseStart: newStart, perWeek: newDays.length, total: t, days: [...newDays].sort((a,b)=>a-b), cancellations: [] };
     await FB.setStudent(e, { name:n, status:"active", added:new Date().toISOString(), lastLogin:null, schedule });
     setNewEmail(""); setNewName(""); setMsg(`✅ ${n} added!`); refresh();
   };
@@ -1592,14 +1605,18 @@ function AdminPanel({ session, logout, setPage, modules }) {
             <label style={{ fontSize:11, fontWeight:700, color:"#666" }}>Начало курса<br/>
               <input type="date" value={newStart} onChange={e=>setNewStart(e.target.value)} style={{ marginTop:4, padding:"8px 10px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
             </label>
+            <label style={{ fontSize:11, fontWeight:700, color:"#666" }}>Всего уроков<br/>
+              <input type="number" min="1" max="200" value={newTotal} onChange={e=>setNewTotal(e.target.value)} style={{ marginTop:4, padding:"8px 10px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none", width:78 }} />
+            </label>
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Раз в неделю</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Частота</div>
               <div style={{ display:"inline-flex", border:"1px solid #e5e5e5", borderRadius:8, overflow:"hidden" }}>
-                {[2,3].map(p => <button key={p} onClick={()=>setAddPer(p)} style={{ padding:"8px 15px", border:"none", cursor:"pointer", fontWeight:800, fontSize:13, background:newPer===p?"#1A5FAD":"white", color:newPer===p?"white":"#555" }}>{p}×</button>)}
+                {[2,3,5].map(p => { const on = matchesPreset(newDays,p); return <button key={p} onClick={()=>applyAddPreset(p)} style={{ padding:"8px 13px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#1A5FAD":"white", color:on?"white":"#555" }}>{p}×</button>; })}
+                <span style={{ padding:"8px 13px", fontWeight:800, fontSize:13, background:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"#1A5FAD":"white", color:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"white":"#999" }}>Свой</span>
               </div>
             </div>
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Дни (выбери {newPer})</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Дни ({newDays.length}×/нед)</div>
               <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                 {WEEKDAYS.map(([lbl, wd]) => {
                   const on = newDays.includes(wd);
