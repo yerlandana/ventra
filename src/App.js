@@ -1263,8 +1263,39 @@ function Dashboard({ session, setPage, modules }) {
 // ══════════════════════════════════════════
 // LEADERBOARD
 // ══════════════════════════════════════════
+// Shared certificate viewer (works for data-URL images/PDFs that browsers block in a new tab).
+function CertModal({ cert, onClose }) {
+  if (!cert) return null;
+  const isImg = cert.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(cert);
+  const isPdf = cert.startsWith("data:application/pdf") || /\.pdf(\?|$)/i.test(cert);
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.72)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"white", borderRadius:16, padding:14, maxWidth:"92vw", maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, marginBottom:10 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a" }}>🎓 IELTS certificate</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <a href={cert} download="ielts-certificate" style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", textDecoration:"none", padding:"6px 10px", border:"1px solid #dbe6f3", borderRadius:8 }}>Скачать</a>
+            <button onClick={onClose} style={{ fontSize:12, fontWeight:700, color:"#666", border:"1px solid #e5e5e5", borderRadius:8, background:"white", padding:"6px 12px", cursor:"pointer" }}>Закрыть ✕</button>
+          </div>
+        </div>
+        {isImg
+          ? <img src={cert} alt="certificate" style={{ maxWidth:"88vw", maxHeight:"78vh", display:"block", borderRadius:8 }} />
+          : isPdf
+            ? <iframe src={cert} title="certificate" style={{ width:"80vw", height:"78vh", border:"none", borderRadius:8 }} />
+            : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#1A5FAD", fontWeight:700 }}>Открыть сертификат ↗</a>}
+      </div>
+    </div>
+  );
+}
+
 function Leaderboard({ session, setPage }) {
   const [rankings, setRankings] = useState([]);
+  const [certView, setCertView] = useState(null);
+  const openCert = (cert) => {
+    if (!cert) return;
+    if (cert.startsWith("data:")) setCertView(cert);   // data URLs can't open in a new tab
+    else window.open(cert, "_blank", "noreferrer");
+  };
   useEffect(() => {
     const load = async () => {
       const [students, allProgress] = await Promise.all([FB.getStudents(), FB.getAllProgress()]);
@@ -1299,7 +1330,14 @@ function Leaderboard({ session, setPage }) {
               <div style={{ fontSize:i<3?20:13, fontWeight:700, width:28, textAlign:"center", color:"#0a0a0a" }}>{medals[i]||`#${i+1}`}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:600, fontSize:13 }}>{r.name}{isMe?" · You":""}</div>
-                <div style={{ fontSize:11, color:"#888" }}>{r.done} lessons · {r.pts} pts{r.cert ? " · " : ""}{r.cert && <a href={r.cert} target="_blank" rel="noreferrer" style={{ color:"#1A5FAD", fontWeight:700 }}>🎓 cert</a>}</div>
+                <div style={{ fontSize:11, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
+                  <span>{r.done} lessons · {r.pts} pts</span>
+                  {r.cert && (
+                    (r.cert.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(r.cert))
+                      ? <img src={r.cert} alt="cert" onClick={()=>openCert(r.cert)} style={{ height:26, width:34, objectFit:"cover", borderRadius:5, border:"1px solid #dbe6f3", cursor:"pointer" }} />
+                      : <button onClick={()=>openCert(r.cert)} style={{ color:"#1A5FAD", fontWeight:700, background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0 }}>🎓 cert</button>
+                  )}
+                </div>
               </div>
               <div style={{ textAlign:"right", minWidth:52 }}>
                 {r.band != null
@@ -1309,6 +1347,7 @@ function Leaderboard({ session, setPage }) {
             </div>
           );
         })}
+        <CertModal cert={certView} onClose={()=>setCertView(null)} />
       </div>
     </div>
   );
@@ -1855,7 +1894,6 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const [myUnlocked, setMyUnlocked] = useState([]); // modules the teacher opened manually
   const [mySchedule, setMySchedule] = useState(null);
   const [schedOpen, setSchedOpen] = useState(false);
-  const [expanded, setExpanded] = useState(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalSel, setGoalSel] = useState(7);
   const [reflectMod, setReflectMod] = useState(null);
@@ -1881,6 +1919,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const mods = modules || [];
   const totalPts = Object.entries(myProgress).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0);
   const allLessons = mods.flatMap(m => m.lessons);
+  const lessonNumById = {}; allLessons.forEach((l, idx) => { lessonNumById[l.id] = idx + 1; });
   const doneCount = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
   const journeyPct = allLessons.length ? Math.round(doneCount/allLessons.length*100) : 0;
 
@@ -1888,7 +1927,6 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const hasReflection = (m) => !!reflections[m.id];
   const fullAccess = isAdmin || hasFullAccess(session.email);
   const isUnlocked = (i) => fullAccess || i === 0 || myUnlocked.includes(mods[i].id) || (moduleComplete(mods[i-1]) && hasReflection(mods[i-1]));
-  const activeIdx = mods.findIndex((m,i) => isUnlocked(i) && !moduleComplete(m));
   const allDone = mods.length > 0 && moduleComplete(mods[mods.length-1]) && hasReflection(mods[mods.length-1]);
   const cert = meta.certificate;
 
@@ -2021,76 +2059,69 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
           <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMin slice" aria-hidden="true" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", opacity:.55 }}>
             <g fill="#ffffff"><ellipse cx="70" cy="60" rx="46" ry="16"/><ellipse cx="40" cy="68" rx="28" ry="11"/><ellipse cx="330" cy="180" rx="44" ry="15"/><ellipse cx="300" cy="188" rx="26" ry="10"/><ellipse cx="80" cy="330" rx="40" ry="14"/><ellipse cx="340" cy="470" rx="42" ry="14"/></g>
           </svg>
-          <div style={{ position:"relative", zIndex:1, textAlign:"center", fontSize:11, fontWeight:800, letterSpacing:"1.2px", textTransform:"uppercase", color:"#1A5FAD", marginBottom:14 }}>🛫 Departure — follow the clouds to your reward</div>
+          <div style={{ position:"relative", zIndex:1, display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#0d2540" }}>📚 Course content</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"#1A5FAD" }}>{doneCount}/{allLessons.length} lessons</div>
+          </div>
 
           <div style={{ position:"relative", zIndex:1 }}>
         {mods.map((m, i) => {
           const unlocked = isUnlocked(i);
           const complete = moduleComplete(m);
           const reflected = hasReflection(m);
-          const isActive = i === activeIdx;
           const lessonsDone = m.lessons.filter(l => myProgress[l.id]?.quizDone).length;
-          const open = expanded === m.id;
           const prev = i > 0 ? mods[i-1] : null;
           const canUnlockHere = !unlocked && prev && moduleComplete(prev) && !hasReflection(prev);
-          const badge = complete ? "✓" : !unlocked ? "🔒" : isActive ? "✈️" : (i+1);
-          const accent = !unlocked ? (canUnlockHere ? "#B8620A" : "#94a3b8") : complete ? "#1E7A4F" : "#1A5FAD";
-          const onCloud = () => {
-            if (unlocked) { setExpanded(open ? null : m.id); }
-            else if (canUnlockHere) { setReflectMod(prev); setRBand(reflections[prev.id]?.band || 6.5); }
-          };
+          const accent = complete ? "#1E7A4F" : unlocked ? "#1A5FAD" : "#94a3b8";
           return (
-            <div key={m.id} style={{ display:"flex", gap:12, alignItems:"stretch", paddingLeft: i%2 ? 26 : 0, paddingRight: i%2 ? 0 : 26, transition:"padding .2s" }}>
-              {/* rail */}
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:42 }}>
-                <div style={{ width:42, height:42, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:complete||!unlocked||isActive?18:15, fontWeight:800, color:"white", background:accent, boxShadow:`0 4px 12px ${accent}66`, border:"3px solid white", animation: canUnlockHere ? "pulse 1.6s ease-in-out infinite" : "none" }}>{badge}</div>
-                <div style={{ flex:1, width:0, borderLeft:`2px dashed ${complete?"#1E7A4F":"#9bbbe0"}`, minHeight:22, margin:"2px 0" }} />
-              </div>
-              {/* cloud card */}
-              <div style={{ flex:1, marginBottom:14, borderRadius:22, overflow:"hidden", background: unlocked ? "white" : (canUnlockHere ? "#fffaf2" : "#eef2f7"),
-                boxShadow: unlocked||canUnlockHere ? cloudShadow : "none", border: unlocked ? "1px solid #e5edf7" : (canUnlockHere ? "1px solid #f0d6b0" : "1px dashed #cbd5e1"), opacity: (unlocked||canUnlockHere) ? 1 : 0.8 }}>
-                <div onClick={onCloud}
-                  style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", cursor: (unlocked||canUnlockHere) ? "pointer" : "not-allowed",
-                    background: unlocked ? "linear-gradient(180deg,#f3f9ff,#ffffff)" : "transparent" }}>
-                  <span style={{ fontSize:22 }}>{unlocked ? "☁️" : "🔒"}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:800, fontSize:13.5, color: unlocked ? "#0a0a0a" : (canUnlockHere?"#8a5a12":"#64748b"), lineHeight:1.3 }}>{m.title}</div>
-                    <div style={{ fontSize:11, color: canUnlockHere?"#B8620A":"#7a8aa0", marginTop:3, fontWeight: canUnlockHere?700:400 }}>
-                      {unlocked ? `${lessonsDone}/${m.lessons.length} lessons`
-                        : canUnlockHere ? "🔓 Tap to take the mock test + write a review → unlock"
-                        : "🔒 Finish the previous module first"}
-                      {reflected ? ` · ✓ Mock Band ${fmtBand(reflections[m.id].band)}` : ""}
-                    </div>
+            <div key={m.id} style={{ background:"white", border:"1px solid #e5e7eb", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
+              {/* unit header */}
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderLeft:`4px solid ${accent}`, background:"#f8fafc" }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:accent, color:"white", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{complete?"✓":unlocked?(i+1):"🔒"}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:800, fontSize:14, color:"#111827", lineHeight:1.3 }}>{m.title}</div>
+                  <div style={{ fontSize:11.5, color: complete?"#1E7A4F":"#6b7280", marginTop:2, fontWeight:600 }}>
+                    {unlocked ? `${lessonsDone}/${m.lessons.length} Completed`
+                      : canUnlockHere ? "🔓 Открой mock-тестом предыдущего модуля"
+                      : "🔒 Заблокировано"}
+                    {reflected ? ` · Mock Band ${fmtBand(reflections[m.id].band)}` : ""}
                   </div>
-                  {unlocked && <span style={{ fontSize:13, color:"#94a3b8" }}>{open ? "▲" : "▼"}</span>}
                 </div>
-
-                {/* lessons */}
-                {open && unlocked && m.lessons.map(l => {
-                  const lp = myProgress[l.id] || {};
-                  const ld = !!lp.quizDone;
-                  return (
-                    <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                      style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px", borderTop:"1px solid #f0f4f9", cursor:"pointer" }}>
-                      <div style={{ width:28, height:28, borderRadius:"50%", background: ld?"#0a0a0a":"white", border: ld?"none":"1.5px solid #d4d4d4", color: ld?"white":"#666", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0 }}>{ld?"✓":(l.n||"·")}</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:600, fontSize:13, color:"#0a0a0a", lineHeight:1.35 }}>{l.title}</div>
-                        <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{l.quiz.questions.length} questions{lp.points?` · ${lp.points} pts`:""}</div>
-                      </div>
-                      <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
-                    </div>
-                  );
-                })}
-
-                {/* reflection gate */}
-                {unlocked && complete && !reflected && (
-                  <div style={{ padding:"14px 16px", borderTop:"1px solid #f0f4f9", background:"#fff8ec" }}>
-                    <div style={{ fontSize:12.5, color:"#8a5a12", fontWeight:600, marginBottom:8 }}>🛬 Module complete! Log your mock-test IELTS score + a short review to open the next module.</div>
-                    <button onClick={() => { setReflectMod(m); setRBand(reflections[m.id]?.band || 6.5); }}
-                      style={{ padding:"9px 16px", borderRadius:10, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Add score & review</button>
-                  </div>
-                )}
               </div>
+
+              {/* lessons */}
+              {unlocked && m.lessons.map(l => {
+                const lp = myProgress[l.id] || {};
+                const ld = !!lp.quizDone;
+                return (
+                  <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #f1f3f5", cursor:"pointer" }}>
+                    <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#1E7A4F":"#c0c7d0" }}>{ld ? "✓" : "📄"}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:600, fontSize:13.5, color:"#111827", lineHeight:1.35 }}>{lessonNumById[l.id] ? `Урок ${lessonNumById[l.id]} · ` : ""}{l.title}</div>
+                      <div style={{ fontSize:11, color: ld?"#1E7A4F":"#9aa3b2", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
+                    </div>
+                    <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
+                  </div>
+                );
+              })}
+
+              {/* unlock CTA for the next module */}
+              {!unlocked && canUnlockHere && (
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5" }}>
+                  <button onClick={() => { setReflectMod(prev); setRBand(reflections[prev.id]?.band || 6.5); }}
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Пройти mock-тест и открыть</button>
+                </div>
+              )}
+
+              {/* reflection gate */}
+              {unlocked && complete && !reflected && (
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5", background:"#fff8ec" }}>
+                  <div style={{ fontSize:12.5, color:"#8a5a12", fontWeight:600, marginBottom:8 }}>🛬 Модуль пройден! Запиши mock-балл + короткий отзыв, чтобы открыть следующий.</div>
+                  <button onClick={() => { setReflectMod(m); setRBand(reflections[m.id]?.band || 6.5); }}
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Добавить балл и отзыв</button>
+                </div>
+              )}
             </div>
           );
         })}
