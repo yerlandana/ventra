@@ -1270,9 +1270,11 @@ function Leaderboard({ session, setPage }) {
       const [students, allProgress] = await Promise.all([FB.getStudents(), FB.getAllProgress()]);
       const r = Object.entries(students).map(([email,info])=>({
         email, name:info.name,
+        band: (info.ielts && info.ielts.band != null) ? info.ielts.band : null,
+        cert: (info.ielts && info.ielts.cert) ? info.ielts.cert : "",
         pts: Object.values(allProgress[email]||{}).reduce((s,v)=>s+(v.points||0),0),
         done: Object.values(allProgress[email]||{}).filter(v=>v.quizDone).length
-      })).sort((a,b)=>b.pts-a.pts);
+      })).sort((a,b)=> (b.band||0)-(a.band||0) || b.pts-a.pts);
       setRankings(r);
     };
     load();
@@ -1288,7 +1290,7 @@ function Leaderboard({ session, setPage }) {
       <div style={{ maxWidth:560, margin:"0 auto", padding:"16px 14px" }}>
         <div style={{ background:"#0a0a0a", borderRadius:12, padding:"14px 16px", color:"white", marginBottom:14 }}>
           <div style={{ fontSize:14, fontWeight:700, letterSpacing:"0.2px" }}>Top Students</div>
-          <div style={{ fontSize:11, opacity:0.7, marginTop:2 }}>Ranked by total points</div>
+          <div style={{ fontSize:11, opacity:0.7, marginTop:2 }}>Ranked by IELTS result, then points</div>
         </div>
         {rankings.map((r,i)=>{
           const isMe = r.email===session.email;
@@ -1297,11 +1299,12 @@ function Leaderboard({ session, setPage }) {
               <div style={{ fontSize:i<3?20:13, fontWeight:700, width:28, textAlign:"center", color:"#0a0a0a" }}>{medals[i]||`#${i+1}`}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:600, fontSize:13 }}>{r.name}{isMe?" · You":""}</div>
-                <div style={{ fontSize:11, color:"#888" }}>{r.done} lessons done</div>
+                <div style={{ fontSize:11, color:"#888" }}>{r.done} lessons · {r.pts} pts{r.cert ? " · " : ""}{r.cert && <a href={r.cert} target="_blank" rel="noreferrer" style={{ color:"#1A5FAD", fontWeight:700 }}>🎓 cert</a>}</div>
               </div>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:16, fontWeight:800, color:"#0a0a0a" }}>{r.pts}</div>
-                <div style={{ fontSize:10, color:"#888" }}>pts</div>
+              <div style={{ textAlign:"right", minWidth:52 }}>
+                {r.band != null
+                  ? <><div style={{ fontSize:18, fontWeight:800, color:"#1E7A4F" }}>{fmtBand(r.band)}</div><div style={{ fontSize:9, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>IELTS</div></>
+                  : <><div style={{ fontSize:16, fontWeight:800, color:"#0a0a0a" }}>{r.pts}</div><div style={{ fontSize:10, color:"#888" }}>pts</div></>}
               </div>
             </div>
           );
@@ -1507,6 +1510,66 @@ function SchedulePanel({ email, info, refresh }) {
   );
 }
 
+// Teacher panel to set a student's final IELTS band and attach a certificate.
+function ResultPanel({ email, info, refresh }) {
+  const cur = info.ielts || null;
+  const [band, setBand] = useState((cur && cur.band) || 7);
+  const [cert, setCert] = useState((cur && cur.cert) || "");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const onFile = (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    if (f.size > 900 * 1024) { setErr("Файл больше 900 КБ — вставьте ссылку (Google Drive) вместо загрузки."); return; }
+    const reader = new FileReader();
+    reader.onload = () => { setCert(String(reader.result)); setErr(""); };
+    reader.readAsDataURL(f);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    await FB.updateStudent(email, { ielts: { band, cert: cert || "", at: new Date().toISOString() } });
+    setSaving(false); refresh();
+  };
+  const clear = async () => {
+    if (!window.confirm("Убрать балл и сертификат у студента?")) return;
+    await FB.updateStudent(email, { ielts: null });
+    setBand(7); setCert(""); refresh();
+  };
+
+  const isImg = cert && (cert.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(cert));
+
+  return (
+    <div>
+      <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:6 }}>Балл IELTS</div>
+      <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:12 }}>
+        {BAND_OPTS.map(b => (
+          <button key={b} onClick={()=>setBand(b)} style={{ padding:"7px 11px", borderRadius:8, border:`2px solid ${band===b?"#1E7A4F":"#dbe6f3"}`, background:band===b?"#1E7A4F":"white", color:band===b?"white":"#0a0a0a", fontWeight:800, fontSize:13, cursor:"pointer" }}>{fmtBand(b)}</button>
+        ))}
+      </div>
+      <div style={{ fontSize:11, fontWeight:700, color:"#555", marginBottom:6 }}>Сертификат — файл (до 900 КБ) или ссылка</div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:8 }}>
+        <input type="file" accept="image/*,application/pdf" onChange={onFile} style={{ fontSize:12 }} />
+        <span style={{ fontSize:11, color:"#999" }}>или</span>
+        <input placeholder="https://… ссылка на сертификат" value={cert.startsWith("data:")?"":cert} onChange={e=>setCert(e.target.value)}
+          style={{ flex:1, minWidth:180, padding:"8px 10px", borderRadius:8, border:"1px solid #dbe0e8", fontSize:13, outline:"none" }} />
+      </div>
+      {err && <div style={{ fontSize:11, color:"#b3261e", marginBottom:8 }}>{err}</div>}
+      {cert && (
+        <div style={{ marginBottom:10 }}>
+          {isImg
+            ? <img src={cert} alt="certificate" style={{ maxWidth:220, maxHeight:150, borderRadius:8, border:"1px solid #e5e5e5" }} />
+            : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:12.5, color:"#1A5FAD", fontWeight:700 }}>📄 Открыть сертификат ↗</a>}
+        </div>
+      )}
+      <div style={{ display:"flex", gap:8 }}>
+        <button onClick={save} disabled={saving} style={{ padding:"9px 18px", borderRadius:9, border:"none", background:"#1E7A4F", color:"white", fontWeight:800, fontSize:13, cursor:"pointer", opacity:saving?0.6:1 }}>{saving?"Сохранение…":"Сохранить результат"}</button>
+        {cur && <button onClick={clear} style={{ padding:"9px 14px", borderRadius:9, border:"1px solid #f0c9c9", background:"white", color:"#b3261e", fontWeight:700, fontSize:13, cursor:"pointer" }}>Убрать</button>}
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════
@@ -1519,6 +1582,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [modulesFor, setModulesFor] = useState(null); // email whose module panel is open
   const [scheduleFor, setScheduleFor] = useState(null); // email whose schedule panel is open
+  const [resultFor, setResultFor] = useState(null); // email whose IELTS-result panel is open
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -1583,7 +1647,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
       </div>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"14px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:10, marginBottom:14 }}>
-          {[["Total",list.length],["Active",list.filter(([,v])=>v.status==="active").length],["Revoked",list.filter(([,v])=>v.status==="revoked").length],["🎤 Speaking",list.filter(([,v])=>v.speaking).length]].map(([l,v])=>(
+          {[["Total",list.length],["Active",list.filter(([,v])=>v.status==="active").length],["🎓 Certified",list.filter(([,v])=>v.ielts && v.ielts.band!=null).length],["🎤 Speaking",list.filter(([,v])=>v.speaking).length]].map(([l,v])=>(
             <div key={l} style={{ background:"white", border:"1px solid #e5e5e5", borderRadius:10, padding:"12px 14px" }}>
               <div style={{ fontSize:11, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>{l}</div>
               <div style={{ fontSize:20, fontWeight:800, color:"#0a0a0a", marginTop:2 }}>{v}</div>
@@ -1640,7 +1704,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
             const unlocked = info.unlockedModules || [];
             const panelOpen = modulesFor === email;
             const scheduleOpen = scheduleFor === email;
+            const resultOpen = resultFor === email;
             const hasSchedule = !!info.schedule;
+            const ieltsBand = info.ielts && info.ielts.band;
             return (
               <div key={email} style={{ borderBottom:"1px solid #f0f0f0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", flexWrap:"wrap" }}>
@@ -1652,6 +1718,10 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <span style={{ fontSize:10, padding:"2px 9px", borderRadius:999, fontWeight:700, background: active ? "#0a0a0a":"#f0f0f0", color: active ? "white":"#666", letterSpacing:"0.3px", textTransform:"uppercase" }}>
                   {active?"Active":"Revoked"}
                 </span>
+                {ieltsBand != null && <span title="IELTS band" style={{ fontSize:11, padding:"2px 9px", borderRadius:999, fontWeight:800, background:"#e8f3ec", color:"#155e37" }}>🎓 {fmtBand(ieltsBand)}</span>}
+                <button onClick={()=>setResultFor(resultOpen?null:email)} title="Set IELTS band & upload certificate" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${ieltsBand!=null?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:ieltsBand!=null?"#e8f3ec":"white", color:ieltsBand!=null?"#155e37":"#666" }}>
+                  🎓 Result {resultOpen?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -1666,6 +1736,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 </button>
                 <button onClick={()=>remove(email)} aria-label="Delete" style={{ padding:"5px 9px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#666", cursor:"pointer", fontSize:11 }}>×</button>
               </div>
+              {resultOpen && (
+                <div style={{ padding:"10px 14px 16px", background:"#f6fbf8" }}>
+                  <div style={{ fontSize:11, color:"#666", margin:"4px 0 10px" }}>Итоговый балл IELTS и сертификат для <b>{info.name}</b> — попадёт в лидерборд и в кабинет студента:</div>
+                  <ResultPanel email={email} info={info} refresh={refresh} />
+                </div>
+              )}
               {scheduleOpen && (
                 <div style={{ padding:"8px 14px 16px", background:"#f7fbf8" }}>
                   <SchedulePanel email={email} info={info} refresh={refresh} />
