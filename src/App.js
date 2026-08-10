@@ -1263,26 +1263,42 @@ function Dashboard({ session, setPage, modules }) {
 // ══════════════════════════════════════════
 // LEADERBOARD
 // ══════════════════════════════════════════
+// Repeating diagonal IELTS8 watermark overlay (non-interactive).
+function Watermark() {
+  return (
+    <div aria-hidden="true" style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden", display:"flex", flexWrap:"wrap", alignContent:"center", justifyContent:"center", transform:"rotate(-26deg) scale(1.45)", opacity:0.16 }}>
+      {Array.from({length:80}).map((_,i)=>(
+        <span key={i} style={{ fontSize:20, fontWeight:900, color:"#0d2540", margin:"10px 16px", whiteSpace:"nowrap", letterSpacing:"3px" }}>IELTS8</span>
+      ))}
+    </div>
+  );
+}
+
 // Shared certificate viewer (works for data-URL images/PDFs that browsers block in a new tab).
-function CertModal({ cert, onClose }) {
+// canDownload → teacher only; students get view-only.
+function CertModal({ cert, onClose, canDownload }) {
   if (!cert) return null;
   const isImg = cert.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(cert);
   const isPdf = cert.startsWith("data:application/pdf") || /\.pdf(\?|$)/i.test(cert);
+  const blockSave = (e) => { if (!canDownload) e.preventDefault(); };
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.72)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:"white", borderRadius:16, padding:14, maxWidth:"92vw", maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, marginBottom:10 }}>
           <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a" }}>🎓 IELTS certificate</div>
           <div style={{ display:"flex", gap:8 }}>
-            <a href={cert} download="ielts-certificate" style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", textDecoration:"none", padding:"6px 10px", border:"1px solid #dbe6f3", borderRadius:8 }}>Скачать</a>
+            {canDownload && <a href={cert} download="ielts-certificate" style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", textDecoration:"none", padding:"6px 10px", border:"1px solid #dbe6f3", borderRadius:8 }}>Скачать</a>}
             <button onClick={onClose} style={{ fontSize:12, fontWeight:700, color:"#666", border:"1px solid #e5e5e5", borderRadius:8, background:"white", padding:"6px 12px", cursor:"pointer" }}>Закрыть ✕</button>
           </div>
         </div>
-        {isImg
-          ? <img src={cert} alt="certificate" style={{ maxWidth:"88vw", maxHeight:"78vh", display:"block", borderRadius:8 }} />
-          : isPdf
-            ? <iframe src={cert} title="certificate" style={{ width:"80vw", height:"78vh", border:"none", borderRadius:8 }} />
-            : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#1A5FAD", fontWeight:700 }}>Открыть сертификат ↗</a>}
+        <div style={{ position:"relative", display:"inline-block", lineHeight:0 }}>
+          {isImg
+            ? <img src={cert} alt="certificate" onContextMenu={blockSave} draggable={false} style={{ maxWidth:"88vw", maxHeight:"78vh", display:"block", borderRadius:8, userSelect:"none" }} />
+            : isPdf
+              ? <iframe src={cert} title="certificate" style={{ width:"80vw", height:"78vh", border:"none", borderRadius:8, display:"block" }} />
+              : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#1A5FAD", fontWeight:700, lineHeight:1.4 }}>Открыть сертификат ↗</a>}
+          {(isImg || isPdf) && <Watermark />}
+        </div>
       </div>
     </div>
   );
@@ -1347,7 +1363,7 @@ function Leaderboard({ session, setPage }) {
             </div>
           );
         })}
-        <CertModal cert={certView} onClose={()=>setCertView(null)} />
+        <CertModal cert={certView} onClose={()=>setCertView(null)} canDownload={session.email === ADMIN_EMAIL} />
       </div>
     </div>
   );
