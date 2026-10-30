@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
 // ─── FIREBASE CONFIG ───
@@ -19,6 +20,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const auth = getAuth(firebaseApp);
+const storage = getStorage(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
@@ -154,6 +156,16 @@ const FB = {
     const snap = await getDoc(doc(db, "lessons", lessonId));
     return snap.exists() ? (snap.data().materials || []) : [];
   },
+  // Files the teacher uploads for a lesson (videos, slides, PDFs)
+  uploadLessonFile: (lessonId, file, onProgress) => new Promise((resolve, reject) => {
+    const path = `lessons/${lessonId}/${Date.now()}-${file.name.replace(/[^\w.-]+/g, "_")}`;
+    const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type });
+    task.on("state_changed",
+      snap => onProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+      reject,
+      async () => resolve({ path, url: await getDownloadURL(task.snapshot.ref) }));
+  }),
+  deleteLessonFile: (path) => deleteObject(storageRef(storage, path)),
 };
 
 // ─── LOCAL SESSION ───
@@ -208,14 +220,14 @@ const QUIZ_TIMER_MS = 30 * 60 * 1000; // 30 minutes
 const QUIZ_SVG = {
   plane: (
     <g>
-      <path d="M14,46 L86,30 Q98,27 104,34 Q98,41 86,40 L60,42 L44,58 L36,57 L44,43 L24,45 L16,53 L10,52 Z" fill="#1A5FAD"/>
+      <path d="M14,46 L86,30 Q98,27 104,34 Q98,41 86,40 L60,42 L44,58 L36,57 L44,43 L24,45 L16,53 L10,52 Z" fill="#5F4FD9"/>
       <circle cx="98" cy="35" r="3" fill="#9ED9CF"/>
       <path d="M50,42 L40,30 L46,30 L60,40 Z" fill="#0D4F45"/>
     </g>
   ),
   airport: (
     <g>
-      <rect x="14" y="40" width="92" height="26" rx="3" fill="#1A5FAD" opacity=".9"/>
+      <rect x="14" y="40" width="92" height="26" rx="3" fill="#5F4FD9" opacity=".9"/>
       <path d="M14,40 Q60,24 106,40 Z" fill="#49BEB6"/>
       <g fill="#E5EEFA"><rect x="22" y="46" width="10" height="14"/><rect x="38" y="46" width="10" height="14"/><rect x="54" y="46" width="10" height="14"/><rect x="70" y="46" width="10" height="14"/><rect x="86" y="46" width="10" height="14"/></g>
       <path d="M70,30 L90,16 L92,18 L78,34 Z" fill="#0a0a0a"/>
@@ -224,7 +236,7 @@ const QUIZ_SVG = {
   controlTower: (
     <g>
       <rect x="52" y="30" width="14" height="40" fill="#7A7870"/>
-      <path d="M44,30 L74,30 L68,14 L50,14 Z" fill="#1A5FAD"/>
+      <path d="M44,30 L74,30 L68,14 L50,14 Z" fill="#5F4FD9"/>
       <rect x="50" y="18" width="18" height="8" fill="#E5EEFA"/>
       <rect x="28" y="64" width="62" height="6" fill="#3D3C39"/>
     </g>
@@ -237,11 +249,11 @@ const QUIZ_SVG = {
   ),
   boardingPass: (
     <g>
-      <rect x="12" y="24" width="96" height="36" rx="4" fill="#fff" stroke="#1A5FAD" strokeWidth="2"/>
-      <rect x="78" y="24" width="2" height="36" fill="#1A5FAD" strokeDasharray="3 3"/>
+      <rect x="12" y="24" width="96" height="36" rx="4" fill="#fff" stroke="#5F4FD9" strokeWidth="2"/>
+      <rect x="78" y="24" width="2" height="36" fill="#5F4FD9" strokeDasharray="3 3"/>
       <circle cx="93" cy="42" r="9" fill="#E5EEFA"/>
-      <path d="M88,42 L98,38 L96,42 L98,46 Z" fill="#1A5FAD"/>
-      <g fill="#1A5FAD"><rect x="20" y="32" width="34" height="4" rx="2"/><rect x="20" y="42" width="24" height="3" rx="1.5"/><rect x="20" y="49" width="40" height="3" rx="1.5"/></g>
+      <path d="M88,42 L98,38 L96,42 L98,46 Z" fill="#5F4FD9"/>
+      <g fill="#5F4FD9"><rect x="20" y="32" width="34" height="4" rx="2"/><rect x="20" y="42" width="24" height="3" rx="1.5"/><rect x="20" y="49" width="40" height="3" rx="1.5"/></g>
     </g>
   ),
   departureBoard: (
@@ -253,7 +265,7 @@ const QUIZ_SVG = {
   ),
   worldMap: (
     <g>
-      <circle cx="60" cy="42" r="30" fill="#E5EEFA" stroke="#1A5FAD" strokeWidth="1.5"/>
+      <circle cx="60" cy="42" r="30" fill="#E5EEFA" stroke="#5F4FD9" strokeWidth="1.5"/>
       <path d="M44,30 Q54,26 62,32 Q56,40 64,46 Q52,52 46,46 Q40,38 44,30 Z" fill="#49BEB6"/>
       <path d="M70,34 Q80,32 82,40 Q76,48 70,44 Z" fill="#49BEB6"/>
       <path d="M40,42 Q70,18 86,40" fill="none" stroke="#FF5959" strokeWidth="2" strokeDasharray="2 4"/>
@@ -262,7 +274,7 @@ const QUIZ_SVG = {
   ),
   luggage: (
     <g>
-      <rect x="40" y="30" width="40" height="40" rx="5" fill="#1A5FAD"/>
+      <rect x="40" y="30" width="40" height="40" rx="5" fill="#5F4FD9"/>
       <rect x="52" y="20" width="16" height="12" rx="4" fill="none" stroke="#3D3C39" strokeWidth="3"/>
       <g stroke="#9ED9CF" strokeWidth="2"><line x1="48" y1="36" x2="48" y2="64"/><line x1="72" y1="36" x2="72" y2="64"/></g>
       <rect x="55" y="44" width="10" height="8" rx="2" fill="#F5C07A"/>
@@ -278,9 +290,9 @@ const QUIZ_SVG = {
   ),
   headphones: (
     <g>
-      <path d="M30,52 V42 a30,30 0 0,1 60,0 V52" fill="none" stroke="#1A5FAD" strokeWidth="5"/>
-      <rect x="24" y="48" width="14" height="20" rx="5" fill="#1A5FAD"/>
-      <rect x="82" y="48" width="14" height="20" rx="5" fill="#1A5FAD"/>
+      <path d="M30,52 V42 a30,30 0 0,1 60,0 V52" fill="none" stroke="#5F4FD9" strokeWidth="5"/>
+      <rect x="24" y="48" width="14" height="20" rx="5" fill="#5F4FD9"/>
+      <rect x="82" y="48" width="14" height="20" rx="5" fill="#5F4FD9"/>
     </g>
   ),
   book: (
@@ -305,7 +317,7 @@ const QUIZ_SVG = {
   ),
   clock: (
     <g>
-      <circle cx="60" cy="42" r="26" fill="#fff" stroke="#1A5FAD" strokeWidth="4"/>
+      <circle cx="60" cy="42" r="26" fill="#fff" stroke="#5F4FD9" strokeWidth="4"/>
       <path d="M60,42 V26 M60,42 L74,48" stroke="#0a0a0a" strokeWidth="3" strokeLinecap="round"/>
       <circle cx="60" cy="42" r="3" fill="#FF5959"/>
     </g>
@@ -314,7 +326,7 @@ const QUIZ_SVG = {
     <g>
       <line x1="22" y1="20" x2="22" y2="64" stroke="#7A7870" strokeWidth="2"/>
       <line x1="22" y1="64" x2="100" y2="64" stroke="#7A7870" strokeWidth="2"/>
-      <polyline points="26,58 44,48 60,52 76,32 96,24" fill="none" stroke="#1A5FAD" strokeWidth="3"/>
+      <polyline points="26,58 44,48 60,52 76,32 96,24" fill="none" stroke="#5F4FD9" strokeWidth="3"/>
       <g fill="#FF5959"><circle cx="44" cy="48" r="3"/><circle cx="76" cy="32" r="3"/><circle cx="96" cy="24" r="3"/></g>
     </g>
   ),
@@ -322,12 +334,12 @@ const QUIZ_SVG = {
     <g>
       <line x1="22" y1="20" x2="22" y2="64" stroke="#7A7870" strokeWidth="2"/>
       <line x1="22" y1="64" x2="100" y2="64" stroke="#7A7870" strokeWidth="2"/>
-      <g><rect x="32" y="44" width="13" height="20" fill="#1A5FAD"/><rect x="52" y="32" width="13" height="32" fill="#49BEB6"/><rect x="72" y="38" width="13" height="26" fill="#F5C07A"/><rect x="92" y="50" width="8" height="14" fill="#FF5959"/></g>
+      <g><rect x="32" y="44" width="13" height="20" fill="#5F4FD9"/><rect x="52" y="32" width="13" height="32" fill="#49BEB6"/><rect x="72" y="38" width="13" height="26" fill="#F5C07A"/><rect x="92" y="50" width="8" height="14" fill="#FF5959"/></g>
     </g>
   ),
   pieChart: (
     <g transform="translate(60,42)">
-      <path d="M0,0 L0,-28 A28,28 0 0,1 24,14 Z" fill="#1A5FAD"/>
+      <path d="M0,0 L0,-28 A28,28 0 0,1 24,14 Z" fill="#5F4FD9"/>
       <path d="M0,0 L24,14 A28,28 0 0,1 -18,21 Z" fill="#49BEB6"/>
       <path d="M0,0 L-18,21 A28,28 0 0,1 -27,-7 Z" fill="#F5C07A"/>
       <path d="M0,0 L-27,-7 A28,28 0 0,1 0,-28 Z" fill="#FF5959"/>
@@ -694,226 +706,187 @@ const INITIAL_MODULES = [
 // ══════════════════════════════════════════
 // QUIZ PAGE
 // ══════════════════════════════════════════
-function QuizPage({ lesson, session, setPage }) {
-  const qs = lesson.quiz.questions;
-  const total = qs.reduce((s,q)=>s+(q.points||10),0);
+// ─── LESSON STEPS: video, presentation, test, assignment ───
+const VIDEO_POINTS = 5; // per correct in-video question
+const SLIDES_POINTS = 5;
+const isMock = (lesson) => lesson.tag === "Mock" || lesson.tag === "Final";
+const hasDeck = (lesson) => /^\d+-\d+$/.test(lesson.id);
+const cleanTitle = (s) => (s || "").replace(/\s*[—–]\s*/g, ": ");
+// Three questions spread across the lesson's bank pause the video; the rest make up the test.
+function videoQuestions(lesson) {
+  if (isMock(lesson)) return [];
+  const cand = lesson.quiz.questions.filter(q => q.type === "mc" || q.type === "tf");
+  if (!cand.length) return [];
+  return [...new Set([0,1,2].map(k => cand[Math.floor(cand.length * (k + 0.5) / 3)]))];
+}
+function testQuestions(lesson) {
+  const inVideo = videoQuestions(lesson);
+  return lesson.quiz.questions.filter(q => !inVideo.includes(q));
+}
+const normAnswer = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+function isCorrect(q, a) {
+  if (q.type === "fitb") return normAnswer(a) === normAnswer(q.answer);
+  if (q.type === "match") return !!a && q.pairs.every(([k, v]) => a[k] === v);
+  return a === q.answer;
+}
+const isAnswered = (q, a) => q.type === "fitb" ? !!normAnswer(a) : q.type === "match" ? !!a && q.pairs.every(([k]) => a[k]) : a !== undefined;
+// Merge one step's result into the student's progress and return the lesson's new progress.
+async function saveStep(email, lessonId, key, data, gain = 0) {
+  const cur = await FB.getProgress(email);
+  const prev = cur[lessonId] || {};
+  const updated = { ...prev, steps: { ...(prev.steps || {}), [key]: data }, points: (prev.points || 0) + gain };
+  await FB.setProgress(email, { [lessonId]: updated });
+  return updated;
+}
+const assignmentDone = (lesson, lp, submission) => {
+  if (lp.assignmentDone) return true;
+  if (!submission) return false;
+  return lesson.assignment.type === "writing" ? !!submission.text : !!submission.rubric;
+};
 
-  const [current, setCurrent] = useState(0);
-  const [score, setScore] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-
-  // per-question interaction
-  const [pick, setPick] = useState(null);        // mc index / tf bool
-  const [fitbVal, setFitbVal] = useState("");
-  const [matchVal, setMatchVal] = useState({});
-  const [locked, setLocked] = useState(false);
-  const [wasCorrect, setWasCorrect] = useState(false);
-  const [lastGain, setLastGain] = useState(0);
-  const [lastBonus, setLastBonus] = useState(0);
-
-  const [finished, setFinished] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-
-  // flight timer (30 min)
-  const [startedAt, setStartedAt] = useState(() => Date.now());
-  const [now, setNow] = useState(() => Date.now());
-  const finishedRef = useRef(false);
-  const remaining = Math.max(0, QUIZ_TIMER_MS - (now - startedAt));
-  const lowTime = remaining > 0 && remaining < 5 * 60 * 1000;
-
-  const q = qs[current];
-
-  const finish = async (auto = false) => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    if (auto) setTimedOut(true);
-    const existing = await FB.getProgress(session.email);
-    const prev = existing[lesson.id] || {};
-    await FB.setProgress(session.email, {
-      [lesson.id]: { ...prev, quizDone:true, quizScore:score, quizTotal:total, points:(prev.points||0)+score, completedAt:new Date().toISOString() }
-    });
-    setFinished(true);
+// One answer control, shared by the in-video questions and the test.
+function QuestionInput({ q, value, onChange, reviewed }) {
+  const optStyle = (selected, correct) => {
+    if (reviewed && correct) return { border:"2px solid #3F9C5B", background:"#E9F6EC", color:"#1D5E31" };
+    if (reviewed && selected) return { border:"2px solid #D65B5B", background:"#FBEAEA", color:"#8A2B2B" };
+    return { border:`2px solid ${selected?"#5F4FD9":"#E7E6F0"}`, background:selected?"#F1EFFC":"white", color:"#14123F" };
   };
-
-  useEffect(() => {
-    if (finished) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [finished]);
-
-  useEffect(() => {
-    if (!finished && remaining === 0) finish(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining, finished]);
-
-  const lockAnswer = (correct) => {
-    if (locked) return;
-    const newStreak = correct ? streak + 1 : 0;
-    const bonus = correct ? Math.min(Math.max(newStreak - 1, 0), 5) * 2 : 0;
-    const gained = correct ? (q.points + bonus) : 0;
-    setLocked(true); setWasCorrect(correct);
-    setStreak(newStreak); setBestStreak(b => Math.max(b, newStreak));
-    if (correct) setCorrectCount(c => c + 1);
-    setLastGain(gained); setLastBonus(bonus);
-    setScore(s => s + gained);
-  };
-
-  const resetQ = () => { setLocked(false); setWasCorrect(false); setPick(null); setFitbVal(""); setMatchVal({}); setLastGain(0); setLastBonus(0); };
-  const advance = () => { if (current < qs.length - 1) { setCurrent(c => c + 1); resetQ(); } else finish(); };
-
-  const restart = () => {
-    setCurrent(0); setScore(0); setCorrectCount(0); setStreak(0); setBestStreak(0);
-    resetQ(); setFinished(false); setTimedOut(false); finishedRef.current = false;
-    setStartedAt(Date.now()); setNow(Date.now());
-  };
-
-  const matchReady = q && q.type === "match" && q.pairs.every(([k]) => (matchVal[k] || "") !== "");
-  const evalMatch = () => q.pairs.every(([k,v]) => matchVal[k] === v);
-
-  // ── LANDING / RESULTS ──
-  if (finished) {
-    const pct = Math.round(correctCount / qs.length * 100);
-    const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0;
-    const rank = pct >= 90 ? "✈️ Captain" : pct >= 75 ? "🧑‍✈️ First Officer" : pct >= 60 ? "🛩️ Co-pilot" : pct >= 40 ? "🎓 Cadet" : "🧳 Trainee";
+  const optBase = { padding:"11px 14px", borderRadius:12, cursor:reviewed?"default":"pointer", fontWeight:600, fontSize:14, textAlign:"left", width:"100%", fontFamily:"inherit" };
+  if (q.type === "mc") return (
+    <div style={{ display:"grid", gap:8 }}>
+      {q.options.map((opt, i) => (
+        <button key={i} type="button" disabled={reviewed} onClick={() => onChange(i)} style={{ ...optBase, ...optStyle(value===i, i===q.answer) }}>{opt}</button>
+      ))}
+    </div>
+  );
+  if (q.type === "tf") return (
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+      {[true,false].map(v => (
+        <button key={String(v)} type="button" disabled={reviewed} onClick={() => onChange(v)} style={{ ...optBase, textAlign:"center", ...optStyle(value===v, v===q.answer) }}>{v?"True":"False"}</button>
+      ))}
+    </div>
+  );
+  if (q.type === "fitb") {
+    const ok = isCorrect(q, value);
     return (
-      <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#0d2540,#1A5FAD)", display:"flex", alignItems:"center", justifyContent:"center", padding:16, fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-        <div style={{ background:"white", borderRadius:22, maxWidth:420, width:"100%", overflow:"hidden", boxShadow:"0 24px 60px rgba(0,0,0,0.35)" }}>
-          <div style={{ background:"linear-gradient(135deg,#0d2540,#1A5FAD)", color:"white", padding:"22px 22px 18px", textAlign:"center" }}>
-            <div style={{ fontSize:11, letterSpacing:"2px", opacity:0.7, fontWeight:700 }}>BOARDING PASS · IELTS8 AIR</div>
-            <div style={{ fontSize:50, margin:"6px 0" }}>{pct>=70?"🛬":"📚"}</div>
-            <div style={{ fontSize:20, fontWeight:800 }}>{pct>=90?"Perfect landing!":pct>=70?"Smooth landing!":pct>=50?"You touched down":"Bumpy flight — try again"}</div>
-            <div style={{ fontSize:22, marginTop:6 }}>{"⭐".repeat(stars)}{"☆".repeat(3-stars)}</div>
-            {timedOut && <div style={{ fontSize:12, color:"#FFD27A", fontWeight:700, marginTop:8 }}>⏰ Flight time ended — auto-landed</div>}
-          </div>
-          <div style={{ padding:"18px 22px 24px" }}>
-            <div style={{ display:"flex", justifyContent:"space-around", textAlign:"center", marginBottom:16 }}>
-              <div><div style={{ fontSize:24, fontWeight:800, color:"#1A5FAD" }}>{score}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Miles (pts)</div></div>
-              <div><div style={{ fontSize:24, fontWeight:800, color:"#0a0a0a" }}>{correctCount}/{qs.length}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Correct</div></div>
-              <div><div style={{ fontSize:24, fontWeight:800, color:"#B8620A" }}>🔥{bestStreak}</div><div style={{ fontSize:11, color:"#94a3b8" }}>Best streak</div></div>
-            </div>
-            <div style={{ textAlign:"center", background:"#eef4fd", borderRadius:12, padding:"10px", marginBottom:18, fontWeight:700, color:"#0d2540" }}>Rank earned: {rank} · {pct}%</div>
-            <div style={{ display:"flex", gap:12 }}>
-              <button onClick={restart} style={{ flex:1, padding:"12px", borderRadius:10, border:"2px solid #e5e5e5", background:"white", color:"#0a0a0a", fontWeight:700, cursor:"pointer" }}>↻ Fly again</button>
-              <button onClick={() => setPage("lesson")} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"#1A5FAD", color:"white", fontWeight:700, cursor:"pointer" }}>Done →</button>
-            </div>
-          </div>
-        </div>
+      <div>
+        <input aria-label="Your answer" placeholder="Type your answer" value={value || ""} disabled={reviewed} onChange={e => onChange(e.target.value)}
+          style={{ width:"100%", padding:"11px 14px", borderRadius:12, fontSize:14, border:`2px solid ${reviewed?(ok?"#3F9C5B":"#D65B5B"):"#E7E6F0"}`, background:reviewed?(ok?"#E9F6EC":"#FBEAEA"):"white" }} />
+        {reviewed && !ok && <div style={{ fontSize:12.5, color:"#1D5E31", fontWeight:700, marginTop:6 }}>Correct answer: {q.answer}</div>}
       </div>
     );
   }
+  const choices = [...new Set(q.pairs.map(([,v]) => v))].sort();
+  return (
+    <div style={{ display:"grid", gap:8 }}>
+      {q.pairs.map(([k, correctV]) => {
+        const chosen = (value || {})[k] || "";
+        const ok = reviewed && chosen === correctV;
+        const bad = reviewed && chosen !== correctV;
+        return (
+          <div key={k} style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:8, alignItems:"center" }}>
+            <div style={{ fontWeight:600, fontSize:14 }}>{k}</div>
+            <select aria-label={k} value={chosen} disabled={reviewed} onChange={e => onChange({ ...(value||{}), [k]: e.target.value })}
+              style={{ padding:10, borderRadius:10, fontSize:13.5, border:`2px solid ${ok?"#3F9C5B":bad?"#D65B5B":"#E7E6F0"}`, background:ok?"#E9F6EC":bad?"#FBEAEA":"white" }}>
+              <option value="">Select</option>
+              {choices.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+            {bad && <div style={{ fontSize:12, color:"#1D5E31", fontWeight:700 }}>Correct: {correctV}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-  // option styling with instant feedback
-  const optStyle = (selected, isCorrect, isWrongPick) => {
-    if (locked && isCorrect) return { border:"2px solid #1E7A4F", background:"#e2ece5", color:"#0d4f45" };
-    if (locked && isWrongPick) return { border:"2px solid #B23A2E", background:"#f6e2df", color:"#7a1f16" };
-    if (locked) return { border:"2px solid #e5e5e5", background:"white", color:"#94a3b8" };
-    return { border:`2px solid ${selected?"#1A5FAD":"#e5e5e5"}`, background:selected?"#eef4fd":"white", color:selected?"#0d2540":"#374151" };
+// The separate lesson test: answer everything, then Submit once for a score and a review.
+function QuizPage({ lesson, session, setPage, isAdmin }) {
+  const qs = testQuestions(lesson);
+  const total = qs.reduce((s,q)=>s+(q.points||10),0);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const submittedRef = useRef(false);
+  const remaining = Math.max(0, QUIZ_TIMER_MS - (now - startedAt));
+  const lowTime = remaining > 0 && remaining < 5 * 60 * 1000;
+  const answeredCount = qs.filter((q,i) => isAnswered(q, answers[i])).length;
+
+  const submit = async (auto = false) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const correct = qs.filter((q,i) => isCorrect(q, answers[i]));
+    const score = correct.reduce((s,q)=>s+(q.points||10),0);
+    const res = { score, total, correct: correct.length, count: qs.length, timedOut: auto };
+    setSaving(true);
+    try {
+      if (!isAdmin) {
+        const cur = await FB.getProgress(session.email);
+        const prevStep = (cur[lesson.id]?.steps?.test) || {};
+        const best = Math.max(prevStep.best || 0, score);
+        // Retakes only earn the points above the previous best.
+        await saveStep(session.email, lesson.id, "test", { score, total, correct: correct.length, count: qs.length, best, attempts: (prevStep.attempts||0)+1, at: new Date().toISOString() }, best - (prevStep.best||0));
+      }
+      setResult(res);
+    } catch (e) {
+      submittedRef.current = false;
+      alert("Could not submit: " + e.message);
+    }
+    setSaving(false);
   };
-  const flightPct = qs.length > 1 ? (current/(qs.length-1))*100 : 100;
+
+  useEffect(() => {
+    if (result) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [result]);
+
+  useEffect(() => {
+    if (!result && remaining === 0) submit(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining, result]);
+
+  const retake = () => {
+    submittedRef.current = false;
+    setAnswers({}); setResult(null); setStartedAt(Date.now()); setNow(Date.now());
+    window.scrollTo(0, 0);
+  };
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(180deg,#cfe4fa,#eaf3fc 220px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <style>{"@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}} @keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}"}</style>
-
-      {/* HUD */}
-      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Exit</button>
-        <div style={{ flex:1, fontWeight:800, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>✈️ Flight {current+1}/{qs.length}</div>
-        <div style={{ fontSize:12, fontWeight:800, color:"#B8620A", flexShrink:0 }}>🔥 {streak}</div>
-        <div style={{ fontSize:12, fontWeight:800, color:"#1A5FAD", flexShrink:0 }}>⭐ {score}</div>
-        <div title="Flight time" style={{ fontSize:13, fontWeight:800, fontVariantNumeric:"tabular-nums", padding:"4px 10px", borderRadius:999, flexShrink:0, background: lowTime ? "#FF5959" : "#0a0a0a", color:"white" }}>⏱ {fmtTime(remaining)}</div>
+    <div style={{ minHeight:"100vh", background:"#F7F7FB" }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:"white", borderBottom:"1px solid #ECEBF3", padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={() => setPage("lesson")} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
+        <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Test: {cleanTitle(lesson.title)}</div>
+        {!result && <div style={{ fontSize:13, fontWeight:700, color:"#6E6C8A", flexShrink:0 }}>{answeredCount}/{qs.length}</div>}
+        {!result && <div style={{ fontSize:13, fontWeight:800, fontVariantNumeric:"tabular-nums", padding:"5px 12px", borderRadius:999, flexShrink:0, background:lowTime?"#D65B5B":"#14123F", color:"white" }}>{fmtTime(remaining)}</div>}
       </div>
-
-      {/* flight sky progress */}
-      <div style={{ position:"relative", height:34, background:"linear-gradient(180deg,#bcdcff,#e3f0fc)", borderBottom:"1px solid #cfe1f5", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:"50%", left:0, right:0, borderTop:"2px dashed #8fb6e6" }} />
-        <span style={{ position:"absolute", top:"50%", left:`calc(${flightPct}% - 12px)`, transform:"translateY(-50%)", fontSize:18, transition:"left .4s ease" }}>✈️</span>
-        <span style={{ position:"absolute", top:"50%", right:6, transform:"translateY(-50%)", fontSize:15 }}>🎓</span>
-      </div>
-
-      <div style={{ maxWidth:600, margin:"18px auto", padding:"0 14px" }}>
-        <div style={{ background:"white", borderRadius:16, padding:"20px 18px", border:"1px solid #e5edf7", boxShadow:"0 10px 26px rgba(13,37,64,.08)" }}>
-          <div style={{ fontSize:12, color:"#94a3b8", marginBottom:8, fontWeight:600 }}>Question {current+1} of {qs.length} · {q.points} pts{q.type==="match"?"":""}</div>
-          {q.img && <QuizImage id={q.img} />}
-          <div style={{ fontSize:18, fontWeight:700, color:"#1e293b", marginBottom:20, lineHeight:1.5 }}>{q.q}</div>
-
-          {q.type==="mc" && q.options.map((opt,i) => (
-            <div key={i} onClick={() => { if(!locked){ setPick(i); lockAnswer(i===q.answer); } }}
-              style={{ padding:"12px 16px", borderRadius:10, marginBottom:10, cursor: locked?"default":"pointer", display:"flex", alignItems:"center", gap:8, ...optStyle(pick===i, i===q.answer, pick===i && i!==q.answer) }}>
-              <span style={{ fontWeight:600, flex:1 }}>{opt}</span>
-              {locked && i===q.answer && <span>✓</span>}
-              {locked && pick===i && i!==q.answer && <span>✗</span>}
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"18px 16px 60px" }}>
+        {result && (
+          <div style={{ background:"#6A5BD6", color:"white", borderRadius:20, padding:"22px 24px", marginBottom:18 }}>
+            <div style={{ fontSize:13, fontWeight:700, opacity:.85 }}>{result.timedOut ? "Time is up, your test was submitted" : "Test submitted"}</div>
+            <div style={{ fontSize:38, fontWeight:800, margin:"4px 0" }}>{Math.round(result.score/result.total*100)}%</div>
+            <div style={{ fontSize:14 }}>{result.correct} of {result.count} correct · {result.score}/{result.total} points</div>
+            <div style={{ display:"flex", gap:10, marginTop:14, flexWrap:"wrap" }}>
+              <button onClick={() => setPage("lesson")} style={{ padding:"10px 18px", borderRadius:12, border:"none", background:"white", color:"#14123F", fontWeight:800, cursor:"pointer" }}>Back to lesson →</button>
+              <button onClick={retake} style={{ padding:"10px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,.6)", background:"transparent", color:"white", fontWeight:700, cursor:"pointer" }}>Retake</button>
             </div>
-          ))}
-
-          {q.type==="tf" && (
-            <div style={{ display:"flex", gap:12 }}>
-              {[true,false].map(v => (
-                <div key={String(v)} onClick={() => { if(!locked){ setPick(v); lockAnswer(v===q.answer); } }}
-                  style={{ flex:1, padding:14, borderRadius:10, cursor: locked?"default":"pointer", textAlign:"center", fontWeight:700, ...optStyle(pick===v, v===q.answer, pick===v && v!==q.answer) }}>
-                  {v?"✅ True":"❌ False"}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {q.type==="fitb" && (
-            <input placeholder="Type your answer…" value={fitbVal} disabled={locked}
-              onChange={e=>setFitbVal(e.target.value)}
-              onKeyDown={e=>{ if(e.key==="Enter" && !locked && fitbVal.trim()) lockAnswer(fitbVal.trim().toLowerCase()===q.answer.toLowerCase()); }}
-              style={{ width:"100%", padding:"14px 16px", borderRadius:10, fontSize:15, boxSizing:"border-box",
-                border:`2px solid ${locked?(wasCorrect?"#1E7A4F":"#B23A2E"):"#e5e5e5"}`, background: locked?(wasCorrect?"#e2ece5":"#f6e2df"):"white" }} />
-          )}
-
-          {q.type==="match" && (
-            <div>
-              <div style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Match each item to the correct answer:</div>
-              {q.pairs.map(([k,correctV]) => {
-                const chosen = matchVal[k] || "";
-                const ok = locked && chosen === correctV;
-                const bad = locked && chosen !== correctV;
-                return (
-                  <div key={k} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                    <div style={{ flex:1, padding:"10px 14px", background:"#f4f8fb", borderRadius:8, fontWeight:600, fontSize:14 }}>{k}</div>
-                    <select value={chosen} disabled={locked} onChange={e => setMatchVal({ ...matchVal, [k]: e.target.value })}
-                      style={{ flex:1, padding:10, borderRadius:8, fontSize:14, border:`2px solid ${ok?"#1E7A4F":bad?"#B23A2E":"#e5e5e5"}`, background: ok?"#e2ece5":bad?"#f6e2df":"white" }}>
-                      <option value="">Select…</option>
-                      {q.pairs.map(([,v]) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                    {locked && (ok ? <span style={{ color:"#1E7A4F", fontWeight:800 }}>✓</span> : <span style={{ color:"#B23A2E", fontWeight:800 }}>✗</span>)}
-                  </div>
-                );
-              })}
-              {locked && !wasCorrect && <div style={{ fontSize:12, color:"#B23A2E", marginTop:4 }}>Correct: {q.pairs.map(([k,v])=>`${k} → ${v}`).join(" · ")}</div>}
-            </div>
-          )}
-
-          {/* check button for fitb/match */}
-          {!locked && (q.type==="fitb" || q.type==="match") && (
-            <button disabled={q.type==="fitb" ? !fitbVal.trim() : !matchReady}
-              onClick={() => lockAnswer(q.type==="fitb" ? (fitbVal.trim().toLowerCase()===q.answer.toLowerCase()) : evalMatch())}
-              style={{ marginTop:18, width:"100%", padding:"12px", borderRadius:10, border:"none", fontWeight:800, fontSize:14,
-                background:(q.type==="fitb"?fitbVal.trim():matchReady)?"#1A5FAD":"#e5e5e5", color:(q.type==="fitb"?fitbVal.trim():matchReady)?"white":"#999", cursor:(q.type==="fitb"?fitbVal.trim():matchReady)?"pointer":"not-allowed" }}>
-              Check answer ✓
-            </button>
-          )}
-
-          {/* feedback + advance */}
-          {locked && (
-            <div style={{ marginTop:18, animation: wasCorrect?"pop .35s ease":"shakeX .35s ease" }}>
-              <div style={{ borderRadius:12, padding:"12px 14px", background: wasCorrect?"#e2ece5":"#f6e2df", color: wasCorrect?"#0d4f45":"#7a1f16", fontWeight:700, fontSize:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-                <span>{wasCorrect ? "✅ Correct!" : "❌ Not quite — answer shown above"}</span>
-                {wasCorrect && <span style={{ color:"#1A5FAD" }}>+{lastGain}{lastBonus>0?` 🔥+${lastBonus}`:""}</span>}
-              </div>
-              {wasCorrect && streak>=3 && <div style={{ textAlign:"center", marginTop:8, fontWeight:800, color:"#B8620A" }}>🔥 {streak} in a row — combo bonus!</div>}
-              <button onClick={advance} style={{ marginTop:14, width:"100%", padding:"13px", borderRadius:10, border:"none", background:"#0d2540", color:"white", fontWeight:800, fontSize:15, cursor:"pointer" }}>
-                {current < qs.length-1 ? "Next ✈️" : "Land & see results 🛬"}
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+        {qs.map((q,i) => (
+          <div key={i} style={{ background:"white", borderRadius:16, padding:"16px 18px", marginBottom:12, border:"1px solid #ECEBF3" }}>
+            <div style={{ fontSize:12, color:"#8B8AA6", fontWeight:700, marginBottom:6 }}>Question {i+1} · {q.points||10} pts</div>
+            {q.img && <QuizImage id={q.img} />}
+            <div style={{ fontSize:15.5, fontWeight:700, lineHeight:1.45, marginBottom:12 }}>{q.q}</div>
+            <QuestionInput q={q} value={answers[i]} reviewed={!!result} onChange={v => setAnswers(a => ({ ...a, [i]: v }))} />
+          </div>
+        ))}
+        {!result && (
+          <button onClick={() => submit(false)} disabled={saving || answeredCount < qs.length}
+            style={{ width:"100%", padding:14, borderRadius:14, border:"none", fontWeight:800, fontSize:15, background:answeredCount<qs.length?"#E7E6F0":"#5F4FD9", color:answeredCount<qs.length?"#8B8AA6":"white", cursor:answeredCount<qs.length?"not-allowed":"pointer" }}>
+            {saving ? "Submitting..." : answeredCount < qs.length ? `Answer all questions to submit (${qs.length-answeredCount} left)` : "Submit test"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1055,7 +1028,7 @@ function AssignmentPage({ lesson, session, setPage }) {
   }[aType];
 
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"inherit" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0, zIndex:50 }}>
         <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
         <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {lesson.title}</div>
@@ -1212,50 +1185,96 @@ function AssignmentPage({ lesson, session, setPage }) {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
-function Dashboard({ session, setPage, modules }) {
-  const [myP, setMyP] = useState({});
-  useEffect(() => { FB.getProgress(session.email).then(setMyP); }, [session.email]);
-  const allLessons = (modules||[]).flatMap(m=>m.lessons);
-  const totalPts = Object.values(myP).reduce((s,v)=>s+(v.points||0),0);
-  const done = allLessons.filter(l=>myP[l.id]?.quizDone).length;
+// One row per lesson with the result of each submitted step. Used on Grades and in the admin panel.
+function ResultsTable({ modules, progress, submissions }) {
+  const cell = { padding:"10px 8px", fontSize:12.5, borderTop:"1px solid #F0EFF6", textAlign:"center", whiteSpace:"nowrap" };
+  const yes = <span style={{ color:"#3F9C5B", fontWeight:800 }}>✓</span>;
+  const none = <span style={{ color:"#C9C8D8" }}>·</span>;
+  return (modules||[]).map(m => (
+    <div key={m.id} style={{ background:"white", borderRadius:16, border:"1px solid #ECEBF3", marginBottom:12, overflowX:"auto" }}>
+      <div style={{ fontWeight:800, fontSize:13.5, padding:"12px 14px" }}>{m.title}</div>
+      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:520 }}>
+        <thead><tr style={{ color:"#8B8AA6", fontSize:11, textTransform:"uppercase", letterSpacing:".04em" }}>
+          <th style={{ textAlign:"left", padding:"0 14px 8px", fontWeight:700 }}>Lesson</th>
+          {["Video","Slides","Test","Task","Points"].map(h => <th key={h} style={{ padding:"0 8px 8px", fontWeight:700 }}>{h}</th>)}
+        </tr></thead>
+        <tbody>
+          {m.lessons.map(l => {
+            const lp = progress[l.id] || {};
+            const st = lp.steps || {};
+            const sub = (submissions||{})[l.id];
+            return (
+              <tr key={l.id}>
+                <td style={{ ...cell, textAlign:"left", padding:"10px 14px", whiteSpace:"normal", fontWeight:600 }}>{lp.quizDone && <span style={{ color:"#3F9C5B" }}>✓ </span>}{cleanTitle(l.title)}</td>
+                <td style={cell}>{st.video ? (st.video.count ? `${st.video.correct}/${st.video.count}` : yes) : none}</td>
+                <td style={cell}>{st.slides ? yes : none}</td>
+                <td style={cell}>{st.test ? <b>{Math.round(st.test.best/st.test.total*100)}%</b> : lp.quizScore!=null ? `${lp.quizScore} pts` : none}</td>
+                <td style={cell}>{sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
+                <td style={{ ...cell, fontWeight:700 }}>{lp.points || 0}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  ));
+}
 
+function Dashboard({ session, modules }) {
+  const [myP, setMyP] = useState({});
+  const [subs, setSubs] = useState({});
+  useEffect(() => {
+    FB.getProgress(session.email).then(setMyP);
+    FB.getSubmissions(session.email).then(setSubs);
+  }, [session.email]);
+  const allLessons = (modules||[]).flatMap(m=>m.lessons);
+  const totalPts = allLessons.reduce((s,l)=>s+(myP[l.id]?.points||0),0);
+  const done = allLessons.filter(l=>myP[l.id]?.quizDone).length;
+  const tests = allLessons.map(l=>myP[l.id]?.steps?.test).filter(Boolean);
+  const avg = tests.length ? Math.round(tests.reduce((s,t)=>s+t.best/t.total,0)/tests.length*100) : null;
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", gap:10, alignItems:"center" }}>
-        <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
-        <div style={{ fontWeight:700, fontSize:14 }}>My Progress</div>
+    <div style={{ maxWidth:980, margin:"0 auto", padding:"8px 0 40px" }}>
+      <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 14px" }}>Grades</h2>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:12, marginBottom:18 }}>
+        {[["Points",totalPts],["Lessons done",`${done}/${allLessons.length}`],["Average test",avg==null?"None yet":`${avg}%`]].map(([l,v])=>(
+          <div key={l} style={{ background:"#F7F7FB", borderRadius:16, padding:"14px 16px" }}>
+            <div style={{ fontSize:12, color:"#6E6C8A", fontWeight:600 }}>{l}</div>
+            <div style={{ fontSize:22, fontWeight:800, marginTop:2 }}>{v}</div>
+          </div>
+        ))}
       </div>
-      <div style={{ maxWidth:680, margin:"0 auto", padding:"14px" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:10, marginBottom:18 }}>
-          {[["Points",totalPts],["Done",`${done}/${allLessons.length}`],["Progress",`${allLessons.length>0?Math.round(done/allLessons.length*100):0}%`]].map(([l,v])=>(
-            <div key={l} style={{ background:"white", border:"1px solid #e5e5e5", borderRadius:10, padding:"12px 14px", textAlign:"left" }}>
-              <div style={{ fontSize:11, color:"#888", letterSpacing:"0.3px", textTransform:"uppercase" }}>{l}</div>
-              <div style={{ fontSize:20, fontWeight:800, color:"#0a0a0a", marginTop:2 }}>{v}</div>
-            </div>
-          ))}
-        </div>
-        {(modules||[]).map(m=>{
-          const mDone = m.lessons.filter(l=>myP[l.id]?.quizDone).length;
-          return (
-            <div key={m.id} style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:10, border:"1px solid #e5e5e5" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8, gap:10 }}>
-                <div style={{ fontWeight:700, color:"#0a0a0a", fontSize:13 }}>{m.title}</div>
-                <div style={{ fontSize:12, color:"#888", flexShrink:0 }}>{mDone}/{m.lessons.length}</div>
-              </div>
-              <div style={{ background:"#e5e5e5", borderRadius:999, height:4, marginBottom:10, overflow:"hidden" }}>
-                <div style={{ width:`${m.lessons.length>0?mDone/m.lessons.length*100:0}%`, background:"#0a0a0a", height:4 }} />
-              </div>
-              {m.lessons.map(l=>(
-                <div key={l.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid #f5f5f5" }}>
-                  <span style={{ fontSize:11, color: myP[l.id]?.quizDone ? "#0a0a0a" : "#bbb" }}>{myP[l.id]?.quizDone?"●":"○"}</span>
-                  <span style={{ flex:1, fontSize:12.5, color:"#0a0a0a" }}>{l.title}</span>
-                  {myP[l.id]?.points?<span style={{ fontSize:12, color:"#0a0a0a", fontWeight:700 }}>+{myP[l.id].points}pts</span>:null}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
+      <ResultsTable modules={modules} progress={myP} submissions={subs} />
+    </div>
+  );
+}
+
+// Every written and speaking task of the course in one list.
+function AssignmentsPage({ session, modules, setPage, setCurrentLesson }) {
+  const [myP, setMyP] = useState({});
+  const [subs, setSubs] = useState({});
+  useEffect(() => {
+    FB.getProgress(session.email).then(setMyP);
+    FB.getSubmissions(session.email).then(setSubs);
+  }, [session.email]);
+  const list = (modules||[]).flatMap(m=>m.lessons).filter(l=>l.assignment);
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+      <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 14px" }}>Assignments</h2>
+      {list.map(l => {
+        const d = assignmentDone(l, myP[l.id]||{}, subs[l.id]);
+        const band = subs[l.id]?.rubric?.overall;
+        return (
+          <button key={l.id} onClick={() => { setCurrentLesson(l); setPage("assignment"); }}
+            style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F7F7FB", border:"none", borderRadius:16, padding:"13px 16px", marginBottom:10, cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
+            <span style={{ width:36, height:36, borderRadius:12, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:d?"#E2F2E6":"white", color:d?"#3F9C5B":"#8B8AA6", fontWeight:800 }}>{d?"✓":"✎"}</span>
+            <span style={{ flex:1, minWidth:0 }}>
+              <span style={{ display:"block", fontWeight:700, fontSize:14 }}>{cleanTitle(l.title)}</span>
+              <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:2, textTransform:"capitalize" }}>{l.assignment.type}{d?" · submitted":" · not submitted"}{band!=null?` · Band ${band}`:""}</span>
+            </span>
+            <span aria-hidden="true" style={{ color:"#8B8AA6", fontSize:18 }}>›</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1287,7 +1306,7 @@ function CertModal({ cert, onClose, canDownload }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, marginBottom:10 }}>
           <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a" }}>🎓 IELTS certificate</div>
           <div style={{ display:"flex", gap:8 }}>
-            {canDownload && <a href={cert} download="ielts-certificate" style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", textDecoration:"none", padding:"6px 10px", border:"1px solid #dbe6f3", borderRadius:8 }}>Скачать</a>}
+            {canDownload && <a href={cert} download="ielts-certificate" style={{ fontSize:12, fontWeight:700, color:"#5F4FD9", textDecoration:"none", padding:"6px 10px", border:"1px solid #dbe6f3", borderRadius:8 }}>Скачать</a>}
             <button onClick={onClose} style={{ fontSize:12, fontWeight:700, color:"#666", border:"1px solid #e5e5e5", borderRadius:8, background:"white", padding:"6px 12px", cursor:"pointer" }}>Закрыть ✕</button>
           </div>
         </div>
@@ -1296,7 +1315,7 @@ function CertModal({ cert, onClose, canDownload }) {
             ? <img src={cert} alt="certificate" onContextMenu={blockSave} draggable={false} style={{ maxWidth:"88vw", maxHeight:"78vh", display:"block", borderRadius:8, userSelect:"none" }} />
             : isPdf
               ? <iframe src={cert} title="certificate" style={{ width:"80vw", height:"78vh", border:"none", borderRadius:8, display:"block" }} />
-              : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#1A5FAD", fontWeight:700, lineHeight:1.4 }}>Открыть сертификат ↗</a>}
+              : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:14, color:"#5F4FD9", fontWeight:700, lineHeight:1.4 }}>Открыть сертификат ↗</a>}
           {(isImg || isPdf) && <Watermark />}
         </div>
       </div>
@@ -1329,7 +1348,7 @@ function Leaderboard({ session, setPage }) {
 
   const medals = ["🥇","🥈","🥉"];
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"inherit" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 16px", display:"flex", gap:10, alignItems:"center" }}>
         <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12 }}>← Back</button>
         <div style={{ fontWeight:700, fontSize:14 }}>Leaderboard</div>
@@ -1351,7 +1370,7 @@ function Leaderboard({ session, setPage }) {
                   {r.cert && (
                     (r.cert.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(r.cert))
                       ? <img src={r.cert} alt="cert" onClick={()=>openCert(r.cert)} style={{ height:26, width:34, objectFit:"cover", borderRadius:5, border:"1px solid #dbe6f3", cursor:"pointer" }} />
-                      : <button onClick={()=>openCert(r.cert)} style={{ color:"#1A5FAD", fontWeight:700, background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0 }}>🎓 cert</button>
+                      : <button onClick={()=>openCert(r.cert)} style={{ color:"#5F4FD9", fontWeight:700, background:"none", border:"none", cursor:"pointer", fontSize:11, padding:0 }}>🎓 cert</button>
                   )}
                 </div>
               </div>
@@ -1465,7 +1484,7 @@ function CourseTracker({ cfg, editable, onToggleCancel }) {
                   else if (lesson) {
                     if (isToday) { bg = "#0a0a0a"; col = "white"; weight = 800; title = `Урок ${lesson.n} · сегодня`; }
                     else if (isPast) { bg = "#e8f3ec"; col = "#1E7A4F"; weight = 800; title = `Урок ${lesson.n} · прошёл`; }
-                    else { bg = "#eaf2fb"; col = "#1A5FAD"; weight = 800; title = `Урок ${lesson.n}`; }
+                    else { bg = "#eaf2fb"; col = "#5F4FD9"; weight = 800; title = `Урок ${lesson.n}`; }
                   }
                   const canCancel = editable && lesson && !isPast && !isCancelled && freeLeft > 0;
                   const canRestore = editable && isCancelled;
@@ -1536,9 +1555,9 @@ function SchedulePanel({ email, info, refresh }) {
             <div style={{ display:"inline-flex", border:"1px solid #dbe0e8", borderRadius:8, overflow:"hidden" }}>
               {[2,3,5].map(p => {
                 const on = matchesPreset(days, p);
-                return <button key={p} onClick={()=>applyPreset(p)} style={{ padding:"8px 14px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#1A5FAD":"white", color:on?"white":"#555" }}>{p}×</button>;
+                return <button key={p} onClick={()=>applyPreset(p)} style={{ padding:"8px 14px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#5F4FD9":"white", color:on?"white":"#555" }}>{p}×</button>;
               })}
-              <span style={{ padding:"8px 14px", fontWeight:800, fontSize:13, background: (!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"#1A5FAD":"white", color:(!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"white":"#999" }}>Свой</span>
+              <span style={{ padding:"8px 14px", fontWeight:800, fontSize:13, background: (!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"#5F4FD9":"white", color:(!matchesPreset(days,2)&&!matchesPreset(days,3)&&!matchesPreset(days,5))?"white":"#999" }}>Свой</span>
             </div>
           </div>
         </div>
@@ -1546,7 +1565,7 @@ function SchedulePanel({ email, info, refresh }) {
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
           {WEEKDAYS.map(([lbl, wd]) => {
             const on = days.includes(wd);
-            return <button key={wd} onClick={()=>toggleDay(wd)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{lbl}</button>;
+            return <button key={wd} onClick={()=>toggleDay(wd)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#5F4FD9":"#dbe6f3"}`, background:on?"#5F4FD9":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{lbl}</button>;
           })}
         </div>
         <div style={{ display:"flex", gap:8 }}>
@@ -1614,7 +1633,7 @@ function ResultPanel({ email, info, refresh }) {
         <div style={{ marginBottom:10 }}>
           {isImg
             ? <img src={cert} alt="certificate" style={{ maxWidth:220, maxHeight:150, borderRadius:8, border:"1px solid #e5e5e5" }} />
-            : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:12.5, color:"#1A5FAD", fontWeight:700 }}>📄 Открыть сертификат ↗</a>}
+            : <a href={cert} target="_blank" rel="noreferrer" style={{ fontSize:12.5, color:"#5F4FD9", fontWeight:700 }}>📄 Открыть сертификат ↗</a>}
         </div>
       )}
       <div style={{ display:"flex", gap:8 }}>
@@ -1638,6 +1657,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [modulesFor, setModulesFor] = useState(null); // email whose module panel is open
   const [scheduleFor, setScheduleFor] = useState(null); // email whose schedule panel is open
   const [resultFor, setResultFor] = useState(null); // email whose IELTS-result panel is open
+  const [lessonsFor, setLessonsFor] = useState(null); // email whose lesson results are open
+  const [lessonsSubs, setLessonsSubs] = useState({});
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -1683,6 +1704,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     refresh();
   };
 
+  const toggleLessons = async (email) => {
+    if (lessonsFor === email) { setLessonsFor(null); return; }
+    setLessonsSubs({}); setLessonsFor(email);
+    setLessonsSubs(await FB.getSubmissions(email));
+  };
+
   const remove = async (email) => {
     if (!window.confirm(`Remove ${email}?`)) return;
     await FB.deleteStudent(email); refresh();
@@ -1691,7 +1718,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const list = Object.entries(students);
 
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"inherit" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
         <Brand size={22} />
         <span style={{ fontSize:10, padding:"2px 8px", borderRadius:999, background:"#0a0a0a", color:"white", fontWeight:700, letterSpacing:"0.4px", textTransform:"uppercase" }}>Admin</span>
@@ -1730,8 +1757,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
             <div>
               <div style={{ fontSize:11, fontWeight:700, color:"#666", marginBottom:4 }}>Частота</div>
               <div style={{ display:"inline-flex", border:"1px solid #e5e5e5", borderRadius:8, overflow:"hidden" }}>
-                {[2,3,5].map(p => { const on = matchesPreset(newDays,p); return <button key={p} onClick={()=>applyAddPreset(p)} style={{ padding:"8px 13px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#1A5FAD":"white", color:on?"white":"#555" }}>{p}×</button>; })}
-                <span style={{ padding:"8px 13px", fontWeight:800, fontSize:13, background:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"#1A5FAD":"white", color:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"white":"#999" }}>Свой</span>
+                {[2,3,5].map(p => { const on = matchesPreset(newDays,p); return <button key={p} onClick={()=>applyAddPreset(p)} style={{ padding:"8px 13px", border:"none", borderRight:"1px solid #eef1f6", cursor:"pointer", fontWeight:800, fontSize:13, background:on?"#5F4FD9":"white", color:on?"white":"#555" }}>{p}×</button>; })}
+                <span style={{ padding:"8px 13px", fontWeight:800, fontSize:13, background:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"#5F4FD9":"white", color:(!matchesPreset(newDays,2)&&!matchesPreset(newDays,3)&&!matchesPreset(newDays,5))?"white":"#999" }}>Свой</span>
               </div>
             </div>
             <div>
@@ -1739,7 +1766,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
               <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                 {WEEKDAYS.map(([lbl, wd]) => {
                   const on = newDays.includes(wd);
-                  return <button key={wd} onClick={()=>toggleAddDay(wd)} style={{ padding:"7px 10px", borderRadius:8, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer" }}>{lbl}</button>;
+                  return <button key={wd} onClick={()=>toggleAddDay(wd)} style={{ padding:"7px 10px", borderRadius:8, border:`1.5px solid ${on?"#5F4FD9":"#dbe6f3"}`, background:on?"#5F4FD9":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer" }}>{lbl}</button>;
                 })}
               </div>
             </div>
@@ -1774,13 +1801,16 @@ function AdminPanel({ session, logout, setPage, modules }) {
                   {active?"Active":"Revoked"}
                 </span>
                 {ieltsBand != null && <span title="IELTS band" style={{ fontSize:11, padding:"2px 9px", borderRadius:999, fontWeight:800, background:"#e8f3ec", color:"#155e37" }}>🎓 {fmtBand(ieltsBand)}</span>}
+                <button onClick={()=>toggleLessons(email)} title="Submitted steps and test scores" style={{ padding:"5px 10px", borderRadius:999, border:"1px solid #e5e5e5", cursor:"pointer", fontSize:11, fontWeight:600, background:lessonsFor===email?"#5F4FD9":"white", color:lessonsFor===email?"white":"#0a0a0a" }}>
+                  📊 Lessons {lessonsFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setResultFor(resultOpen?null:email)} title="Set IELTS band & upload certificate" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${ieltsBand!=null?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:ieltsBand!=null?"#e8f3ec":"white", color:ieltsBand!=null?"#155e37":"#666" }}>
                   🎓 Result {resultOpen?"▲":"▼"}
                 </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
-                <button onClick={()=>setModulesFor(panelOpen?null:email)} title="Open individual modules for this student" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${unlocked.length?"#1A5FAD":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:unlocked.length?"#e8f0fb":"white", color:unlocked.length?"#154a86":"#666" }}>
+                <button onClick={()=>setModulesFor(panelOpen?null:email)} title="Open individual modules for this student" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${unlocked.length?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:unlocked.length?"#e8f0fb":"white", color:unlocked.length?"#154a86":"#666" }}>
                   🔓 Modules{unlocked.length?` (${unlocked.length})`:""} {panelOpen?"▲":"▼"}
                 </button>
                 <button onClick={()=>toggleSpeaking(email, !!info.speaking)} title="Paid Speaking World access" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${info.speaking?"#B8860B":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:info.speaking?"#fff7e0":"white", color:info.speaking?"#8a5a12":"#666" }}>
@@ -1791,6 +1821,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 </button>
                 <button onClick={()=>remove(email)} aria-label="Delete" style={{ padding:"5px 9px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#666", cursor:"pointer", fontSize:11 }}>×</button>
               </div>
+              {lessonsFor===email && (
+                <div style={{ padding:"10px 14px 6px", background:"#F7F7FB" }}>
+                  <ResultsTable modules={mods} progress={allProgress[email]||{}} submissions={lessonsSubs} />
+                </div>
+              )}
               {resultOpen && (
                 <div style={{ padding:"10px 14px 16px", background:"#f6fbf8" }}>
                   <div style={{ fontSize:11, color:"#666", margin:"4px 0 10px" }}>Итоговый балл IELTS и сертификат для <b>{info.name}</b> — попадёт в лидерборд и в кабинет студента:</div>
@@ -1810,7 +1845,7 @@ function AdminPanel({ session, logout, setPage, modules }) {
                     {mods.map((m,i)=>{
                       const on = unlocked.includes(m.id);
                       return (
-                        <button key={m.id} onClick={()=>toggleModule(email, m.id, unlocked)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#1A5FAD":"#dbe6f3"}`, background:on?"#1A5FAD":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"left", maxWidth:260 }}>
+                        <button key={m.id} onClick={()=>toggleModule(email, m.id, unlocked)} style={{ padding:"7px 12px", borderRadius:9, border:`1.5px solid ${on?"#5F4FD9":"#dbe6f3"}`, background:on?"#5F4FD9":"white", color:on?"white":"#0d2540", fontWeight:700, fontSize:12, cursor:"pointer", textAlign:"left", maxWidth:260 }}>
                           {on?"✓ ":"＋ "}{i+1}. {m.title}
                         </button>
                       );
@@ -1852,7 +1887,7 @@ function Login({ authError }) {
   const shown = err || authError;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", padding:16 }}>
+    <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit", padding:16 }}>
       <div style={{ background:"white", borderRadius:14, padding:32, width:"100%", maxWidth:360, boxShadow:"0 12px 48px rgba(0,0,0,0.35)" }}>
         <div style={{ textAlign:"center", marginBottom:24, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
           <BrandLogo size={44} />
@@ -1879,22 +1914,85 @@ function Login({ authError }) {
 // ══════════════════════════════════════════
 const nb = (bg,c) => ({ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:bg, color:c, cursor:"pointer", fontSize:12, fontWeight:600, letterSpacing:"0.2px" });
 
-function Nav({ session, logout, setPage, isAdmin, pts }) {
+const ICONS = {
+  home:<path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/>,
+  courses:<><path d="M12 4L2 9l10 5 10-5z"/><path d="M6 11.5V17c3 2.5 9 2.5 12 0v-5.5"/></>,
+  tasks:<><path d="M5 4h4v16H5zM11 4h3v16h-3z"/><path d="M16.5 4.5l3-.7 3 15.7-3 .6z"/></>,
+  grades:<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>,
+  board:<><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3"/></>,
+  mic:<><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></>,
+  globe:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></>,
+  leaf:<path d="M5 19C4 10 10 4 20 4c0 10-6 16-15 15zM5 19l8-8"/>,
+  pen:<path d="M4 20l1-5L16 4l4 4L9 19z"/>,
+  check:<><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></>,
+  admin:<><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></>,
+  logout:<path d="M10 4H5a1 1 0 00-1 1v14a1 1 0 001 1h5M15 8l4 4-4 4M19 12H9"/>,
+  search:<><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></>,
+  menu:<path d="M4 7h16M4 12h16M4 17h16"/>,
+};
+const Icon = ({ name, size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink:0 }}>{ICONS[name]}</svg>
+);
+
+// The sidebar and top bar around every page except the full-screen test and assignment.
+function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrentLesson, children }) {
+  const [pts, setPts] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => setPts(Object.entries(p||{}).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0))).catch(() => {});
+  }, [session.email, page]);
+  const go = (p) => { setPage(p); setOpen(false); setQuery(""); window.scrollTo(0, 0); };
+  const q = query.trim().toLowerCase();
+  const hits = q ? (modules||[]).flatMap(m=>m.lessons).filter(l => l.title.toLowerCase().includes(q)).slice(0,6) : [];
+  const active = page === "lesson" ? "courses" : page;
+  const item = (id, label, icon) => (
+    <button key={id} className={"lms-item" + (active===id ? " on" : "")} aria-current={active===id ? "page" : undefined} onClick={() => go(id)}><Icon name={icon} />{label}</button>
+  );
+  const link = (href, label, icon) => (
+    <a key={href} className="lms-item" href={href} target="_blank" rel="noreferrer"><Icon name={icon} />{label}</a>
+  );
   return (
-    <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", position:"sticky", top:0, zIndex:100 }}>
-      <Brand size={22} onClick={() => setPage("course")} />
-      <div style={{ flex:1, minWidth:8 }} />
-      <button onClick={() => setPage("course")} style={nb("white","#0a0a0a")}>Course</button>
-      <button onClick={() => setPage("admissions")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #1E7A4F", background:"#1E7A4F", color:"white", cursor:"pointer", fontSize:12, fontWeight:700 }}>✈ Universities</button>
-      <a href="/skyielts-writing.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid transparent", background:"linear-gradient(90deg,#0ea5e9,#8b5cf6)", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✍️ Writing Bands</a>
-      <a href="/essay-checker.html" target="_blank" rel="noreferrer" style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #0E7C86", background:"#0E7C86", color:"white", cursor:"pointer", fontSize:12, fontWeight:700, textDecoration:"none" }}>✓ Essay Checker</a>
-      <button onClick={() => setPage("speaking")} style={{ padding:"5px 12px", borderRadius:999, border:"1px solid #B8860B", background:"linear-gradient(90deg,#f0c33c,#B8860B)", color:"#3a2a00", cursor:"pointer", fontSize:12, fontWeight:800 }}>🎤 Speaking ✦</button>
-      <button onClick={() => setPage("psych")} style={nb("white","#0a0a0a")}>🧘 Mindset</button>
-      <button onClick={() => setPage("dashboard")} style={nb("white","#0a0a0a")}>Progress</button>
-      <button onClick={() => setPage("leaderboard")} style={nb("white","#0a0a0a")}>Board</button>
-      {isAdmin && <button onClick={() => setPage("admin")} style={nb("#0a0a0a","white")}>Admin</button>}
-      <div style={{ background:"#0a0a0a", color:"white", borderRadius:999, padding:"4px 11px", fontSize:12, fontWeight:700, letterSpacing:"0.2px" }}>{pts} pts</div>
-      <button onClick={logout} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", cursor:"pointer", fontSize:12, color:"#666" }}>Logout</button>
+    <div className="lms-shell">
+      {open && <div className="lms-scrim" onClick={() => setOpen(false)} />}
+      <aside className={"lms-side" + (open ? " open" : "")}>
+        <button className="lms-logo" onClick={() => go("course")}>IELTS<span>8</span></button>
+        <div className="lms-group">Main menu</div>
+        {item("course","Dashboard","home")}
+        {item("courses","My Courses","courses")}
+        {item("assignments","Assignments","tasks")}
+        {item("dashboard","Grades","grades")}
+        {item("leaderboard","Leaderboard","board")}
+        <div className="lms-group">Practice</div>
+        {item("speaking","Speaking","mic")}
+        {link("/skyielts-writing.html","Writing Bands","pen")}
+        {link("/essay-checker.html","Essay Checker","check")}
+        {item("psych","Mindset","leaf")}
+        {item("admissions","Universities","globe")}
+        <div style={{ flex:1, minHeight:16 }} />
+        <div className="lms-group">Settings</div>
+        {isAdmin && item("admin","Admin","admin")}
+        <button className="lms-item" onClick={logout}><Icon name="logout" />Logout</button>
+      </aside>
+      <div className="lms-main">
+        <div className="lms-top">
+          <button className="lms-burger" aria-label="Open menu" onClick={() => setOpen(true)}><Icon name="menu" size={22} /></button>
+          <div className="lms-search">
+            <Icon name="search" size={18} />
+            <input aria-label="Search lessons" placeholder="Search lessons" value={query} onChange={e => setQuery(e.target.value)} />
+            {q && (
+              <div className="lms-hits">
+                {hits.length === 0 && <div style={{ padding:"10px 14px", fontSize:13, color:"#8B8AA6" }}>No lessons found</div>}
+                {hits.map(l => <button key={l.id} onClick={() => { setCurrentLesson(l); go("lesson"); }}>{cleanTitle(l.title)}</button>)}
+              </div>
+            )}
+          </div>
+          <div style={{ flex:1 }} />
+          <div className="lms-pts">{pts} pts</div>
+          <div className="lms-avatar" title={session.name}>{(session.name||"?").trim().charAt(0).toUpperCase()}</div>
+        </div>
+        <div className="lms-content">{children}</div>
+      </div>
     </div>
   );
 }
@@ -1905,7 +2003,14 @@ function Nav({ session, logout, setPage, isAdmin, pts }) {
 const fmtBand = (b) => Number.isInteger(Number(b)) ? Number(b).toFixed(1) : String(b);
 const BAND_OPTS = [4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9];
 
-function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modules }) {
+const Donut = ({ pct, color }) => (
+  <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style={{ flexShrink:0 }}>
+    <circle cx="28" cy="28" r="21" fill="none" stroke={color} strokeOpacity=".16" strokeWidth="7"/>
+    <circle cx="28" cy="28" r="21" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" pathLength="100" strokeDasharray={`${Math.max(pct*100, 1)} 100`} transform="rotate(-90 28 28)"/>
+  </svg>
+);
+
+function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view = "dashboard" }) {
   const [myProgress, setMyProgress] = useState({});
   const [myUnlocked, setMyUnlocked] = useState([]); // modules the teacher opened manually
   const [mySchedule, setMySchedule] = useState(null);
@@ -1933,11 +2038,8 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
   const meta = myProgress.__meta || {};
   const reflections = meta.reflections || {};
   const mods = modules || [];
-  const totalPts = Object.entries(myProgress).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0);
   const allLessons = mods.flatMap(m => m.lessons);
-  const lessonNumById = {}; allLessons.forEach((l, idx) => { lessonNumById[l.id] = idx + 1; });
   const doneCount = allLessons.filter(l => myProgress[l.id]?.quizDone).length;
-  const journeyPct = allLessons.length ? Math.round(doneCount/allLessons.length*100) : 0;
 
   const moduleComplete = (m) => m.lessons.length > 0 && m.lessons.every(l => myProgress[l.id]?.quizDone);
   const hasReflection = (m) => !!reflections[m.id];
@@ -1970,15 +2072,13 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
     await writeMeta({ certificate: { band: certBand, file: certFile || "(file attached)", at: new Date().toISOString() } });
   };
 
-  const cloudShadow = "0 10px 26px rgba(13,37,64,.10)";
+  const cloudShadow = "0 10px 26px rgba(20,18,63,.08)";
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 230px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
-      <style>{"@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.13)}}"}</style>
-      <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
+    <div>
+      <div style={{ maxWidth: view === "dashboard" ? 1240 : 860, margin:"0 auto", paddingBottom:40 }}>
 
-        {mySchedule && (() => {
+        {view === "dashboard" && mySchedule && (() => {
           const sch = courseSchedule(mySchedule);
           if (!sch) return null;
           const freeLeft = Math.max(0, 3 - ((mySchedule.cancellations||[]).length));
@@ -1992,95 +2092,164 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
                   <div style={{ fontWeight:800, fontSize:14.5, color:"#0d2540" }}>Your course schedule</div>
                   <div style={{ fontSize:12, color:"#64748b", marginTop:1 }}>{fmtDay(sch.startISO)} → {fmtDay(sch.endISO)} · {sch.total} уроков · {mySchedule.perWeek}×/нед</div>
                 </div>
-                <button onClick={()=>setSchedOpen(o=>!o)} style={{ padding:"6px 12px", borderRadius:999, border:"1px solid #dbe6f3", background:"white", color:"#1A5FAD", fontWeight:700, fontSize:12, cursor:"pointer" }}>{schedOpen?"Скрыть календарь":"Показать календарь"}</button>
+                <button onClick={()=>setSchedOpen(o=>!o)} style={{ padding:"6px 12px", borderRadius:999, border:"1px solid #dbe6f3", background:"white", color:"#5F4FD9", fontWeight:700, fontSize:12, cursor:"pointer" }}>{schedOpen?"Скрыть календарь":"Показать календарь"}</button>
               </div>
-              {next && <div style={{ fontSize:12.5, color:"#1A5FAD", fontWeight:700, marginTop:8 }}>Ближайший урок {next.n}: {fmtDay(next.date)}</div>}
+              {next && <div style={{ fontSize:12.5, color:"#5F4FD9", fontWeight:700, marginTop:8 }}>Ближайший урок {next.n}: {fmtDay(next.date)}</div>}
               <div style={{ fontSize:12, color:"#1E7A4F", marginTop:6 }}>Вы можете без потерь отменить 3 дня — осталось {freeLeft}. Для отмены напишите преподавателю.</div>
               {schedOpen && <div style={{ marginTop:14 }}><CourseTracker cfg={mySchedule} editable={false} /></div>}
             </div>
           );
         })()}
 
-        {/* ── HERO · IELTS8.KZ boarding pass ── */}
-        <style>{"@keyframes heroFly{0%{transform:translateX(-50px) translateY(0) rotate(-8deg)}100%{transform:translateX(640px) translateY(-16px) rotate(-8deg)}} @keyframes heroDrift{0%{transform:translateX(0)}100%{transform:translateX(-40px)}}"}</style>
-        <div style={{ position:"relative", overflow:"hidden", borderRadius:20, padding:"18px 20px 16px", color:"white", marginBottom:22,
-          background:"linear-gradient(135deg,#070d18 0%,#0d2540 50%,#1A5FAD 135%)", boxShadow:"0 16px 38px rgba(13,37,64,.32)" }}>
-          {/* aviation motion backdrop */}
-          <div aria-hidden="true" style={{ position:"absolute", inset:0, overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:18, left:0, fontSize:20, opacity:.5, animation:"heroFly 18s linear infinite" }}>✈️</div>
-            <div style={{ position:"absolute", top:14, left:"60%", fontSize:26, opacity:.12, animation:"heroDrift 9s ease-in-out infinite alternate" }}>☁️</div>
-            <div style={{ position:"absolute", bottom:24, left:"18%", fontSize:20, opacity:.10, animation:"heroDrift 12s ease-in-out infinite alternate" }}>☁️</div>
-            <svg viewBox="0 0 400 160" preserveAspectRatio="none" style={{ position:"absolute", inset:0, width:"100%", height:"100%", opacity:.6 }}>
-              <circle cx="58" cy="30" r="42" fill="#1A5FAD" opacity=".22"/>
-              <path d="M-10,150 C120,118 250,58 420,6" fill="none" stroke="#49BEB6" strokeWidth="2" strokeDasharray="2 10" opacity=".5"/>
-            </svg>
-          </div>
-
-          <div style={{ position:"relative", zIndex:1 }}>
-            {/* top ticket row */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px dashed rgba(255,255,255,.22)", paddingBottom:10, marginBottom:12 }}>
-              <span style={{ fontSize:14, fontWeight:900, letterSpacing:"0.5px" }}>IELTS<span style={{ color:"#49BEB6" }}>8</span>.KZ</span>
-              <span style={{ fontSize:9.5, fontWeight:700, letterSpacing:"2px", color:"#9ED9CF", textTransform:"uppercase" }}>Boarding pass ✈</span>
+        {view === "dashboard" && (() => {
+          const left = allLessons.length - doneCount;
+          const count = (ls, test) => ls.filter(test).length;
+          const testDone = (l) => !!myProgress[l.id]?.steps?.test || myProgress[l.id]?.quizScore != null;
+          const taskDone = (l) => !!myProgress[l.id]?.assignmentDone;
+          const mocks = allLessons.filter(isMock);
+          const tasks = allLessons.filter(l => l.assignment);
+          const nextUp = mods.flatMap((m,i) => isUnlocked(i) ? m.lessons : []).filter(l => !myProgress[l.id]?.quizDone).slice(0,3);
+          const STEP_NAMES = { video:"the video", slides:"the presentation", test:"the test" };
+          const activity = allLessons.flatMap(l => {
+            const lp = myProgress[l.id] || {};
+            const rows = Object.entries(lp.steps||{}).map(([k,v]) => ({ at:v.at, what:`You submitted ${STEP_NAMES[k]||k}`, l }));
+            if (lp.completedAt) rows.push({ at:lp.completedAt, what:"You finished", l });
+            return rows;
+          }).filter(a => a.at).sort((a,b) => b.at.localeCompare(a.at)).slice(0,3);
+          const sectionHead = (title, action) => (
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", margin:"0 0 12px" }}>
+              <h3 style={{ margin:0, fontSize:20, fontWeight:800 }}>{title}</h3>
+              {action}
             </div>
-
-            <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:"1.4px", textTransform:"uppercase", color:"#9ED9CF" }}>Passenger</div>
-            <h2 style={{ margin:"1px 0 0", fontSize:21, fontWeight:800, letterSpacing:"-0.3px" }}>Welcome back, {session.name}</h2>
-            <p style={{ margin:"3px 0 12px", opacity:0.72, fontSize:12 }}>From B1 to IELTS Band 8 · keep learning, keep climbing ✦</p>
-
-            {/* route line */}
-            <div style={{ position:"relative", height:20, margin:"2px 2px 14px" }}>
-              <span style={{ position:"absolute", left:0, top:1, fontSize:11, fontWeight:800 }}>B1</span>
-              <div style={{ position:"absolute", top:9, left:24, right:62, borderTop:"2px dashed rgba(255,255,255,.4)" }} />
-              <span style={{ position:"absolute", left:`calc(24px + (100% - 86px) * ${journeyPct/100})`, top:-3, fontSize:15, transition:"left .4s ease" }}>✈️</span>
-              <span style={{ position:"absolute", right:0, top:1, fontSize:11, fontWeight:800, color:"#9ED9CF" }}>BAND 8</span>
-            </div>
-
-            {/* stats */}
-            <div style={{ display:"flex", gap:18, flexWrap:"wrap", alignItems:"center" }}>
-              <div><div style={{ fontSize:20, fontWeight:800 }}>{totalPts}</div><div style={{ fontSize:11, opacity:0.7 }}>Miles (pts)</div></div>
-              <div><div style={{ fontSize:20, fontWeight:800 }}>{doneCount}/{allLessons.length}</div><div style={{ fontSize:11, opacity:0.7 }}>Legs flown</div></div>
-              <div><div style={{ fontSize:20, fontWeight:800 }}>{journeyPct}%</div><div style={{ fontSize:11, opacity:0.7 }}>Journey</div></div>
-              <div onClick={() => setGoalOpen(true)} style={{ marginLeft:"auto", cursor:"pointer", background:"rgba(255,255,255,0.14)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:12, padding:"6px 12px", textAlign:"center" }}>
-                <div style={{ fontSize:18, fontWeight:800, color:"#9ED9CF" }}>🎯 {meta.goal ? "Band "+fmtBand(meta.goal) : "—"}</div>
-                <div style={{ fontSize:10, opacity:0.7 }}>Target · tap to edit</div>
+          );
+          const viewAll = (to) => <button onClick={() => setPage(to)} style={{ border:"none", background:"none", color:"#8B8AA6", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>View all ›</button>;
+          const openLesson = (l) => { setCurrentLesson(l); setPage("lesson"); };
+          return (
+            <>
+              <div className="lms-hero-grid">
+                <div className="lms-hero">
+                  <div style={{ position:"relative", zIndex:1, maxWidth:"62%" }}>
+                    <h2 style={{ margin:0, fontSize:26, fontWeight:800, lineHeight:1.3 }}>Hello {session.name}, nice to have you come back!</h2>
+                    <p style={{ margin:"12px 0 16px", fontSize:15, lineHeight:1.55 }}>
+                      {left > 0 ? <>You have <b style={{ textDecoration:"underline" }}>{left} {left===1?"lesson":"lessons"}</b> left on your way to Band 8. So let's start.</> : "You have finished every lesson. Well done!"}
+                    </p>
+                    <button onClick={() => setPage("courses")} style={{ border:"none", background:"none", color:"white", fontWeight:800, fontSize:15, cursor:"pointer", padding:0, fontFamily:"inherit" }}>View all ›</button>
+                  </div>
+                  <svg className="lms-hero-art" viewBox="0 0 300 240" aria-hidden="true">
+                    <circle cx="165" cy="125" r="88" fill="#4F41B8"/>
+                    <circle cx="165" cy="125" r="112" fill="none" stroke="#C9C2F6" strokeWidth="2" opacity=".7"/>
+                    <circle cx="165" cy="125" r="130" fill="none" stroke="#E4BF6C" strokeWidth="2" strokeDasharray="4 10"/>
+                    <circle cx="165" cy="100" r="26" fill="none" stroke="#E4BF6C" strokeWidth="9"/>
+                    <circle cx="165" cy="154" r="30" fill="none" stroke="#FFFFFF" strokeWidth="9"/>
+                    {[["🎧",66,42],["📖",236,44],["✍️",40,142],["🎤",258,150]].map(([e,x,y]) => (
+                      <g key={e}><rect x={x-20} y={y-20} width="40" height="40" rx="12" fill="white"/><text x={x} y={y+7} textAnchor="middle" fontSize="20">{e}</text></g>
+                    ))}
+                  </svg>
+                </div>
+                <div>
+                  {sectionHead("Total Contents", <span style={{ fontSize:12, fontWeight:700, color:"#8B8AA6" }}>{allLessons.length} LESSONS</span>)}
+                  <div className="lms-donuts">
+                    {[
+                      ["Lessons", doneCount, allLessons.length, "#6A5BD6"],
+                      ["Tests", count(allLessons,testDone), allLessons.length, "#E8743B"],
+                      ["Tasks", count(tasks,taskDone), tasks.length, "#EDAE3E"],
+                      ["Mocks", count(mocks,l=>myProgress[l.id]?.quizDone), mocks.length, "#4FAE6A"],
+                    ].map(([label,d,t,c]) => (
+                      <div key={label} style={{ background:"#F7F7FB", borderRadius:18, padding:"14px 14px 14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                        <div style={{ fontWeight:800, fontSize:14, lineHeight:1.5 }}>{d}/{t}<br/>{label}</div>
+                        <Donut pct={t ? d/t : 0} color={c} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* achievements */}
-            <div style={{ marginTop:14, paddingTop:12, borderTop:"1px dashed rgba(255,255,255,.22)" }}>
-              <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:"1.4px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:8 }}>🏅 Achievements</div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                {[
-                  { e:"🛫", t:"Takeoff", on: doneCount>=1 },
-                  { e:"📚", t:"Bookworm", on: doneCount>=5 },
-                  { e:"🏅", t:"Module", on: mods.some(moduleComplete) },
-                  { e:"🎯", t:"Goal set", on: !!meta.goal },
-                  { e:"🎓", t:"Certified", on: !!cert },
-                ].map(a => (
-                  <span key={a.t} title={a.on ? "Unlocked!" : "Locked"} style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11.5, fontWeight:700,
-                    padding:"5px 10px", borderRadius:999, border:"1px solid", borderColor: a.on?"rgba(73,190,182,.6)":"rgba(255,255,255,.14)",
-                    background: a.on?"rgba(73,190,182,.18)":"rgba(255,255,255,.04)", color: a.on?"#bff0e9":"rgba(255,255,255,.45)", filter: a.on?"none":"grayscale(1)" }}>
-                    <span style={{ fontSize:13 }}>{a.on?a.e:"🔒"}</span>{a.t}
-                  </span>
-                ))}
+              <div style={{ margin:"26px 0" }}>
+                {sectionHead("Courses Enrolled", viewAll("courses"))}
+                <div style={{ background:"#F7F7FB", borderRadius:20, padding:"16px 20px" }}>
+                  <div style={{ display:"flex", gap:20, fontSize:12.5, fontWeight:600, marginBottom:14, flexWrap:"wrap" }}>
+                    <span><span style={{ color:"#EDAE3E" }}>●</span> Tests Submitted</span>
+                    <span><span style={{ color:"#4FAE6A" }}>●</span> Lessons Finished</span>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"16px 28px" }}>
+                    {mods.map(m => {
+                      const n = m.lessons.length || 1;
+                      const bars = [[count(m.lessons,testDone)/n,"#EDAE3E","#F7EBD0"],[count(m.lessons,l=>myProgress[l.id]?.quizDone)/n,"#4FAE6A","#DDEFE1"]];
+                      return (
+                        <div key={m.id} style={{ display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:12, alignItems:"center" }}>
+                          <div style={{ fontWeight:700, fontSize:13, lineHeight:1.3 }}>{m.title.replace(/^MODULE (\d+):\s*/, (_,n) => `${n}. `)}</div>
+                          <div style={{ display:"grid", gap:6 }}>
+                            {bars.map(([v,c,bg]) => (
+                              <div key={c} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <div style={{ flex:1, height:7, background:bg, borderRadius:9, overflow:"hidden" }}><div style={{ width:`${v*100}%`, height:"100%", background:c, borderRadius:9 }} /></div>
+                                <span style={{ fontSize:11, fontWeight:700, width:30, textAlign:"right" }}>{Math.round(v*100)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ── ROUTE MAP (module clouds on a sky) ── */}
-        <div style={{ position:"relative", borderRadius:22, padding:"30px 8px 14px", marginBottom:18, overflow:"hidden",
-          background:"linear-gradient(180deg,#cfe4fa 0%,#e3f0fc 45%,#f1f7fd 100%)", border:"1px solid #cfe1f5" }}>
-          {/* decorative sky */}
-          <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMin slice" aria-hidden="true" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", opacity:.55 }}>
-            <g fill="#ffffff"><ellipse cx="70" cy="60" rx="46" ry="16"/><ellipse cx="40" cy="68" rx="28" ry="11"/><ellipse cx="330" cy="180" rx="44" ry="15"/><ellipse cx="300" cy="188" rx="26" ry="10"/><ellipse cx="80" cy="330" rx="40" ry="14"/><ellipse cx="340" cy="470" rx="42" ry="14"/></g>
-          </svg>
-          <div style={{ position:"relative", zIndex:1, display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:"#0d2540" }}>📚 Course content</div>
-            <div style={{ fontSize:12, fontWeight:700, color:"#1A5FAD" }}>{doneCount}/{allLessons.length} lessons</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", gap:26 }}>
+                <div>
+                  {sectionHead("Continue Learning", viewAll("courses"))}
+                  {nextUp.length === 0 && <div className="lms-row" style={{ color:"#8B8AA6", fontSize:14 }}>{left > 0 ? "Open the next module in My Courses." : "All lessons are finished."}</div>}
+                  {nextUp.map(l => (
+                    <button key={l.id} className="lms-row" onClick={() => openLesson(l)}>
+                      <span className="lms-tile" style={{ color:TC[l.tag]||"#6A5BD6" }}>{(l.tag||"?").charAt(0)}</span>
+                      <span style={{ flex:1, minWidth:0 }}>
+                        <span style={{ display:"block", fontWeight:700, fontSize:14, lineHeight:1.3 }}>{cleanTitle(l.title)}</span>
+                        <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:3 }}>{l.tag}</span>
+                      </span>
+                      <span className="lms-chev" aria-hidden="true">›</span>
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  {sectionHead("Recent Activity", viewAll("dashboard"))}
+                  {activity.length === 0 && <div className="lms-row" style={{ color:"#8B8AA6", fontSize:14 }}>Your submitted steps will appear here.</div>}
+                  {activity.map((a,i) => (
+                    <button key={i} className="lms-row" onClick={() => openLesson(a.l)}>
+                      <span className="lms-tile" style={{ background:"#E2F2E6", color:"#3F9C5B" }}>✓</span>
+                      <span style={{ flex:1, minWidth:0 }}>
+                        <span style={{ display:"block", fontSize:13.5, lineHeight:1.35 }}>{a.what} of <b>{cleanTitle(a.l.title)}</b></span>
+                        <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:3 }}>{new Date(a.at).toLocaleString("ru-RU",{ dateStyle:"short", timeStyle:"short" })}</span>
+                      </span>
+                      <span className="lms-chev" aria-hidden="true">›</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ background:"#F7F7FB", borderRadius:18, padding:"14px 18px", marginTop:26, display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
+                <div style={{ flex:1, minWidth:180, display:"flex", gap:7, flexWrap:"wrap" }}>
+                  {[
+                    { e:"🛫", t:"Takeoff", on: doneCount>=1 },
+                    { e:"📚", t:"Bookworm", on: doneCount>=5 },
+                    { e:"🏅", t:"Module", on: mods.some(moduleComplete) },
+                    { e:"🎯", t:"Goal set", on: !!meta.goal },
+                    { e:"🎓", t:"Certified", on: !!cert },
+                  ].map(a => (
+                    <span key={a.t} style={{ fontSize:12, fontWeight:700, padding:"5px 10px", borderRadius:999, background:a.on?"#ECE9FB":"white", color:a.on?"#4F41B8":"#9B9AB2", filter:a.on?"none":"grayscale(1)" }}>{a.on?a.e:"🔒"} {a.t}</span>
+                  ))}
+                </div>
+                <button onClick={() => setGoalOpen(true)} style={{ border:"none", borderRadius:12, padding:"9px 14px", background:"white", fontWeight:800, fontSize:13, cursor:"pointer", color:"#14123F" }}>🎯 Target: {meta.goal ? `Band ${fmtBand(meta.goal)}` : "set"}</button>
+              </div>
+            </>
+          );
+        })()}
+
+        {view === "courses" && (
+        <div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <h2 style={{ margin:0, fontSize:24, fontWeight:800 }}>My Courses</h2>
+            <div style={{ fontSize:13, fontWeight:700, color:"#5F4FD9" }}>{doneCount}/{allLessons.length} lessons</div>
           </div>
 
-          <div style={{ position:"relative", zIndex:1 }}>
+          <div>
         {mods.map((m, i) => {
           const unlocked = isUnlocked(i);
           const complete = moduleComplete(m);
@@ -2088,7 +2257,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
           const lessonsDone = m.lessons.filter(l => myProgress[l.id]?.quizDone).length;
           const prev = i > 0 ? mods[i-1] : null;
           const canUnlockHere = !unlocked && prev && moduleComplete(prev) && !hasReflection(prev);
-          const accent = complete ? "#1E7A4F" : unlocked ? "#1A5FAD" : "#94a3b8";
+          const accent = complete ? "#1E7A4F" : unlocked ? "#5F4FD9" : "#94a3b8";
           return (
             <div key={m.id} style={{ background:"white", border:"1px solid #e5e7eb", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
               {/* unit header */}
@@ -2114,7 +2283,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
                     style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #f1f3f5", cursor:"pointer" }}>
                     <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#1E7A4F":"#c0c7d0" }}>{ld ? "✓" : "📄"}</span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:600, fontSize:13.5, color:"#111827", lineHeight:1.35 }}>{lessonNumById[l.id] ? `Урок ${lessonNumById[l.id]} · ` : ""}{l.title}</div>
+                      <div style={{ fontWeight:600, fontSize:13.5, color:"#111827", lineHeight:1.35 }}>{l.n ? `Lesson ${l.n}: ` : ""}{cleanTitle(l.title)}</div>
                       <div style={{ fontSize:11, color: ld?"#1E7A4F":"#9aa3b2", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
                     </div>
                     <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
@@ -2149,7 +2318,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
           </div>
           <div onClick={() => allDone && setRewardOpen(true)}
             style={{ flex:1, borderRadius:22, padding:"16px 18px", cursor: allDone?"pointer":"default",
-              background: allDone ? "linear-gradient(135deg,#1A5FAD,#0d2540)" : "#f1f5f9", color: allDone?"white":"#64748b",
+              background: allDone ? "linear-gradient(135deg,#5F4FD9,#0d2540)" : "#f1f5f9", color: allDone?"white":"#64748b",
               boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #cbd5e1" }}>
             <div style={{ fontWeight:800, fontSize:15 }}>{cert ? "🎓 Certificate received!" : "🏆 Finish line — your reward"}</div>
             <div style={{ fontSize:12, opacity:0.85, marginTop:4 }}>
@@ -2161,6 +2330,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
         </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* ═══ GOAL MODAL ═══ */}
@@ -2171,7 +2341,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
           <p style={{ margin:"0 0 14px", textAlign:"center", fontSize:12.5, color:"#64748b" }}>This is your goal at the start of the journey. We'll compare it to your certificate at the finish.</p>
           <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center", marginBottom:18 }}>
             {BAND_OPTS.map(b => (
-              <button key={b} onClick={() => setGoalSel(b)} style={{ padding:"9px 14px", borderRadius:10, border:`2px solid ${goalSel===b?"#1A5FAD":"#e5e5e5"}`, background:goalSel===b?"#1A5FAD":"white", color:goalSel===b?"white":"#0a0a0a", fontWeight:700, cursor:"pointer" }}>{fmtBand(b)}</button>
+              <button key={b} onClick={() => setGoalSel(b)} style={{ padding:"9px 14px", borderRadius:10, border:`2px solid ${goalSel===b?"#5F4FD9":"#e5e5e5"}`, background:goalSel===b?"#5F4FD9":"white", color:goalSel===b?"white":"#0a0a0a", fontWeight:700, cursor:"pointer" }}>{fmtBand(b)}</button>
             ))}
           </div>
           <button onClick={submitGoal} disabled={saving} style={btnPrimary}>{saving?"Saving…":"Start the journey ✈️"}</button>
@@ -2211,7 +2381,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
               <label style={lblStyle}>Your actual overall band</label>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
                 {BAND_OPTS.map(b => (
-                  <button key={b} onClick={() => setCertBand(b)} style={{ padding:"7px 11px", borderRadius:8, border:`2px solid ${certBand===b?"#1A5FAD":"#e5e5e5"}`, background:certBand===b?"#1A5FAD":"white", color:certBand===b?"white":"#0a0a0a", fontWeight:700, fontSize:13, cursor:"pointer" }}>{fmtBand(b)}</button>
+                  <button key={b} onClick={() => setCertBand(b)} style={{ padding:"7px 11px", borderRadius:8, border:`2px solid ${certBand===b?"#5F4FD9":"#e5e5e5"}`, background:certBand===b?"#5F4FD9":"white", color:certBand===b?"white":"#0a0a0a", fontWeight:700, fontSize:13, cursor:"pointer" }}>{fmtBand(b)}</button>
                 ))}
               </div>
               <button onClick={submitCert} disabled={saving} style={btnPrimary}>{saving?"Saving…":"🎁 Claim reward"}</button>
@@ -2219,7 +2389,7 @@ function CoursePage({ session, logout, setPage, setCurrentLesson, isAdmin, modul
           ) : (
             <>
               <div style={{ display:"flex", gap:10, justifyContent:"center", margin:"4px 0 14px" }}>
-                <div style={{ background:"#eef4fd", borderRadius:12, padding:"12px 18px", textAlign:"center" }}><div style={{ fontSize:11, color:"#64748b" }}>Target</div><div style={{ fontSize:22, fontWeight:800, color:"#1A5FAD" }}>{fmtBand(meta.goal)}</div></div>
+                <div style={{ background:"#eef4fd", borderRadius:12, padding:"12px 18px", textAlign:"center" }}><div style={{ fontSize:11, color:"#64748b" }}>Target</div><div style={{ fontSize:22, fontWeight:800, color:"#5F4FD9" }}>{fmtBand(meta.goal)}</div></div>
                 <div style={{ background: cert.band>=meta.goal?"#e2ece5":"#fdf0e0", borderRadius:12, padding:"12px 18px", textAlign:"center" }}><div style={{ fontSize:11, color:"#64748b" }}>Achieved</div><div style={{ fontSize:22, fontWeight:800, color: cert.band>=meta.goal?"#1E7A4F":"#B8620A" }}>{fmtBand(cert.band)}</div></div>
               </div>
               <p style={{ textAlign:"center", fontSize:13, color:"#0a0a0a", margin:"0 0 14px", fontWeight:600 }}>
@@ -2243,7 +2413,7 @@ function Overlay({ children, onClose }) {
     </div>
   );
 }
-const btnPrimary = { width:"100%", padding:"12px", borderRadius:10, border:"none", background:"#1A5FAD", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" };
+const btnPrimary = { width:"100%", padding:"12px", borderRadius:10, border:"none", background:"#5F4FD9", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" };
 const lblStyle = { display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.3px", textTransform:"uppercase", color:"#94a3b8", marginBottom:6 };
 
 // ══════════════════════════════════════════
@@ -2261,7 +2431,6 @@ const MOTIVATION = [
   "One page a day becomes fluency.",
 ];
 const pickMotivation = (id) => { let h=0; const s=String(id); for (let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return MOTIVATION[h % MOTIVATION.length]; };
-const presentLabel = (type) => type==="presentation" ? "Understanding the presentation" : type==="pdf" ? "Read & take notes" : type==="video" ? "Watch & note down" : "Open & explore";
 
 // Turn a Slides/PDF/Doc/Office URL into an embeddable preview src.
 function embedSrc(url) {
@@ -2278,40 +2447,257 @@ function embedSrc(url) {
   return u; // direct PDF or any framable page
 }
 
-function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refreshModules, modules }) {
-  const [addType, setAddType] = useState("link");
+const YT_API = { promise: null };
+function loadYouTubeApi() {
+  if (YT_API.promise) return YT_API.promise;
+  YT_API.promise = new Promise(resolve => {
+    if (window.YT && window.YT.Player) return resolve(window.YT);
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  });
+  return YT_API.promise;
+}
+const youtubeId = (url) => { const m = (url||"").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/); return m ? m[1] : null; };
+const isVideoFile = (mat) => !!mat.storagePath || /\.(mp4|webm|mov|m4v|ogv)(\?|$)/i.test(mat.url || "");
+
+// Video step. Uploaded files and YouTube pause at each question; other hosts (Drive, Vimeo)
+// cannot be controlled from here, so their questions sit under the player.
+function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
+  const yt = youtubeId(mat.url);
+  const file = isVideoFile(mat);
+  const controllable = !!(yt || file);
+  const [answers, setAnswers] = useState({});
+  const [pending, setPending] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const videoRef = useRef(null);
+  const ytBox = useRef(null);
+  const player = useRef(null);
+  const stateRef = useRef({});
+  stateRef.current = { answers, pending };
+
+  useEffect(() => {
+    let dead = false;
+    if (file) {
+      player.current = {
+        time: () => videoRef.current?.currentTime || 0,
+        duration: () => videoRef.current?.duration || 0,
+        ended: () => !!videoRef.current?.ended,
+        pause: () => videoRef.current?.pause(),
+        play: () => videoRef.current?.play().catch(() => {}),
+        seek: (t) => { if (videoRef.current) videoRef.current.currentTime = t; },
+      };
+    } else if (yt) {
+      loadYouTubeApi().then(YT => {
+        if (dead || !ytBox.current) return;
+        const p = new YT.Player(ytBox.current, { videoId: yt, width:"100%", height:"100%", playerVars:{ rel:0, fs:0, modestbranding:1 } });
+        player.current = {
+          time: () => p.getCurrentTime?.() || 0,
+          duration: () => p.getDuration?.() || 0,
+          ended: () => p.getPlayerState?.() === 0,
+          pause: () => p.pauseVideo?.(),
+          play: () => p.playVideo?.(),
+          seek: (t) => p.seekTo?.(t, true),
+        };
+      });
+    }
+    return () => { dead = true; player.current = null; };
+  }, [file, yt]);
+
+  // Questions sit at even points through the video; skipping ahead returns to the first unanswered one.
+  useEffect(() => {
+    if (!controllable || saved || !questions.length) return;
+    const id = setInterval(() => {
+      const p = player.current;
+      const { answers: a, pending: open } = stateRef.current;
+      if (!p || open !== null) return;
+      const d = p.duration();
+      if (!d && !p.ended()) return;
+      const next = questions.findIndex((_, i) => a[i] === undefined);
+      if (next < 0) return;
+      const at = d * (next + 1) / (questions.length + 1);
+      // Some files don't report a duration, so their remaining questions come at the end.
+      if (p.ended() || p.time() >= at) { p.pause(); if (Number.isFinite(at)) p.seek(at); setPending(next); }
+    }, 400);
+    return () => clearInterval(id);
+  }, [controllable, saved, questions]);
+
+  const allAnswered = questions.every((_, i) => answers[i] !== undefined);
+  const correct = questions.filter((q,i) => isCorrect(q, answers[i])).length;
+  const submit = async () => { setSaving(true); await onSubmit(correct, questions.length); setSaving(false); };
+  const resume = () => { setPending(null); player.current?.play(); };
+
+  const open = pending !== null ? questions[pending] : null;
+  return (
+    <div>
+      <div style={{ position:"relative", aspectRatio:"16 / 9", background:"#100E35", borderRadius:16, overflow:"hidden" }}>
+        {file && <video ref={videoRef} src={mat.url} controls controlsList="nofullscreen nodownload" playsInline style={{ width:"100%", height:"100%", display:"block" }} />}
+        {yt && <div style={{ width:"100%", height:"100%" }}><div ref={ytBox} /></div>}
+        {!controllable && <iframe title={mat.title||"Lesson video"} src={embedSrc(mat.url)} allowFullScreen frameBorder="0" style={{ width:"100%", height:"100%", display:"block" }} />}
+        {open && (
+          <div style={{ position:"absolute", inset:0, background:"rgba(16,14,53,.88)", display:"flex", alignItems:"center", justifyContent:"center", padding:14, overflowY:"auto" }}>
+            <div style={{ background:"white", borderRadius:16, padding:"16px 18px", width:"100%", maxWidth:520, margin:"auto" }}>
+              <div style={{ fontSize:12, fontWeight:800, color:"#5F4FD9", marginBottom:6 }}>Question {pending+1} of {questions.length}</div>
+              <div style={{ fontSize:15, fontWeight:700, lineHeight:1.4, marginBottom:10 }}>{open.q}</div>
+              <QuestionInput q={open} value={answers[pending]} reviewed={answers[pending] !== undefined} onChange={v => setAnswers(a => ({ ...a, [pending]: v }))} />
+              {answers[pending] !== undefined && (
+                <button onClick={resume} style={{ marginTop:12, width:"100%", padding:11, borderRadius:12, border:"none", background:"#5F4FD9", color:"white", fontWeight:800, cursor:"pointer" }}>
+                  {isCorrect(open, answers[pending]) ? "Correct! Continue the video" : "Not quite. Continue the video"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!saved && !controllable && questions.map((q,i) => (
+        <div key={i} style={{ background:"#F7F7FB", borderRadius:14, padding:"14px 16px", marginTop:12 }}>
+          <div style={{ fontSize:14.5, fontWeight:700, marginBottom:10 }}>{i+1}. {q.q}</div>
+          <QuestionInput q={q} value={answers[i]} reviewed={answers[i] !== undefined} onChange={v => setAnswers(a => ({ ...a, [i]: v }))} />
+        </div>
+      ))}
+
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:14, flexWrap:"wrap" }}>
+        <div style={{ flex:1, minWidth:180, fontSize:13, color:"#6E6C8A", lineHeight:1.45 }}>
+          {saved ? (saved.count ? `Submitted: ${saved.correct} of ${saved.count} correct.` : "Submitted.")
+            : !questions.length ? "Watch the video, then submit this step."
+            : controllable ? `The video stops ${questions.length} times for a question. Answered: ${Object.keys(answers).length} of ${questions.length}.`
+            : `Answer the questions while you watch. Answered: ${Object.keys(answers).length} of ${questions.length}.`}
+        </div>
+        {!saved && canSubmit && <SubmitBtn disabled={!allAnswered || saving} onClick={submit}>{saving ? "Submitting..." : "Submit video"}</SubmitBtn>}
+      </div>
+    </div>
+  );
+}
+
+// Presentation step: the deck reports the current slide, and Submit opens on the last one.
+function DeckStep({ lesson, saved, canSubmit, onSubmit }) {
+  const frame = useRef(null);
+  const [slide, setSlide] = useState({ slide:1, total:0 });
+  const [reachedEnd, setReachedEnd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const src = `/decks/${lesson.id}.html`;
+  useEffect(() => {
+    const onMsg = (e) => {
+      if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow || e.data?.type !== "ielts8-deck") return;
+      setSlide(e.data);
+      if (e.data.slide >= e.data.total) setReachedEnd(true);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+  const submit = async () => { setSaving(true); await onSubmit(); setSaving(false); };
+  return (
+    <div>
+      <iframe ref={frame} title={`Presentation: ${cleanTitle(lesson.title)}`} src={src} allowFullScreen frameBorder="0"
+        style={{ width:"100%", aspectRatio:"16 / 10", display:"block", borderRadius:16, background:"#100E35" }} />
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:14, flexWrap:"wrap" }}>
+        <div style={{ flex:1, minWidth:180, fontSize:13, color:"#6E6C8A", lineHeight:1.45 }}>
+          {saved ? "Submitted." : reachedEnd ? "You reached the last slide." : `Go through all the slides to submit.${slide.total ? ` Slide ${slide.slide} of ${slide.total}.` : ""}`}{" "}
+          <a href={src} target="_blank" rel="noreferrer" style={{ color:"#5F4FD9", fontWeight:700 }}>Open in a new tab</a>
+        </div>
+        {!saved && canSubmit && <SubmitBtn disabled={!reachedEnd || saving} onClick={submit}>{saving ? "Submitting..." : "Submit presentation"}</SubmitBtn>}
+      </div>
+    </div>
+  );
+}
+
+const SubmitBtn = ({ disabled, onClick, children }) => (
+  <button onClick={onClick} disabled={disabled} style={{ padding:"11px 22px", borderRadius:12, border:"none", fontWeight:800, fontSize:14, background:disabled?"#E7E6F0":"#5F4FD9", color:disabled?"#8B8AA6":"white", cursor:disabled?"not-allowed":"pointer" }}>{children}</button>
+);
+
+function LessonPage({ lesson, session, setPage, isAdmin }) {
+  const [addType, setAddType] = useState("video");
   const [addSection, setAddSection] = useState("topic"); // topic | discussion | hometask
   const [addUrl, setAddUrl] = useState("");
+  const [addFile, setAddFile] = useState(null);
+  const [uploadPct, setUploadPct] = useState(null);
   const [addTitle, setAddTitle] = useState("");
   const [addText, setAddText] = useState("");
   const [myProgress, setMyProgress] = useState({});
   const [saving, setSaving] = useState(false);
   const [materials, setMaterials] = useState(lesson.materials || []);
   const [submission, setSubmission] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [activeStep, setActiveStep] = useState(null);
+  const finishing = useRef(false);
 
   useEffect(() => {
-    FB.getLessonMaterials(lesson.id).then(mats => { setMaterials(mats || []); });
-  }, [lesson.id]);
-
-  useEffect(() => { FB.getProgress(session.email).then(setMyProgress); }, [session.email]);
-
-  useEffect(() => {
-    FB.getSubmissions(session.email).then(s => setSubmission(s[lesson.id] || null));
-  }, [session.email, lesson.id]);
+    setLoaded(false); setActiveStep(null); finishing.current = false;
+    Promise.all([
+      FB.getLessonMaterials(lesson.id).then(mats => setMaterials(mats || [])),
+      FB.getProgress(session.email).then(setMyProgress),
+      FB.getSubmissions(session.email).then(s => setSubmission(s[lesson.id] || null)),
+    ]).finally(() => setLoaded(true));
+  }, [lesson.id, session.email]);
 
   const lp = myProgress[lesson.id] || {};
+  const stepsDone = lp.steps || {};
+  const lessonVideo = materials.find(m => m.type === "video");
+  const vQuestions = videoQuestions(lesson);
+  const hasAssignment = !!lesson.assignment;
+
+  // A step without content (no video uploaded yet, no deck for mock tests) is left out.
+  const steps = [
+    lessonVideo && { key:"video", label:"Video", done:!!stepsDone.video },
+    hasDeck(lesson) && { key:"slides", label:"Presentation", done:!!stepsDone.slides },
+    { key:"test", label:"Test", done:!!stepsDone.test || lp.quizScore != null },
+    hasAssignment && { key:"assignment", label:"Assignment", done:assignmentDone(lesson, lp, submission) },
+  ].filter(Boolean);
+  const firstOpen = steps.findIndex(s => !s.done);
+  const free = isAdmin || !!lp.quizDone;
+  const isLocked = (i) => !free && firstOpen !== -1 && i > firstOpen;
+  const current = activeStep || (firstOpen === -1 ? steps[0].key : steps[firstOpen].key);
+  const currentIdx = steps.findIndex(s => s.key === current);
+  const allStepsDone = firstOpen === -1;
+
+  const [openToast, setOpenToast] = useState("");
+  const toast = (t) => { setOpenToast(t); setTimeout(() => setOpenToast(""), 2600); };
+
+  // Finishing every step completes the lesson, which is what unlocks the next module.
+  const DONE_POINTS = 30;
+  useEffect(() => {
+    if (!loaded || isAdmin || lp.quizDone || !allStepsDone || finishing.current) return;
+    finishing.current = true;
+    (async () => {
+      const cur = await FB.getProgress(session.email);
+      const lpc = cur[lesson.id] || {};
+      if (lpc.quizDone) return;
+      const updated = { ...lpc, quizDone:true, points:(lpc.points||0)+DONE_POINTS, completedAt:new Date().toISOString() };
+      await FB.setProgress(session.email, { [lesson.id]: updated });
+      setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
+      toast(`+${DONE_POINTS} pts · lesson completed!`);
+    })().catch(() => { finishing.current = false; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, allStepsDone, lp.quizDone, isAdmin, lesson.id, session.email]);
+
+  const submitStep = async (key, data, gain) => {
+    try {
+      const updated = await saveStep(session.email, lesson.id, key, { ...data, at:new Date().toISOString() }, gain);
+      setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
+      setActiveStep(null);
+      toast(gain ? `Submitted · +${gain} pts` : "Submitted");
+    } catch (e) { alert("Could not submit: " + e.message); }
+  };
 
   const saveMaterial = async () => {
-    if (!addUrl || !addTitle) return;
+    if (!addTitle || (!addUrl && !addFile)) return;
     setSaving(true);
     try {
+      let url = addUrl.trim(), storagePath = null;
+      if (addFile) {
+        const up = await FB.uploadLessonFile(lesson.id, addFile, setUploadPct);
+        url = up.url; storagePath = up.path;
+      }
       const current = await FB.getLessonMaterials(lesson.id);
-      const newMat = { type: addType, section: addSection, url: addUrl, title: addTitle, text: addText.trim(), id: Date.now() };
+      const newMat = { type: addType, section: addSection, url, title: addTitle, text: addText.trim(), id: Date.now(), ...(storagePath ? { storagePath } : {}) };
       const updated = [...(current || []), newMat];
       await FB.setLessonMaterials(lesson.id, updated);
       setMaterials(updated);
-      setAddUrl(""); setAddTitle(""); setAddText("");
+      setAddUrl(""); setAddTitle(""); setAddText(""); setAddFile(null);
     } catch(e) { alert("Failed to save: " + e.message); }
+    setUploadPct(null);
     setSaving(false);
   };
 
@@ -2319,6 +2705,8 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
     setSaving(true);
     try {
       const current = await FB.getLessonMaterials(lesson.id);
+      const target = (current || []).find(m => m.id === mid);
+      if (target?.storagePath) await FB.deleteLessonFile(target.storagePath).catch(() => {});
       const updated = (current || []).filter(m => m.id !== mid);
       await FB.setLessonMaterials(lesson.id, updated);
       setMaterials(updated);
@@ -2327,7 +2715,6 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
   };
 
   // award points the first time a student opens a material
-  const [openToast, setOpenToast] = useState("");
   const isOpened = (mat) => (lp.openedMaterials || []).includes(mat.id);
   const awardOpen = async (mat) => {
     if (isOpened(mat)) return;
@@ -2339,209 +2726,168 @@ function LessonPage({ lesson, session, setPage, setCurrentLesson, isAdmin, refre
       const updated = { ...lpc, openedMaterials: [...opened, mat.id], points: (lpc.points||0) + OPEN_POINTS };
       await FB.setProgress(session.email, { [lesson.id]: updated });
       setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
-      setOpenToast(`+${OPEN_POINTS} pts · material opened! ✨`);
-      setTimeout(() => setOpenToast(""), 2400);
-    } catch(e) {}
-  };
-
-  // Mark the whole lesson as completed (replaces the old quiz as the "done" signal).
-  const DONE_POINTS = 30;
-  const markDone = async () => {
-    if (lp.quizDone) return;
-    try {
-      const cur = await FB.getProgress(session.email);
-      const lpc = cur[lesson.id] || {};
-      if (lpc.quizDone) return;
-      const updated = { ...lpc, quizDone: true, points: (lpc.points || 0) + DONE_POINTS, completedAt: new Date().toISOString() };
-      await FB.setProgress(session.email, { [lesson.id]: updated });
-      setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
-      setOpenToast(`+${DONE_POINTS} pts · lesson completed! 🎉`);
-      setTimeout(() => setOpenToast(""), 2600);
+      toast(`+${OPEN_POINTS} pts · material opened`);
     } catch(e) {}
   };
 
   const SECTIONS = [
-    { key:"topic",      label:"IELTS Topic", icon:"📚", accent:"#1A5FAD", bg:"#eaf2fb" },
-    { key:"discussion", label:"Discussion",  icon:"💬", accent:"#B8620A", bg:"#fdf0e0" },
-    { key:"hometask",   label:"Hometask",    icon:"📝", accent:"#1E7A4F", bg:"#e2ece5" },
+    { key:"topic",      label:"IELTS Topic", accent:"#5F4FD9", bg:"#F1EFFC" },
+    { key:"discussion", label:"Discussion",  accent:"#B8620A", bg:"#FDF3E3" },
+    { key:"hometask",   label:"Hometask",    accent:"#2F7D4A", bg:"#E9F6EC" },
   ];
 
   // one material card (shared across the three sections)
-  const renderMat = (mat, idx) => {
-    const isVideo = mat.type==="video" && mat.url && (mat.url.includes("youtube") || mat.url.includes("youtu.be"));
+  const renderMat = (mat) => {
+    const isYt = mat.type==="video" && youtubeId(mat.url);
+    const isFile = mat.type==="video" && isVideoFile(mat);
     const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
     const tall = mat.type==="pdf";
     const opened = isOpened(mat);
     return (
-      <div key={mat.id} className="matCard matFly" style={{ animationDelay:`${idx*70}ms`, background:"white", borderRadius:20, padding:16, marginBottom:14, border:"1px solid rgba(0,0,0,.06)", boxShadow:"0 6px 18px rgba(13,37,64,.06)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <span className="iconBadge" style={{ width:44, height:44, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:"linear-gradient(145deg,#eef5fd,#d9e8f8)", flexShrink:0 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</span>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:15.5, fontWeight:700, color:"#0a0a0a", letterSpacing:"-0.2px", lineHeight:1.25 }}>{mat.title}</div>
-            <div style={{ fontSize:12, color:"#9aa3b2", marginTop:1, textTransform:"capitalize" }}>{mat.type}{opened ? " · opened" : ""}</div>
+      <div key={mat.id} style={{ background:"white", borderRadius:16, padding:14, marginBottom:12, border:"1px solid #ECEBF3" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+          <span style={{ width:38, height:38, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, background:"#F1EFFC", flexShrink:0 }}>{mat.type==="video"?"🎬":mat.type==="presentation"?"📊":mat.type==="pdf"?"📄":"🔗"}</span>
+          <div style={{ flex:1, minWidth:110 }}>
+            <div style={{ fontSize:14, fontWeight:700, lineHeight:1.25 }}>{mat.title}</div>
+            <div style={{ fontSize:12, color:"#8B8AA6", marginTop:1, textTransform:"capitalize" }}>{mat.type}{mat===lessonVideo?" · lesson video":""}{opened ? " · opened" : ` · +${OPEN_POINTS} pts`}</div>
           </div>
-          {opened
-            ? <span style={{ fontSize:12, fontWeight:700, color:"#1E7A4F", background:"#e8f3ec", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>✓ +{OPEN_POINTS}</span>
-            : <span style={{ fontSize:12, fontWeight:700, color:"#1A5FAD", background:"#eaf2fb", borderRadius:999, padding:"4px 10px", flexShrink:0 }}>+{OPEN_POINTS} pts</span>}
-          <a className="openBtn" href={mat.url} target="_blank" rel="noreferrer" onClick={() => awardOpen(mat)}
-            style={{ padding:"8px 16px", borderRadius:999, background:"linear-gradient(180deg,#2a7fe6,#1559c0)", color:"white", textDecoration:"none", fontSize:13, fontWeight:700, flexShrink:0, boxShadow:"0 5px 14px rgba(21,89,192,.32)" }}>Open</a>
-          {isAdmin && <button onClick={() => deleteMaterial(mat.id)} style={{ width:32, height:32, borderRadius:10, border:"none", background:"#f4f4f6", color:"#9aa3b2", cursor:"pointer", flexShrink:0, fontSize:14 }}>✕</button>}
+          <a href={mat.url} target="_blank" rel="noreferrer" onClick={() => awardOpen(mat)}
+            style={{ padding:"7px 14px", borderRadius:999, background:"#5F4FD9", color:"white", textDecoration:"none", fontSize:12.5, fontWeight:700, flexShrink:0 }}>Open</a>
+          {isAdmin && <button aria-label={`Delete ${mat.title}`} onClick={() => deleteMaterial(mat.id)} style={{ width:30, height:30, borderRadius:10, border:"none", background:"#F4F4F8", color:"#8B8AA6", cursor:"pointer", flexShrink:0, fontSize:13 }}>✕</button>}
         </div>
-
-        {(isVideo || preview) && (
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase", color:"#2a7fe6", marginTop:14, marginBottom:7 }}>{presentLabel(mat.type)}</div>
+        {isYt && mat!==lessonVideo && (
+          <iframe width="100%" height="220" title={mat.title||"Video"} src={`https://www.youtube.com/embed/${youtubeId(mat.url)}`} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12 }} />
         )}
-        {isVideo && (
-          <div style={{ borderRadius:16, overflow:"hidden" }}>
-            <iframe width="100%" height="250" title={mat.title||"Lesson video"}
-              src={mat.url.replace("watch?v=","embed/").replace("youtu.be/","www.youtube.com/embed/")}
-              frameBorder="0" allowFullScreen style={{ display:"block" }} />
-          </div>
-        )}
+        {isFile && mat!==lessonVideo && <video src={mat.url} controls style={{ width:"100%", display:"block", borderRadius:12, marginTop:12 }} />}
         {preview && (
-          <div style={{ borderRadius:16, overflow:"hidden", border:"1px solid rgba(0,0,0,.06)" }}>
-            <iframe width="100%" height={tall?520:360} title={mat.title||"Preview"}
-              src={preview} frameBorder="0" allowFullScreen style={{ display:"block", background:"#f6f9fd" }} />
-          </div>
+          <iframe width="100%" height={tall?480:320} title={mat.title||"Preview"} src={preview} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12, background:"#F7F7FB" }} />
         )}
-        {mat.text && (
-          <div style={{ marginTop:12, fontSize:14, color:"#475569", lineHeight:1.7, whiteSpace:"pre-line" }}>{mat.text}</div>
-        )}
+        {mat.text && <div style={{ marginTop:10, fontSize:13.5, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{mat.text}</div>}
       </div>
     );
   };
 
+  // The lesson video is already step 1, so students don't see it twice. The teacher still needs it here to delete it.
+  const extraMaterials = materials.filter(m => isAdmin || m !== lessonVideo);
+  const testSaved = stepsDone.test;
+  const accept = addType==="video" ? "video/*" : addType==="pdf" ? "application/pdf" : addType==="presentation" ? ".pdf,.ppt,.pptx" : undefined;
+
   return (
-    <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
-        <button onClick={() => setPage("course")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:700, fontSize:13.5, color:"#0a0a0a", lineHeight:1.3 }}>{lesson.n ? `Lesson ${lesson.n}` : ""}{lesson.n ? " · " : ""}{lesson.title}</div>
-          <div style={{ fontSize:11, color:"#888", marginTop:2 }}>{lp.points ? `${lp.points} pts earned` : "Not completed yet"}</div>
+    <div style={{ maxWidth:1040, margin:"0 auto", padding:"4px 0 40px" }}>
+      <button onClick={() => setPage("courses")} style={{ border:"none", background:"none", color:"#6E6C8A", fontWeight:700, fontSize:13, cursor:"pointer", padding:0, marginBottom:8, fontFamily:"inherit" }}>← My Courses</button>
+      <div style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+        <div style={{ flex:1, minWidth:220 }}>
+          <h2 style={{ margin:0, fontSize:22, fontWeight:800, lineHeight:1.25 }}>{lesson.n ? `Lesson ${lesson.n}: ` : ""}{cleanTitle(lesson.title)}</h2>
+          <div style={{ fontSize:13, color:"#6E6C8A", marginTop:4 }}>{lp.quizDone ? "Lesson completed" : pickMotivation(lesson.id)}{lp.points ? ` · ${lp.points} pts` : ""}</div>
         </div>
-        <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[lesson.tag]||"#94a3b8", color:TT(lesson.tag), fontWeight:700, letterSpacing:"0.2px", flexShrink:0 }}>{lesson.tag}</span>
+        <span style={{ fontSize:11, padding:"4px 11px", borderRadius:999, background:TC[lesson.tag]||"#94a3b8", color:TT(lesson.tag), fontWeight:700, flexShrink:0 }}>{lesson.tag}</span>
       </div>
-      <div style={{ maxWidth:1080, margin:"0 auto", padding:"14px" }}>
 
-        {lesson.guideUrl && (
-          <a href={lesson.guideUrl} target="_blank" rel="noreferrer"
-            style={{ display:"flex", alignItems:"center", gap:12, textDecoration:"none", background:"#0a0a0a", color:"white", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-            <span style={{ fontSize:22, lineHeight:1 }}>✈️</span>
-            <span style={{ flex:1, minWidth:0 }}>
-              <span style={{ display:"block", fontWeight:700, fontSize:14 }}>Open Interactive Writing Guide</span>
-              <span style={{ display:"block", fontSize:12, opacity:0.75, marginTop:2 }}>Pie charts, hybrid tasks & Band 7+ strategies — aviation example</span>
-            </span>
-            <span style={{ fontSize:13, fontWeight:700, opacity:0.9 }}>Open ↗</span>
-          </a>
-        )}
+      {lesson.guideUrl && (
+        <a href={lesson.guideUrl} target="_blank" rel="noreferrer" style={{ display:"flex", alignItems:"center", gap:12, textDecoration:"none", background:"#14123F", color:"white", borderRadius:14, padding:"12px 16px", marginBottom:14 }}>
+          <span style={{ flex:1, minWidth:0, fontWeight:700, fontSize:14 }}>Open Interactive Writing Guide</span>
+          <span style={{ fontSize:13, fontWeight:700 }}>Open ↗</span>
+        </a>
+      )}
 
-        <style>{`
-          @keyframes flyIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:none}}
-          @keyframes birdFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(7deg)}}
-          .matFly{animation:flyIn .55s cubic-bezier(.2,.85,.25,1) both}
-          .matCard{transition:transform .3s cubic-bezier(.2,.85,.25,1),box-shadow .3s cubic-bezier(.2,.85,.25,1)}
-          .matCard:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 22px 48px rgba(13,37,64,.16)}
-          .iconBadge{transition:transform .35s cubic-bezier(.2,.85,.25,1)}
-          .matCard:hover .iconBadge{transform:scale(1.14) rotate(-7deg)}
-          .openBtn{transition:transform .2s cubic-bezier(.2,.85,.25,1),filter .2s}
-          .openBtn:hover{transform:scale(1.07);filter:brightness(1.08)}
-          .birdFloat{animation:birdFloat 5s ease-in-out infinite;display:inline-block}
-        `}</style>
-
-        {/* completion bar (replaces the old quiz) */}
-        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", background:"white", borderRadius:14, padding:"12px 16px", marginBottom:16, border:"1px solid #e5e5e5" }}>
-          <span className="birdFloat" style={{ fontSize:24 }}>🕊️</span>
-          <div style={{ flex:1, minWidth:150 }}>
-            <div style={{ fontSize:14, fontWeight:800, color:"#0a0a0a" }}>{pickMotivation(lesson.id)}</div>
-            <div style={{ fontSize:12, color:"#8a94a6", marginTop:1 }}>{lp.quizDone ? "Lesson completed ✓" : "Work through the sections below, then mark the lesson done."}</div>
-          </div>
-          {!isAdmin && (
-            <button onClick={markDone} disabled={!!lp.quizDone} style={{ padding:"9px 18px", borderRadius:999, border:"none", cursor: lp.quizDone?"default":"pointer", fontWeight:800, fontSize:13, background: lp.quizDone?"#e8f3ec":"#1E7A4F", color: lp.quizDone?"#1E7A4F":"white" }}>
-              {lp.quizDone ? "✓ Completed" : "Mark lesson complete"}
+      {/* steps */}
+      <div style={{ display:"grid", gridTemplateColumns:`repeat(${steps.length},minmax(0,1fr))`, gap:8, marginBottom:14 }}>
+        {steps.map((s,i) => {
+          const locked = isLocked(i);
+          const on = s.key === current;
+          return (
+            <button key={s.key} disabled={locked} aria-current={on ? "step" : undefined} onClick={() => setActiveStep(s.key)}
+              style={{ padding:"10px 8px", borderRadius:14, border:`2px solid ${on?"#5F4FD9":"transparent"}`, background:s.done?"#E9F6EC":on?"#F1EFFC":"#F7F7FB", color:locked?"#A9A8BD":"#14123F", cursor:locked?"not-allowed":"pointer", fontWeight:700, fontSize:13, fontFamily:"inherit", minWidth:0 }}>
+              <span style={{ display:"block", fontSize:11.5, color:s.done?"#3F9C5B":locked?"#A9A8BD":"#5F4FD9", fontWeight:800 }}>{s.done?"✓ Submitted":locked?"🔒 Locked":`Step ${i+1}`}</span>
+              <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
             </button>
+          );
+        })}
+      </div>
+
+      <div style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:20, padding:16, marginBottom:20 }}>
+        {!loaded && <div style={{ padding:30, textAlign:"center", color:"#8B8AA6" }}>Loading the lesson...</div>}
+        {loaded && current==="video" && lessonVideo && (
+          <VideoStep key={lessonVideo.id} mat={lessonVideo} questions={vQuestions} saved={stepsDone.video} canSubmit={!isAdmin}
+            onSubmit={(correct, count) => submitStep("video", { correct, count }, correct * VIDEO_POINTS)} />
+        )}
+        {loaded && current==="slides" && (
+          <DeckStep lesson={lesson} saved={stepsDone.slides} canSubmit={!isAdmin} onSubmit={() => submitStep("slides", {}, SLIDES_POINTS)} />
+        )}
+        {loaded && current==="test" && (
+          <div style={{ padding:"10px 6px" }}>
+            <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Lesson test</h3>
+            <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.55 }}>{testQuestions(lesson).length} questions, 30 minutes. Answer every question, then submit to see your score and the correct answers.</p>
+            {testSaved && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Last result: {Math.round(testSaved.score/testSaved.total*100)}% · Best: {Math.round(testSaved.best/testSaved.total*100)}% · Attempts: {testSaved.attempts}</div>}
+            <SubmitBtn onClick={() => setPage("quiz")}>{testSaved ? "Retake the test" : isAdmin ? "Preview the test" : "Start the test"}</SubmitBtn>
+          </div>
+        )}
+        {loaded && current==="assignment" && hasAssignment && (
+          <div style={{ padding:"10px 6px" }}>
+            <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Assignment</h3>
+            <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{lesson.assignment.prompt}</p>
+            {submission?.rubric?.overall != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Self-assessed Band {submission.rubric.overall}</div>}
+            <SubmitBtn onClick={() => setPage("assignment")}>{steps[currentIdx].done ? "Open: review or retry" : "Write and submit"}</SubmitBtn>
+          </div>
+        )}
+        {loaded && steps[currentIdx]?.done && currentIdx < steps.length-1 && (
+          <div style={{ textAlign:"right", marginTop:12 }}>
+            <button onClick={() => setActiveStep(steps[currentIdx+1].key)} style={{ border:"none", background:"none", color:"#5F4FD9", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>Next step: {steps[currentIdx+1].label} →</button>
+          </div>
+        )}
+      </div>
+
+      {isAdmin && (
+        <div style={{ background:"#F7F7FB", borderRadius:18, padding:18, marginBottom:20 }}>
+          <div style={{ fontWeight:800, marginBottom:4 }}>Add material</div>
+          <div style={{ fontSize:12.5, color:"#6E6C8A", marginBottom:12 }}>The first video added here becomes step 1 of the lesson, with its questions. Upload a file or paste a link.</div>
+          <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+            {SECTIONS.map(s => (
+              <button key={s.key} onClick={() => setAddSection(s.key)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, background:addSection===s.key?"#5F4FD9":"#ECEBF3", color:addSection===s.key?"white":"#55536F" }}>{s.label}</button>
+            ))}
+          </div>
+          <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+            {[["video","Video"],["presentation","Slides"],["pdf","PDF"],["link","Link"]].map(([t,l]) => (
+              <button key={t} onClick={() => { setAddType(t); setAddFile(null); }} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#14123F":"#ECEBF3", color:addType===t?"white":"#55536F" }}>{l}</button>
+            ))}
+          </div>
+          <input aria-label="Title" placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #E7E6F0", fontSize:14, marginBottom:8 }} />
+          {addType !== "link" && (
+            <label style={{ display:"block", padding:"10px 12px", borderRadius:10, border:"2px dashed #CFCCE6", background:"white", fontSize:13.5, marginBottom:8, cursor:"pointer" }}>
+              <b style={{ color:"#5F4FD9" }}>Upload a file</b> {addFile ? `· ${addFile.name} (${Math.round(addFile.size/1048576)} MB)` : "from your computer"}
+              <input type="file" accept={accept} style={{ display:"none" }} onChange={e => setAddFile(e.target.files?.[0] || null)} />
+            </label>
           )}
+          <input aria-label="Link" disabled={!!addFile} placeholder="Or paste a link (YouTube, Google Drive, Slides, Canva, PDF)" value={addUrl} onChange={e=>setAddUrl(e.target.value)} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #E7E6F0", fontSize:14, marginBottom:8, opacity:addFile?.5:1 }} />
+          <textarea aria-label="Notes" placeholder="Notes shown under the material (optional)" value={addText} onChange={e=>setAddText(e.target.value)} rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #E7E6F0", fontSize:14, marginBottom:8, resize:"vertical" }} />
+          {uploadPct !== null && (
+            <div style={{ height:8, background:"#ECEBF3", borderRadius:9, overflow:"hidden", marginBottom:8 }} role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100}><div style={{ width:`${uploadPct}%`, height:"100%", background:"#5F4FD9" }} /></div>
+          )}
+          <SubmitBtn disabled={saving || !addTitle || (!addUrl && !addFile)} onClick={saveMaterial}>{uploadPct !== null ? `Uploading ${uploadPct}%` : saving ? "Saving..." : "Add material"}</SubmitBtn>
         </div>
+      )}
 
-        {isAdmin && (
-          <div style={{ background:"white", borderRadius:14, padding:20, marginBottom:16, border:"1px solid #e5e5e5" }}>
-            <div style={{ fontWeight:700, marginBottom:12 }}>Add Material</div>
-            <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-              {[["topic","📚 IELTS Topic"],["discussion","💬 Discussion"],["hometask","📝 Hometask"]].map(([k,l]) => (
-                <button key={k} onClick={() => setAddSection(k)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, background:addSection===k?"#1A5FAD":"#eef2f7", color:addSection===k?"white":"#475569" }}>{l}</button>
-              ))}
-            </div>
-            <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-              {["link","video","presentation","pdf"].map(t => (
-                <button key={t} onClick={() => setAddType(t)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:600, background:addType===t?"#0a0a0a":"#e5e5e5", color:addType===t?"white":"#475569" }}>
-                  {t==="link"?"Link":t==="video"?"Video":t==="presentation"?"Slides":"PDF"}
-                </button>
-              ))}
-            </div>
-            <input placeholder="Title" value={addTitle} onChange={e=>setAddTitle(e.target.value)}
-              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-            <input placeholder="URL (Google Slides / Drive / Canva / PDF / .pptx)" value={addUrl} onChange={e=>setAddUrl(e.target.value)}
-              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8 }} />
-            <textarea placeholder="Text / notes shown under the preview (optional)" value={addText} onChange={e=>setAddText(e.target.value)} rows={3}
-              style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"2px solid #e5e5e5", fontSize:14, boxSizing:"border-box", marginBottom:8, resize:"vertical", fontFamily:"inherit" }} />
-            <button onClick={saveMaterial} disabled={saving} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#0a0a0a", color:"white", fontWeight:700, cursor:"pointer", opacity: saving ? 0.7 : 1 }}>
-              {saving ? "Saving..." : `Add to ${addSection==="topic"?"IELTS Topic":addSection==="discussion"?"Discussion":"Hometask"}`}
-            </button>
-          </div>
-        )}
-
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:16, alignItems:"start" }}>
-          {SECTIONS.map(sec => {
-            const items = materials.filter(m => (m.section||"topic")===sec.key);
-            const isHome = sec.key==="hometask";
-            return (
-              <div key={sec.key}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 13px", borderRadius:12, background:sec.bg, marginBottom:12 }}>
-                  <span style={{ fontSize:18 }}>{sec.icon}</span>
-                  <span style={{ fontWeight:800, fontSize:14.5, color:sec.accent }}>{sec.label}</span>
-                  <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:sec.accent, opacity:.7 }}>{items.length}</span>
+      {extraMaterials.length > 0 && (
+        <>
+          <h3 style={{ margin:"0 0 12px", fontSize:18, fontWeight:800 }}>More materials</h3>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16, alignItems:"start" }}>
+            {SECTIONS.map(sec => {
+              const items = extraMaterials.filter(m => (m.section||"topic")===sec.key);
+              if (!items.length) return null;
+              return (
+                <div key={sec.key}>
+                  <div style={{ padding:"8px 13px", borderRadius:12, background:sec.bg, color:sec.accent, fontWeight:800, fontSize:13.5, marginBottom:10 }}>{sec.label}</div>
+                  {items.map(renderMat)}
                 </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-                {isHome && lesson.assignment && (() => {
-                  const aType = lesson.assignment.type;
-                  const desc = aType === "essay"    ? "Essay · 60-min timer · self-assessment"
-                             : aType === "speaking" ? "Speaking task · self-assessment"
-                                                    : "Short written response";
-                  const done = !!submission;
-                  const band = submission?.rubric?.overall;
-                  return (
-                    <div style={{ background:"#0a0a0a", borderRadius:18, padding:16, marginBottom:14, color:"white" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:10 }}>
-                        <div>
-                          <div style={{ fontSize:14, fontWeight:700 }}>Assignment</div>
-                          <div style={{ fontSize:12, opacity:0.75, marginTop:2 }}>{desc}</div>
-                        </div>
-                        {band != null && (
-                          <div style={{ background:"white", color:"#0a0a0a", borderRadius:8, padding:"6px 12px", textAlign:"center", minWidth:54 }}>
-                            <div style={{ fontSize:18, fontWeight:800, lineHeight:1 }}>{band}</div>
-                            <div style={{ fontSize:9, letterSpacing:"0.4px", textTransform:"uppercase", color:"#666", marginTop:2 }}>Band</div>
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => setPage("assignment")} style={{ width:"100%", padding:12, borderRadius:10, border:"1px solid white", background: done ? "white" : "transparent", color: done ? "#0a0a0a" : "white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
-                        {done ? "Open · review or retry" : "Open Assignment"}
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                {items.length === 0 && !(isHome && lesson.assignment) && (
-                  <div style={{ textAlign:"center", padding:"26px 12px", color:"#aab2c0", background:"white", borderRadius:16, border:"1px dashed #e0e5ec", fontSize:13 }}>{isAdmin ? "Add material to this section above." : "Nothing here yet."}</div>
-                )}
-                {items.map((mat, idx) => renderMat(mat, idx))}
-              </div>
-            );
-          })}
-        </div>
-
-        {openToast && (
-          <div style={{ position:"fixed", bottom:22, left:"50%", transform:"translateX(-50%)", background:"#1d1d1f", color:"white", padding:"11px 20px", borderRadius:999, fontWeight:700, fontSize:13.5, boxShadow:"0 12px 30px rgba(0,0,0,.3)", zIndex:300 }}>{openToast}</div>
-        )}
-      </div>
+      {openToast && (
+        <div role="status" style={{ position:"fixed", bottom:22, left:"50%", transform:"translateX(-50%)", background:"#14123F", color:"white", padding:"11px 20px", borderRadius:999, fontWeight:700, fontSize:13.5, boxShadow:"0 12px 30px rgba(0,0,0,.3)", zIndex:300, whiteSpace:"nowrap" }}>{openToast}</div>
+      )}
     </div>
   );
 }
@@ -2628,14 +2974,13 @@ function admitVerdict(u, P, band) {
 }
 const VERDICT_META = {
   likely: { label:"✓ Likely", color:"#1E7A4F", bg:"#e2ece5", blurb:"Your profile is at or above the typical bar." },
-  target: { label:"◎ Target", color:"#1A5FAD", bg:"#e5eefa", blurb:"A realistic match — competitive but achievable." },
+  target: { label:"◎ Target", color:"#5F4FD9", bg:"#e5eefa", blurb:"A realistic match — competitive but achievable." },
   reach:  { label:"↗ Reach", color:"#B8620A", bg:"#fdf0e0", blurb:"Ambitious — apply, but add safer options too." },
 };
 const strengthLabel = (p) => p>=88?"Exceptional":p>=75?"Very strong":p>=60?"Strong":p>=45?"Solid":"Building";
-const segBtn = (on, c="#1A5FAD") => ({ padding:"7px 12px", borderRadius:8, border:`2px solid ${on?c:"#e5e5e5"}`, background:on?c:"white", color:on?"white":"#0a0a0a", fontWeight:700, fontSize:12.5, cursor:"pointer", textTransform:"capitalize" });
+const segBtn = (on, c="#5F4FD9") => ({ padding:"7px 12px", borderRadius:8, border:`2px solid ${on?c:"#e5e5e5"}`, background:on?c:"white", color:on?"white":"#0a0a0a", fontWeight:700, fontSize:12.5, cursor:"pointer", textTransform:"capitalize" });
 
 function AdmissionsPage({ session, logout, setPage, isAdmin }) {
-  const [myProgress, setMyProgress] = useState({});
   const [band, setBand] = useState(6.5);
   const [region, setRegion] = useState("All");
   const [level, setLevel] = useState("All");
@@ -2648,14 +2993,13 @@ function AdmissionsPage({ session, logout, setPage, isAdmin }) {
 
   useEffect(() => {
     FB.getProgress(session.email).then(p => {
-      const prog = p || {}; setMyProgress(prog);
+      const prog = p || {};
       const m = prog.__meta || {};
       const pre = (m.certificate && m.certificate.band) || m.goal;
       if (pre) setBand(pre);
     });
   }, [session.email]);
 
-  const totalPts = Object.entries(myProgress).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0);
   const profile = calcProfile({ gpa, sat, satOptional, band, activities, essays });
 
   const pool = UNIVERSITIES
@@ -2703,10 +3047,9 @@ function AdmissionsPage({ session, logout, setPage, isAdmin }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 230px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={totalPts} />
+    <div style={{ minHeight:"100vh", background:"transparent", fontFamily:"inherit" }}>
       <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
-        <div style={{ position:"relative", overflow:"hidden", borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d2540,#1A5FAD)", boxShadow:"0 12px 30px rgba(13,37,64,.25)" }}>
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d2540,#5F4FD9)", boxShadow:"0 12px 30px rgba(13,37,64,.25)" }}>
           <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>✈ Admissions Alley</div>
           <h2 style={{ margin:0, fontSize:19, fontWeight:800 }}>Where can you get in?</h2>
           <p style={{ margin:"4px 0 0", opacity:0.8, fontSize:12 }}>Fill your Common App profile — we estimate your chances and match scholarships abroad.</p>
@@ -2739,8 +3082,8 @@ function AdmissionsPage({ session, logout, setPage, isAdmin }) {
           <div style={{ fontSize:13, fontWeight:800, color:"#0d2540", marginBottom:2 }}>📋 Common App profile</div>
           <div style={{ fontSize:11.5, color:"#94a3b8", marginBottom:14 }}>The same factors universities weigh on your application.</div>
 
-          <div style={{ display:"flex", justifyContent:"space-between" }}><label style={lblStyle}>GPA (out of 4.0)</label><span style={{ fontWeight:800, color:"#1A5FAD" }}>{gpa.toFixed(1)}</span></div>
-          <input type="range" min="0" max="4" step="0.1" value={gpa} onChange={e=>setGpa(Number(e.target.value))} style={{ width:"100%", marginBottom:6, accentColor:"#1A5FAD" }} />
+          <div style={{ display:"flex", justifyContent:"space-between" }}><label style={lblStyle}>GPA (out of 4.0)</label><span style={{ fontWeight:800, color:"#5F4FD9" }}>{gpa.toFixed(1)}</span></div>
+          <input type="range" min="0" max="4" step="0.1" value={gpa} onChange={e=>setGpa(Number(e.target.value))} style={{ width:"100%", marginBottom:6, accentColor:"#5F4FD9" }} />
           <div style={{ fontSize:10.5, color:"#aab4c4", marginBottom:14 }}>Tip: ~90–100% ≈ 4.0 · ~80–89% ≈ 3.3 · ~70–79% ≈ 2.7</div>
 
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -2751,8 +3094,8 @@ function AdmissionsPage({ session, logout, setPage, isAdmin }) {
           </div>
           {!satOptional && (
             <>
-              <div style={{ textAlign:"right", fontWeight:800, color:"#1A5FAD" }}>{sat}</div>
-              <input type="range" min="400" max="1600" step="10" value={sat} onChange={e=>setSat(Number(e.target.value))} style={{ width:"100%", marginBottom:14, accentColor:"#1A5FAD" }} />
+              <div style={{ textAlign:"right", fontWeight:800, color:"#5F4FD9" }}>{sat}</div>
+              <input type="range" min="400" max="1600" step="10" value={sat} onChange={e=>setSat(Number(e.target.value))} style={{ width:"100%", marginBottom:14, accentColor:"#5F4FD9" }} />
             </>
           )}
           {satOptional && <div style={{ height:8 }} />}
@@ -2769,7 +3112,7 @@ function AdmissionsPage({ session, logout, setPage, isAdmin }) {
         </div>
 
         {/* Profile strength meter */}
-        <div style={{ background:"linear-gradient(135deg,#0d2540,#1A5FAD)", borderRadius:14, padding:"16px 18px", color:"white", marginBottom:18 }}>
+        <div style={{ background:"linear-gradient(135deg,#0d2540,#5F4FD9)", borderRadius:14, padding:"16px 18px", color:"white", marginBottom:18 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
             <span style={{ fontSize:12, opacity:0.8, fontWeight:600, letterSpacing:"0.3px" }}>YOUR PROFILE STRENGTH</span>
             <span style={{ fontSize:24, fontWeight:800 }}>{profile}<span style={{ fontSize:13, opacity:0.7 }}>/100</span></span>
@@ -2799,7 +3142,7 @@ const chip = { fontSize:11, color:"#475569", background:"#eef4fd", borderRadius:
 // IELTS PSYCHOLOGIST — stress-reduction techniques
 // ══════════════════════════════════════════
 const PSYCH_TECHNIQUES = [
-  { icon:"🌬️", title:"Box breathing (4·4·4·4)", color:"#1A5FAD",
+  { icon:"🌬️", title:"Box breathing (4·4·4·4)", color:"#5F4FD9",
     body:"The fastest way to calm a racing heart before or during the test. Breathe in for 4, hold for 4, out for 4, hold for 4. Repeat 4 rounds — it lowers your heart rate and clears your head.", tip:"Use the breathing circle above for 1–2 minutes before you start." },
   { icon:"😮‍💨", title:"4-7-8 calming breath", color:"#1E7A4F",
     body:"Inhale through the nose for 4, hold for 7, exhale slowly through the mouth for 8. Great the night before to fall asleep, or in the waiting room.", tip:"Do 3–4 cycles, no more — it's powerful." },
@@ -2807,7 +3150,7 @@ const PSYCH_TECHNIQUES = [
     body:"When panic hits, name 5 things you can see, 4 you can hear, 3 you can touch, 2 you can smell, 1 you can taste. It pulls your brain out of fear and back into the room.", tip:"Perfect just before the Speaking test." },
   { icon:"🛫", title:"Pre-flight checklist (exam day)", color:"#0d2540",
     body:"Sleep 7–8h, eat a real breakfast, arrive 30 min early, bring water and ID. Don't cram new material in the last hour — review light notes only. A calm body makes a calm mind.", tip:"Lay everything out the night before." },
-  { icon:"🧭", title:"In-flight: when you get stuck", color:"#1A5FAD",
+  { icon:"🧭", title:"In-flight: when you get stuck", color:"#5F4FD9",
     body:"If one question freezes you, take 2 slow breaths, mark it, and move on — never let one item sink the whole test. Listening: let a missed answer go instantly and catch the next. Reading/Writing: watch the clock, not the perfect sentence.", tip:"A skipped question costs 1 mark; panic costs ten." },
   { icon:"💭", title:"Reframe the nerves", color:"#1E7A4F",
     body:"Those butterflies are energy, not danger. Swap 'I'm going to fail' for 'I've prepared, and I'll do my best.' Nervous excitement and fear feel the same in the body — tell yourself it's excitement.", tip:"Say it out loud: 'This is excitement, and I'm ready.'" },
@@ -2818,21 +3161,12 @@ const PSYCH_TECHNIQUES = [
 ];
 
 function PsychPage({ session, logout, setPage, isAdmin }) {
-  const [pts, setPts] = useState(0);
-  useEffect(() => {
-    FB.getProgress(session.email).then(p => {
-      const prog = p || {};
-      setPts(Object.entries(prog).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0));
-    });
-  }, [session.email]);
-
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(#e7f6f3,#f2f9fb 240px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
+    <div style={{ minHeight:"100vh", background:"transparent", fontFamily:"inherit" }}>
       <style>{"@keyframes breathe{0%{transform:scale(.6)}25%{transform:scale(1)}50%{transform:scale(1)}75%{transform:scale(.6)}100%{transform:scale(.6)}}"}</style>
       <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
 
-        <div style={{ borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d4f45,#1A5FAD)", boxShadow:"0 12px 30px rgba(13,79,69,.25)" }}>
+        <div style={{ borderRadius:16, padding:"20px", color:"white", marginBottom:18, background:"linear-gradient(135deg,#0d4f45,#5F4FD9)", boxShadow:"0 12px 30px rgba(13,79,69,.25)" }}>
           <div style={{ fontSize:11, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#9ED9CF", marginBottom:4 }}>🧘 IELTS Psychologist</div>
           <h2 style={{ margin:0, fontSize:19, fontWeight:800 }}>Calm mind, higher band</h2>
           <p style={{ margin:"4px 0 0", opacity:0.85, fontSize:12 }}>Stress is the #1 hidden score-killer. These techniques keep you steady before, during and after the test.</p>
@@ -2843,7 +3177,7 @@ function PsychPage({ session, logout, setPage, isAdmin }) {
           <div style={{ fontSize:13, fontWeight:800, color:"#0d4f45", marginBottom:4 }}>Breathe with the circle</div>
           <div style={{ fontSize:11.5, color:"#7a8aa0", marginBottom:16 }}>In 4 · Hold 4 · Out 4 · Hold 4 — follow it for a minute</div>
           <div style={{ height:150, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={{ width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%,#9ED9CF,#1A5FAD)", boxShadow:"0 0 40px rgba(26,95,173,.4)", animation:"breathe 16s ease-in-out infinite", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontWeight:700, fontSize:13 }}>breathe</div>
+            <div style={{ width:120, height:120, borderRadius:"50%", background:"radial-gradient(circle at 35% 30%,#9ED9CF,#5F4FD9)", boxShadow:"0 0 40px rgba(26,95,173,.4)", animation:"breathe 16s ease-in-out infinite", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontWeight:700, fontSize:13 }}>breathe</div>
           </div>
         </div>
 
@@ -2927,7 +3261,6 @@ const SPK_LEVELS = [
 
 function SpeakingWorld({ session, logout, setPage, isAdmin }) {
   const [access, setAccess] = useState(null); // null = checking
-  const [pts, setPts] = useState(0);
   const [tab, setTab] = useState("part1");
   // Part 2 practice
   const [cueIdx, setCueIdx] = useState(0);
@@ -2935,10 +3268,6 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
   const [sec, setSec] = useState(0);
 
   useEffect(() => {
-    FB.getProgress(session.email).then(p => {
-      const prog = p || {};
-      setPts(Object.entries(prog).filter(([k]) => k !== "__meta").reduce((s,[,v]) => s+(v.points||0), 0));
-    }).catch(()=>{});
     if (isAdmin || hasFullAccess(session.email)) { setAccess(true); return; }
     FB.getStudent(session.email).then(s => setAccess(!!(s && s.speaking))).catch(() => setAccess(false));
   }, [session.email, isAdmin]);
@@ -2966,10 +3295,9 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
   const TABS = [["part1","Part 1 · Interview"],["part2","Part 2 · Cue card"],["part3","Part 3 · Discussion"],["phrases","Phrases"],["bands","Band criteria"]];
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(#eaf2fb,#f6f9fd 240px,#fafafa)", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Nav session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} pts={pts} />
+    <div style={{ minHeight:"100vh", background:"transparent", fontFamily:"inherit" }}>
       <div style={{ maxWidth:760, margin:"0 auto", padding:"18px 16px 60px" }}>
-        <div style={{ position:"relative", overflow:"hidden", borderRadius:18, padding:"22px 20px", color:"white", marginBottom:16, background:"linear-gradient(135deg,#070d18,#0d2540 55%,#1A5FAD 135%)", boxShadow:"0 14px 34px rgba(13,37,64,.28)" }}>
+        <div style={{ position:"relative", overflow:"hidden", borderRadius:18, padding:"22px 20px", color:"white", marginBottom:16, background:"linear-gradient(135deg,#070d18,#0d2540 55%,#5F4FD9 135%)", boxShadow:"0 14px 34px rgba(13,37,64,.28)" }}>
           <div style={{ position:"absolute", top:12, right:16, fontSize:30, opacity:0.18 }}>🛫</div>
           <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1.6px", textTransform:"uppercase", color:"#e8b923" }}>Premium · Departure lounge</div>
           <h2 style={{ margin:"3px 0 4px", fontSize:22, fontWeight:800 }}>🎤 Speaking World</h2>
@@ -2979,7 +3307,7 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
 
         <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
           {TABS.map(([k,label]) => (
-            <button key={k} onClick={() => setTab(k)} style={{ padding:"8px 13px", borderRadius:999, border:`1.5px solid ${tab===k?"#1A5FAD":"#dbe6f3"}`, background:tab===k?"#1A5FAD":"white", color:tab===k?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{label}</button>
+            <button key={k} onClick={() => setTab(k)} style={{ padding:"8px 13px", borderRadius:999, border:`1.5px solid ${tab===k?"#5F4FD9":"#dbe6f3"}`, background:tab===k?"#5F4FD9":"white", color:tab===k?"white":"#0d2540", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>{label}</button>
           ))}
         </div>
 
@@ -2994,7 +3322,7 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
         {tab==="part2" && (
           <div>
             <div style={{ background:"white", borderRadius:16, padding:"18px", border:"1px solid #e5edf7", boxShadow:"0 8px 22px rgba(13,37,64,.08)", marginBottom:14 }}>
-              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD" }}>Cue card</div>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#5F4FD9" }}>Cue card</div>
               <div style={{ fontSize:18, fontWeight:800, color:"#0d2540", margin:"4px 0 10px" }}>{cue.title}</div>
               <div style={{ fontSize:13, color:"#64748b", marginBottom:6 }}>You should say:</div>
               <ul style={{ margin:0, paddingLeft:20, color:"#334155", fontSize:14, lineHeight:1.8 }}>{cue.bullets.map((b,i)=><li key={i}>{b}</li>)}</ul>
@@ -3031,14 +3359,14 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
 
         {tab==="phrases" && SPK_PHRASES.map(g => (
           <div key={g.group} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)", marginBottom:12 }}>
-            <div style={{ fontSize:14, fontWeight:800, color:"#1A5FAD", marginBottom:10 }}>{g.group}</div>
+            <div style={{ fontSize:14, fontWeight:800, color:"#5F4FD9", marginBottom:10 }}>{g.group}</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>{g.items.map((p,i)=><span key={i} style={{ background:"#eef4fd", color:"#0d2540", borderRadius:999, padding:"6px 13px", fontSize:13, fontWeight:500 }}>{p}</span>)}</div>
           </div>
         ))}
 
         {tab==="bands" && (
           <div style={{ display:"grid", gap:12 }}>
-            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD", marginBottom:2 }}>Target by band</div>
+            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#5F4FD9", marginBottom:2 }}>Target by band</div>
             {SPK_LEVELS.map(lv => {
               const locked = !lv.open && !isIelts8;
               return (
@@ -3065,7 +3393,7 @@ function SpeakingWorld({ session, logout, setPage, isAdmin }) {
               );
             })}
 
-            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#1A5FAD", margin:"6px 0 2px" }}>The 4 marking criteria</div>
+            <div style={{ fontSize:11, fontWeight:800, letterSpacing:"1px", textTransform:"uppercase", color:"#5F4FD9", margin:"6px 0 2px" }}>The 4 marking criteria</div>
             {SPK_BANDS.map(b => (
               <div key={b.crit} style={{ background:"white", borderRadius:16, padding:"16px 18px", border:"1px solid #e5edf7", boxShadow:"0 6px 16px rgba(13,37,64,.05)" }}>
                 <div style={{ fontSize:16, fontWeight:800, color:"#0d2540" }}>{b.ico} {b.crit}</div>
@@ -3127,16 +3455,6 @@ export default function App() {
 
   const logout = () => { setPage("course"); signOut(auth); };
 
-  const refreshModules = async () => {
-    const mods = await FB.getModules();
-    const result = mods || INITIAL_MODULES;
-    setModules(result);
-    if (currentLesson) {
-      const updated = result.flatMap(m => m.lessons).find(l => l.id === currentLesson.id);
-      if (updated) setCurrentLesson({...updated});
-    }
-  };
-
   if (loading || authLoading) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#0a0a0a,#0a0a0a)", fontFamily:"sans-serif" }}>
       <div style={{ color:"white", textAlign:"center" }}>
@@ -3149,15 +3467,24 @@ export default function App() {
 
   const isAdmin = session.email === ADMIN_EMAIL;
 
-  if (page === "admin" && isAdmin) return <AdminPanel session={session} logout={logout} setPage={setPage} modules={modules} />;
-  if (page === "admissions") return <AdmissionsPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
-  if (page === "psych") return <PsychPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
-  if (page === "speaking") return <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} />;
-  if (page === "leaderboard") return <Leaderboard session={session} setPage={setPage} />;
-  if (page === "dashboard") return <Dashboard session={session} setPage={setPage} modules={modules} />;
-  if (page === "lesson" && currentLesson) return <LessonPage lesson={currentLesson} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} refreshModules={refreshModules} modules={modules} />;
-  if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} />;
+  // Full-screen pages, without the sidebar
+  if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "assignment" && currentLesson) return <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
 
-  return <CoursePage session={session} logout={logout} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
+  const body =
+    page === "admin" && isAdmin ? <AdminPanel session={session} logout={logout} setPage={setPage} modules={modules} /> :
+    page === "admissions" ? <AdmissionsPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} /> :
+    page === "psych" ? <PsychPage session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} /> :
+    page === "speaking" ? <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} /> :
+    page === "leaderboard" ? <Leaderboard session={session} setPage={setPage} /> :
+    page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
+    page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
+    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} /> :
+    <CoursePage key={page==="courses"?"courses":"dashboard"} view={page==="courses"?"courses":"dashboard"} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
+
+  return (
+    <AppShell session={session} page={page} setPage={setPage} logout={logout} isAdmin={isAdmin} modules={modules} setCurrentLesson={setCurrentLesson}>
+      {body}
+    </AppShell>
+  );
 }

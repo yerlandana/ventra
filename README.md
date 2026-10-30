@@ -4,13 +4,12 @@ A minimalist online IELTS preparation course that guides learners from
 **B1 to IELTS Band 8** through structured lessons, quizzes, written
 assignments, AI feedback, and full mock tests.
 
-The site is intentionally black‑and‑white — colour is reserved only for
-the four IELTS skill tags, so the focus stays on the content:
+The interface uses a lavender sidebar with a purple accent. Colour tags still mark the four IELTS skills:
 
-- 🟥 **Reading** — `#FF5959`
-- 🟨 **Listening** — `#FAD05A`
-- 🟩 **Writing** — `#49BEB6`
-- 🟦 **Speaking** — `#075F63`
+- **Reading**: `#FF5959`
+- **Listening**: `#FAD05A`
+- **Writing**: `#49BEB6`
+- **Speaking**: `#075F63`
 
 ## Features
 
@@ -18,6 +17,9 @@ the four IELTS skill tags, so the focus stays on the content:
   Writing, Speaking, with Grammar / Vocabulary built into every lesson.
 - **Per‑lesson materials** — links, slides, PDFs and embedded YouTube
   videos that the teacher can upload and edit live from the admin panel.
+- **Lesson steps with Submit**: video with questions that pause it, presentation, test, assignment. Each step opens after the previous one is submitted.
+- **Video upload** to Firebase Storage from the lesson page (`storage.rules`).
+- **Presentations** in `public/decks/`, built from `scripts/deck-content.js` with `node scripts/build-decks.js`.
 - **Quizzes** with multiple‑choice, true/false, fill‑in‑the‑blank and
   matching question types, plus an instant score breakdown.
 - **Writing & Speaking assignments** sent to the Anthropic Claude API

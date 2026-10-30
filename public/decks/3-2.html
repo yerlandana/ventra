@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The long turn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap">
+<style>:root{
+  --indigo:#2A2680; --indigo-2:#221F6E; --navy:#15225A; --lav:#B6AFF0; --gold:#C9973A; --gold-2:#E4BF6C;
+  --ink:#FFFFFF; --soft:#D9D5FA; --muted:#A9A3DA; --line:rgba(214,208,255,.16); --card:rgba(21,34,90,.55);
+  --bad:#F2999B; --good:#93DDB2; --ground:#100E35; --bar:rgba(16,14,53,.92);
+  --font:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);overflow:hidden}
+#deck{position:fixed;inset:0 0 calc(64px + env(safe-area-inset-bottom,0px)) 0;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--k,.5));transform-origin:50% 50%;overflow:hidden;border-radius:4px;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.slide{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 82% 12%,#3B36A3 0,rgba(59,54,163,0) 46%),radial-gradient(circle at 8% 100%,#211D6B 0,rgba(33,29,107,0) 40%),var(--indigo)}
+.slide[hidden]{display:none}
+.slide *{box-sizing:border-box}
+.slide h1,.slide h2,.slide p{margin:0}
+.decor{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.pad{position:absolute;inset:80px 128px 120px 128px;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:44px}
+.h2{font-size:80px;font-weight:800;line-height:1.05;letter-spacing:-.02em;text-wrap:balance;max-width:1500px}
+.h2 em{font-style:normal;color:var(--gold-2)}
+.lead{font-size:36px;line-height:1.4;color:var(--soft);max-width:1400px}
+.foot{position:absolute;left:128px;right:128px;bottom:44px;z-index:1;display:flex;justify-content:space-between;align-items:center;font-size:21px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+.foot b{color:var(--gold-2);font-weight:700}
+.a{opacity:0;transform:translateY(26px)}
+.slide.on .a{animation:up .7s cubic-bezier(.2,.75,.25,1) forwards;animation-delay:calc(var(--d,0) * 110ms + 120ms)}
+@keyframes up{to{opacity:1;transform:none}}
+.slide.on .draw{stroke-dasharray:1600;stroke-dashoffset:1600;animation:draw 1.8s ease forwards .1s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.slide.on .spin{transform-origin:center;transform-box:fill-box;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:70px 560px 1fr;gap:28px;align-items:baseline;padding:24px 0;border-top:1px solid var(--line)}
+.row:last-child{border-bottom:1px solid var(--line)}
+.num{font-size:38px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.idm{font-size:42px;font-weight:700;line-height:1.15}
+.ex{font-size:34px;line-height:1.36;color:var(--soft)}
+.ex b,.hl,.ctxt b,.lead b{color:var(--gold-2);font-weight:700}
+.card{background:var(--card);border:1px solid rgba(182,175,240,.24);border-radius:28px;padding:32px 38px;display:flex;flex-direction:column;gap:14px}
+.ctag{font-size:24px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-2)}
+.ctxt{font-size:33px;line-height:1.4;color:var(--ink)}
+.cnote{font-size:28px;line-height:1.38;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:86px;height:50px;padding:0 18px;border-radius:999px;background:var(--gold);color:#1A1446;font-weight:800;font-size:25px;letter-spacing:.02em}
+.chip.l{background:transparent;border:2px solid var(--lav);color:var(--lav)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:28px 36px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.gap{display:inline-block;min-width:170px;border-bottom:4px solid var(--gold-2);margin:0 6px}
+.ladder{display:flex;flex-direction:column;gap:20px}
+.step{display:grid;grid-template-columns:170px 1fr 380px;gap:30px;align-items:center;padding:24px 34px;border-radius:24px;background:var(--card);border:1px solid rgba(182,175,240,.18)}
+.step .ctxt{font-size:35px}
+.why{font-size:27px;line-height:1.35;color:var(--muted)}
+.bad{color:var(--bad)} .good{color:var(--good)}
+.mark{font-weight:800;margin-right:12px}
+.cover-logo{position:absolute;left:128px;top:100px;display:flex;align-items:center;gap:28px;z-index:1}
+.cover-logo span{font-size:54px;font-weight:800;letter-spacing:.12em}
+.slide.on .logo8 circle{stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.6s ease forwards}
+.slide.on .logo8 circle:nth-child(2){animation-delay:.5s}
+.slide.on .logo-word{animation:up .8s ease forwards 1.1s}
+.logo-word{opacity:0;transform:translateY(20px)}
+.cover-title{position:absolute;left:128px;top:320px;z-index:1;display:flex;flex-direction:column;gap:30px;max-width:1120px}
+.cover-title .kick{font-size:30px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lav)}
+.cover-title h1{font-size:112px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.cover-title h1 i{font-style:normal;color:var(--gold-2)}
+.cover-title p{font-size:36px;line-height:1.35;color:var(--soft);max-width:1040px}
+.check{display:flex;flex-direction:column;gap:20px}
+.ci{display:grid;grid-template-columns:90px 1fr;gap:30px;align-items:center;font-size:42px;font-weight:600;line-height:1.25}
+.ci .n{width:70px;height:70px;border-radius:50%;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--gold-2)}
+.slide.on .ci{animation:slidein .7s cubic-bezier(.2,.75,.25,1) forwards;animation-delay:calc(var(--d) * 300ms + 300ms)}
+.ci{opacity:0;transform:translateX(-40px)}
+@keyframes slidein{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .a,.ci,.logo-word{opacity:1!important;transform:none!important;animation:none!important}
+  .slide.on .draw,.slide.on .logo8 circle{animation:none;stroke-dashoffset:0}
+  .slide.on .spin{animation:none}
+}
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:12px;height:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bar);border-top:1px solid var(--line);backdrop-filter:blur(10px)}
+#name{flex:1;min-width:0;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+#count b{color:var(--ink)}
+.btn{appearance:none;border:1px solid var(--line);background:#1C1950;color:var(--ink);font:inherit;font-size:14px;font-weight:600;height:36px;min-width:36px;padding:0 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.btn:hover{background:#26226A}
+.btn:focus-visible{outline:2px solid var(--gold-2);outline-offset:2px}
+.btn:disabled{opacity:.35;cursor:default}
+#prog{position:fixed;left:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));height:3px;background:var(--gold);z-index:6;width:0;transition:width .3s ease}</style></head>
+<body data-title="The long turn">
+<div id="deck"><div id="stage">
+<section class="slide" data-name="Cover" data-decor="cover">
+  <div class="cover-logo"><svg class="logo8" width="96" height="140" viewBox="0 0 96 140" aria-hidden="true"><circle cx="48" cy="38" r="30" fill="none" stroke="#C9973A" stroke-width="9"/><circle cx="48" cy="100" r="34" fill="none" stroke="#B6AFF0" stroke-width="9"/></svg><span class="logo-word">IELTS<b style="color:var(--gold-2)">8</b></span></div>
+  <div class="cover-title"><span class="kick a" style="--d:4">Lesson 10 · Speaking Part 2</span><h1 class="a" style="--d:6">The <i>long turn</i></h1><p class="a" style="--d:8">Use your one minute well, speak for two minutes and tell stories with the Past Perfect</p></div>
+  <div class="foot"><span class="a" style="--d:10">Dana Yerlanova · IELTS 8.0 · TESOL</span><span class="a" style="--d:10">ielts8.kz</span></div>
+</section>
+<section class="slide" data-name="Today's plan" data-decor="a">
+  <div class="pad"><h2 class="h2 a">Today's <em>plan</em></h2><div class="g2"><div class="card a" style="--d:1"><div class="idm"><span class="num">1</span> Part 2 at a glance</div><p class="ctxt"></p><p class="cnote">One minute to prepare, up to two minutes to speak.</p></div><div class="card a" style="--d:2"><div class="idm"><span class="num">2</span> Make useful notes</div><p class="ctxt"></p><p class="cnote">Key words only, not sentences.</p></div><div class="card a" style="--d:3"><div class="idm"><span class="num">3</span> Structure your story</div><p class="ctxt"></p><p class="cnote">Keep going with a clear path.</p></div><div class="card a" style="--d:4"><div class="idm"><span class="num">4</span> Past Perfect</div><p class="ctxt"></p><p class="cnote">Show what happened earlier.</p></div></div></div>
+  <div class="foot"><span>Plan</span><b>2 / 8</b></div>
+</section>
+<section class="slide" data-name="How the turn works" data-decor="b">
+  <div class="pad"><h2 class="h2 a">How the <em>turn works</em></h2><div class="g3"><div class="card a" style="--d:1"><div class="idm">1 minute</div><p class="ctxt">Prepare and make notes.</p><p class="cnote">Paper and a pencil are provided.</p></div><div class="card a" style="--d:2"><div class="idm">1 to 2 minutes</div><p class="ctxt">Speak without interruption.</p><p class="cnote">The examiner will stop you.</p></div><div class="card a" style="--d:3"><div class="idm">Follow up</div><p class="ctxt">One or two short questions.</p><p class="cnote">Answer briefly, then Part 3 begins.</p></div></div></div>
+  <div class="foot"><span>Speaking</span><b>3 / 8</b></div>
+</section>
+<section class="slide" data-name="Structure your story" data-decor="c">
+  <div class="pad"><h2 class="h2 a">Structure your <em>story</em></h2><div class="rows"><div class="row a" style="--d:1"><span class="num">1</span><span class="idm">Set the scene</span><span class="ex">I'd like to talk about a trip I took two years ago...</span></div><div class="row a" style="--d:2"><span class="num">2</span><span class="idm">Give the background</span><span class="ex">I had never been abroad before, so I was nervous...</span></div><div class="row a" style="--d:3"><span class="num">3</span><span class="idm">Tell what happened</span><span class="ex">As soon as we arrived, we noticed...</span></div><div class="row a" style="--d:4"><span class="num">4</span><span class="idm">Say how you felt</span><span class="ex">Looking back, it taught me to...</span></div></div></div>
+  <div class="foot"><span>Speaking</span><b>4 / 8</b></div>
+</section>
+<section class="slide" data-name="Notes, not sentences" data-decor="a">
+  <div class="pad"><h2 class="h2 a">Notes, <em>not sentences</em></h2><div class="ladder"><div class="step a" style="--d:1"><span class="chip l">Cue card</span><p class="ctxt">Describe a memorable journey you have taken.</p><p class="why">The task</p></div><div class="step a" style="--d:3"><span class="chip l">Notes</span><p class="ctxt"><b>Turkey, 2023, family, first flight, lost bag, kind stranger</b></p><p class="why">Key words only</p></div><div class="step a" style="--d:5"><span class="chip">Speaking</span><p class="ctxt">We flew to Turkey, <b>which was my first flight</b>, and then my bag went missing...</p><p class="why">Notes become sentences</p></div></div></div>
+  <div class="foot"><span>Speaking</span><b>5 / 8</b></div>
+</section>
+<section class="slide" data-name="The Past Perfect" data-decor="b">
+  <div class="pad"><h2 class="h2 a">The <em>Past Perfect</em></h2><div class="ladder"><div class="step a" style="--d:1"><span class="chip l">Past Simple</span><p class="ctxt">We <b>arrived</b> at the airport.</p><p class="why">The main story</p></div><div class="step a" style="--d:3"><span class="chip l">Past Perfect</span><p class="ctxt">The plane <b>had already left</b>.</p><p class="why">Happened earlier</p></div><div class="step a" style="--d:5"><span class="chip">Together</span><p class="ctxt"><b>By the time</b> we arrived, the plane <b>had left</b>.</p><p class="why">Shows the order clearly</p></div></div><p class="lead a" style="--d:8">Form: <b>had + past participle</b>. Signals: <b>by the time, before, already, never</b>.</p></div>
+  <div class="foot"><span>Grammar</span><b>6 / 8</b></div>
+</section>
+<section class="slide" data-name="Common errors" data-decor="c">
+  <div class="pad"><h2 class="h2 a">Common <em>errors</em></h2><div class="g3"><div class="card a" style="--d:1"><div class="idm" style="font-size:34px">Overuse</div><p class="ctxt bad"><span class="mark">✗</span>I had woken up and had eaten.</p><p class="ctxt good"><span class="mark">✓</span>I woke up and ate breakfast.</p></div><div class="card a" style="--d:2"><div class="idm" style="font-size:34px">Wrong form</div><p class="ctxt bad"><span class="mark">✗</span>He had went home.</p><p class="ctxt good"><span class="mark">✓</span>He had gone home.</p></div><div class="card a" style="--d:3"><div class="idm" style="font-size:34px">Wrong order</div><p class="ctxt bad"><span class="mark">✗</span>When I arrived, she left already.</p><p class="ctxt good"><span class="mark">✓</span>When I arrived, she had already left.</p></div></div></div>
+  <div class="foot"><span>Grammar</span><b>7 / 8</b></div>
+</section>
+<section class="slide" data-name="Your checklist" data-decor="a">
+  <div class="pad"><h2 class="h2 a">Your <em>checklist</em></h2><div class="check"><div class="ci" style="--d:1"><span class="n">1</span><span>Write only key words in your notes</span></div><div class="ci" style="--d:2"><span class="n">2</span><span>Cover every point on the cue card</span></div><div class="ci" style="--d:3"><span class="n">3</span><span>Keep talking until the examiner stops you</span></div><div class="ci" style="--d:4"><span class="n">4</span><span>Use the Past Simple for the main story</span></div><div class="ci" style="--d:5"><span class="n">5</span><span>Use the Past Perfect for earlier events</span></div></div></div>
+  <div class="foot"><span>Checklist</span><b>8 / 8</b></div>
+</section>
+</div></div>
+<div id="prog"></div>
+<nav id="bar" aria-label="Slide controls"><span id="name"></span><button class="btn" id="prev" type="button" aria-label="Previous slide">←</button><span id="count"></span><button class="btn" id="next" type="button" aria-label="Next slide">→</button><button class="btn" id="full" type="button" aria-label="Full screen">⤢</button></nav>
+<script>(function(){
+  var NAVY='#15225A', LAV='#B6AFF0', GOLD='#C9973A';
+  var D={
+    a:'<circle cx="1790" cy="120" r="150" fill="'+NAVY+'"/><circle class="draw" cx="1790" cy="120" r="215" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".55"/><path class="draw" d="M1560 1080 A 260 260 0 0 1 2080 1080" fill="none" stroke="'+LAV+'" stroke-width="34" opacity=".16"/><circle cx="1610" cy="300" r="10" fill="'+GOLD+'"/>',
+    b:'<path class="draw" d="M1920 120 A 190 190 0 0 0 1920 500" fill="none" stroke="'+LAV+'" stroke-width="30" opacity=".2"/><circle cx="1860" cy="1010" r="150" fill="'+NAVY+'"/><circle class="spin" cx="1860" cy="1010" r="215" fill="none" stroke="'+GOLD+'" stroke-width="3" stroke-dasharray="6 16" opacity=".8"/><circle cx="1700" cy="70" r="9" fill="'+GOLD+'"/>',
+    c:'<circle cx="1890" cy="80" r="110" fill="'+NAVY+'"/><path class="draw" d="M1920 640 A 200 200 0 0 0 1920 1040" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".6"/><path class="draw" d="M1920 700 A 140 140 0 0 0 1920 980" fill="none" stroke="'+GOLD+'" stroke-width="3" opacity=".8"/><path d="M1920 760 A 80 80 0 0 0 1920 920" fill="'+NAVY+'"/>',
+    cover:'<circle cx="1560" cy="470" r="330" fill="'+NAVY+'"/><circle class="draw" cx="1560" cy="470" r="420" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".5"/><circle class="spin" cx="1560" cy="470" r="490" fill="none" stroke="'+GOLD+'" stroke-width="3" stroke-dasharray="8 20" opacity=".7"/><path class="draw" d="M1240 1080 A 320 320 0 0 1 1880 1080" fill="none" stroke="'+LAV+'" stroke-width="44" opacity=".18"/><path d="M1440 470 A 120 120 0 0 1 1680 470 Z" fill="'+GOLD+'" opacity=".9"/><circle cx="1180" cy="150" r="12" fill="'+GOLD+'"/>'
+  };
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  slides.forEach(function(s){
+    var v=s.getAttribute('data-decor'); if(!D[v]) return;
+    s.insertAdjacentHTML('afterbegin','<svg class="decor" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">'+D[v]+'</svg>');
+  });
+  var title=document.body.getAttribute('data-title');
+  var stage=document.getElementById('stage'), deck=document.getElementById('deck');
+  var cnt=document.getElementById('count'), nm=document.getElementById('name'), prog=document.getElementById('prog');
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+  var i=0;
+  function fit(){ stage.style.setProperty('--k',Math.min(deck.clientWidth/1920,deck.clientHeight/1080)*0.98); }
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,k){ s.hidden=(k!==i); s.classList.toggle('on',k===i); });
+    cnt.innerHTML='<b>'+(i+1)+'</b> / '+slides.length;
+    nm.textContent=title+' · '+slides[i].getAttribute('data-name');
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    prev.disabled=(i===0); next.disabled=(i===slides.length-1);
+    try{ history.replaceState(null,'','#s'+(i+1)); }catch(e){}
+    // Tell the lesson page how far the student got, so it can enable Submit on the last slide.
+    try{ if(window.parent!==window) window.parent.postMessage({type:'ielts8-deck',slide:i+1,total:slides.length},location.origin); }catch(e){}
+  }
+  prev.addEventListener('click',function(){go(i-1)});
+  next.addEventListener('click',function(){go(i+1)});
+  document.getElementById('full').addEventListener('click',function(){
+    try{
+      if(document.fullscreenElement){ document.exitFullscreen(); }
+      else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); }
+    }catch(e){}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1)}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1)}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(slides.length-1)}
+  });
+  stage.addEventListener('click',function(e){
+    var r=stage.getBoundingClientRect();
+    if(e.clientX < r.left + r.width*0.3) go(i-1); else go(i+1);
+  });
+  var tx=null;
+  deck.addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(tx===null) return; var dx=e.changedTouches[0].clientX-tx; tx=null;
+    if(Math.abs(dx)>40) go(dx<0?i+1:i-1);
+  });
+  window.addEventListener('resize',fit);
+  fit();
+  var m=/^#s(\d+)$/.exec(location.hash||'');
+  go(m?parseInt(m[1],10)-1:0);
+})();</script>
+</body></html>
