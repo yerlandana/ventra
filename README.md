@@ -44,7 +44,7 @@ The interface uses a lavender sidebar with a purple accent. Colour tags still ma
 | Styling      | Inline styles, monochrome design system, system font stack          |
 | Auth         | E‑mail allowlist (no password) — managed by the admin               |
 | Database     | Firebase Firestore (`students`, `progress`, `submissions`, `lessons`, `config/structure`) |
-| AI feedback  | Anthropic Claude API (`claude-sonnet-4-20250514`) for essay scoring |
+| AI feedback  | Anthropic Claude API (`claude-opus-5-5`) via `api/check-writing.js`, key in `ANTHROPIC_API_KEY` |
 | Hosting      | Static site — works on any host that serves `build/`                |
 
 ## Project layout

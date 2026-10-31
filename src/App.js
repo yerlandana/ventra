@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { SKELETONS, LESSON_SKELETON } from "./skeletons";
+import { HOMEWORK } from "./homework";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -725,7 +727,7 @@ function testQuestions(lesson) {
 }
 const normAnswer = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 function isCorrect(q, a) {
-  if (q.type === "fitb") return normAnswer(a) === normAnswer(q.answer);
+  if (q.type === "fitb") return [q.answer, ...(q.alt || [])].some(x => normAnswer(a) === normAnswer(x));
   if (q.type === "match") return !!a && q.pairs.every(([k, v]) => a[k] === v);
   return a === q.answer;
 }
@@ -741,7 +743,7 @@ async function saveStep(email, lessonId, key, data, gain = 0) {
 const assignmentDone = (lesson, lp, submission) => {
   if (lp.assignmentDone) return true;
   if (!submission) return false;
-  return lesson.assignment.type === "writing" ? !!submission.text : !!submission.rubric;
+  return lesson.assignment.type === "writing" ? !!submission.text : !!(submission.rubric || submission.ai);
 };
 
 // One answer control, shared by the in-video questions and the test.
@@ -913,6 +915,8 @@ function AssignmentPage({ lesson, session, setPage }) {
   const [notes, setNotes] = useState("");
   const [previous, setPrevious] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const skeleton = skeletonOf(lesson);
 
   // Load existing submission + restore timer
   useEffect(() => {
@@ -922,7 +926,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       const prior = s[lesson.id];
       if (prior) {
         setPrevious(prior);
-        if (prior.rubric || (!useRubric && prior.text)) { setStage("done"); return; }
+        if (prior.ai || prior.rubric || (!useRubric && prior.text)) { setStage("done"); return; }
         if (prior.text) setText(prior.text);
       }
       if (useTimer) {
@@ -965,7 +969,25 @@ function AssignmentPage({ lesson, session, setPage }) {
         startedAt: startedAt ? new Date(startedAt).toISOString() : null,
         submittedAt: new Date().toISOString(),
       });
-      if (!useRubric) {
+      if (useRubric) {
+        // The AI gives the band; if it can't be reached, the student grades themselves instead.
+        setStage("checking");
+        setAiError("");
+        try {
+          const ai = await requestAiCheck({ type: aType, prompt: lesson.assignment.prompt, text, skeleton: skeletonOutline(skeleton) });
+          const sub = { text, type: aType, startedAt: startedAt ? new Date(startedAt).toISOString() : null, submittedAt: new Date().toISOString(), ai };
+          await FB.setSubmission(session.email, lesson.id, sub);
+          const existing = await FB.getProgress(session.email);
+          const prev = existing[lesson.id] || {};
+          await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + (prev.assignmentDone ? 0 : 20) } });
+          if (useTimer) localStorage.removeItem(timerKey);
+          setPrevious(sub);
+          setStage("done");
+        } catch (e) {
+          setAiError(e.message);
+          setStage("rubric");
+        }
+      } else {
         const existing = await FB.getProgress(session.email);
         const prev = existing[lesson.id] || {};
         await FB.setProgress(session.email, {
@@ -974,8 +996,6 @@ function AssignmentPage({ lesson, session, setPage }) {
         if (useTimer) localStorage.removeItem(timerKey);
         setPrevious({ text, type: aType, submittedAt: new Date().toISOString() });
         setStage("done");
-      } else {
-        setStage("rubric");
       }
     } finally { setSaving(false); }
   };
@@ -1000,7 +1020,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       const existing = await FB.getProgress(session.email);
       const prev = existing[lesson.id] || {};
       await FB.setProgress(session.email, {
-        [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + 20 }
+        [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + (prev.assignmentDone ? 0 : 20) }
       });
       if (useTimer) localStorage.removeItem(timerKey);
       setPrevious(sub);
@@ -1031,7 +1051,7 @@ function AssignmentPage({ lesson, session, setPage }) {
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"inherit" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0, zIndex:50 }}>
         <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
-        <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {lesson.title}</div>
+        <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {cleanTitle(lesson.title)}</div>
         {stage === "writing" && useTimer && startedAt && (
           <div style={{ flexShrink:0, padding:"4px 10px", borderRadius:999, background: timesUp ? "#0a0a0a" : (lowTime ? "#0a0a0a" : "#f4f4f4"), color: (timesUp || lowTime) ? "white" : "#0a0a0a", fontWeight:800, fontSize:12, fontVariantNumeric:"tabular-nums", letterSpacing:"0.5px" }}>
             {timesUp ? "TIME'S UP" : fmtTime(remaining)}
@@ -1042,7 +1062,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       <div style={{ maxWidth:700, margin:"0 auto", padding:"14px" }}>
         <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
           <div style={{ fontWeight:700, marginBottom:8, fontSize:11, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Task</div>
-          <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{lesson.assignment.prompt}</div>
+          <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{cleanTitle(lesson.assignment.prompt)}</div>
         </div>
 
         {/* INTRO — start the 1h timer for essays */}
@@ -1051,10 +1071,23 @@ function AssignmentPage({ lesson, session, setPage }) {
             <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:6 }}>Ready to start?</div>
             <div style={{ fontSize:12.5, color:"#666", lineHeight:1.55, marginBottom:12 }}>
               You'll have <b>60 minutes</b> to write your essay (recommended: at least {minWords} words).
-              The timer keeps running even if you reload the page. After submitting, you'll grade yourself
-              with the IELTS band rubric.
+              The timer keeps running even if you reload the page. After you submit, AI gives you an estimated
+              band and checks your vocabulary.
             </div>
             <button onClick={startWork} style={{ width:"100%", padding:12, borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.2px" }}>Start · 60:00</button>
+          </div>
+        )}
+
+        {skeleton && (stage === "intro" || stage === "writing") && (
+          <details open style={{ background:"white", borderRadius:10, padding:"12px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <summary style={{ cursor:"pointer", fontWeight:800, fontSize:13, marginBottom:8 }}>Essay skeleton</summary>
+            <SkeletonCard sk={skeleton} />
+          </details>
+        )}
+
+        {stage === "checking" && (
+          <div role="status" style={{ background:"white", borderRadius:10, padding:"30px 16px", marginBottom:12, border:"1px solid #e5e5e5", textAlign:"center", fontWeight:700 }}>
+            AI is checking your work. This can take up to a minute.
           </div>
         )}
 
@@ -1077,7 +1110,7 @@ function AssignmentPage({ lesson, session, setPage }) {
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
               <button onClick={submitText} disabled={!canSubmitText}
                 style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background: canSubmitText ? "#0a0a0a" : "#e5e5e5", color: canSubmitText ? "white" : "#888", fontWeight:700, fontSize:13, cursor: canSubmitText ? "pointer" : "not-allowed", borderColor: canSubmitText ? "#0a0a0a" : "#e5e5e5" }}>
-                {saving ? "Saving…" : (useRubric ? "Submit · grade myself →" : "Submit")}
+                {saving ? "Saving…" : (useRubric ? "Submit for AI check" : "Submit")}
               </button>
             </div>
           </div>
@@ -1086,6 +1119,11 @@ function AssignmentPage({ lesson, session, setPage }) {
         {/* RUBRIC — self-assessment */}
         {stage === "rubric" && (
           <div style={{ background:"white", borderRadius:10, padding:"16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            {aiError && (
+              <div style={{ background:"#FDF3E3", color:"#7A5206", borderRadius:8, padding:"10px 12px", fontSize:12.5, lineHeight:1.5, marginBottom:12 }}>
+                AI check failed: {aiError}. Your text is saved. Grade yourself below, or <button onClick={submitText} style={{ border:"none", background:"none", padding:0, color:"#5F4FD9", fontWeight:800, cursor:"pointer", fontSize:12.5 }}>try the AI check again</button>.
+              </div>
+            )}
             <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:4 }}>Grade yourself · IELTS bands</div>
             <div style={{ fontSize:12, color:"#666", marginBottom:14, lineHeight:1.5 }}>
               Be honest. Reading the descriptors and scoring yourself trains your eye for what examiners look at.
@@ -1141,6 +1179,8 @@ function AssignmentPage({ lesson, session, setPage }) {
               <div style={{ fontSize:11, color:"#888" }}>{previous.submittedAt ? new Date(previous.submittedAt).toLocaleString("en-GB") : ""}</div>
             </div>
 
+            {previous.ai && <div style={{ marginBottom:14 }}><AiReport ai={previous.ai} /></div>}
+
             {previous.rubric && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(78px, 1fr))", gap:8, marginBottom:14 }}>
                 <div style={{ background:"#0a0a0a", color:"white", borderRadius:8, padding:"10px 8px", textAlign:"center" }}>
@@ -1185,6 +1225,205 @@ function AssignmentPage({ lesson, session, setPage }) {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
+// Fill-in parts of a skeleton are shown as highlighted chips.
+const SkeletonFrame = ({ text }) => text.split(/(\[[^\]]+\])/).map((part, i) => part.startsWith("[")
+  ? <span key={i} style={{ background:"#FBF0D6", color:"#7A5206", borderRadius:5, padding:"0 5px", fontWeight:700 }}>{part.slice(1,-1)}</span>
+  : <span key={i}>{part}</span>);
+
+function SkeletonCard({ sk }) {
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:10 }}>
+        <h3 style={{ margin:0, fontSize:17, fontWeight:800 }}>{sk.title} skeleton</h3>
+        <span style={{ fontSize:12, fontWeight:700, color:"#4F41B8", background:"#ECE9FB", borderRadius:999, padding:"3px 10px" }}>{sk.task} · {sk.words}</span>
+      </div>
+      <div style={{ display:"grid", gap:8 }}>
+        {sk.paragraphs.map(p => (
+          <div key={p.label} style={{ background:"#F7F7FB", borderRadius:12, padding:"11px 14px" }}>
+            <div style={{ fontSize:11.5, fontWeight:800, color:"#5F4FD9", textTransform:"uppercase", letterSpacing:".04em", marginBottom:4 }}>{p.label}</div>
+            <div style={{ fontSize:14, lineHeight:1.7 }}><SkeletonFrame text={p.frame} /></div>
+            {p.example && <div style={{ fontSize:12.5, color:"#6E6C8A", marginTop:5, lineHeight:1.5 }}>{p.example}</div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:12.5, fontWeight:800, margin:"14px 0 7px" }}>Phrases to use</div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+        {sk.phrases.map(p => <span key={p} style={{ fontSize:12.5, background:"#F1EFFC", color:"#3D318F", borderRadius:8, padding:"4px 9px" }}>{p}</span>)}
+      </div>
+      {sk.avoid?.length > 0 && <>
+        <div style={{ fontSize:12.5, fontWeight:800, margin:"14px 0 7px" }}>Avoid</div>
+        {sk.avoid.map(([bad, good]) => (
+          <div key={bad} style={{ fontSize:13, lineHeight:1.55, marginBottom:4 }}><span style={{ color:"#B23A3A" }}>✗ {bad}</span> <span style={{ color:"#2F7D4A" }}>✓ {good}</span></div>
+        ))}
+      </>}
+    </div>
+  );
+}
+
+function SkeletonsPage() {
+  const [task, setTask] = useState("Task 1");
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+      <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 12px" }}>Essay Skeletons</h2>
+      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+        {["Task 1","Task 2"].map(t => <button key={t} aria-pressed={task===t} onClick={() => setTask(t)} style={{ padding:"7px 16px", borderRadius:999, border:"none", cursor:"pointer", fontWeight:700, fontSize:13, background:task===t?"#5F4FD9":"#F1EFFC", color:task===t?"white":"#3D318F" }}>{t}</button>)}
+      </div>
+      {Object.values(SKELETONS).filter(s => s.task === task).map(sk => (
+        <div key={sk.title} style={{ border:"1px solid #ECEBF3", borderRadius:18, padding:16, marginBottom:14 }}><SkeletonCard sk={sk} /></div>
+      ))}
+    </div>
+  );
+}
+
+const skeletonOf = (lesson) => SKELETONS[LESSON_SKELETON[lesson.id]];
+const skeletonOutline = (sk) => sk ? sk.paragraphs.map(p => `${p.label}: ${p.frame}`).join("\n") : "";
+
+async function requestAiCheck({ type, prompt, text, skeleton }) {
+  const res = await fetch("/api/check-writing", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", Authorization:`Bearer ${await auth.currentUser.getIdToken()}` },
+    body:JSON.stringify({ type, prompt, text, skeleton }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "The AI check is not available");
+  return data;
+}
+
+// The band, criteria and vocabulary check returned by the AI.
+function AiReport({ ai }) {
+  const v = ai.vocabulary || {};
+  const head = { fontSize:13, fontWeight:800, margin:"16px 0 7px" };
+  return (
+    <div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(112px,1fr))", gap:8 }}>
+        <div style={{ background:"#6A5BD6", color:"white", borderRadius:14, padding:"12px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:28, fontWeight:800, lineHeight:1.1 }}>{Number(ai.overall).toFixed(1)}</div>
+          <div style={{ fontSize:11.5, fontWeight:600 }}>Estimated band</div>
+        </div>
+        {ai.criteria.map(c => (
+          <div key={c.key} style={{ background:"#F7F7FB", borderRadius:14, padding:"12px 10px", textAlign:"center" }}>
+            <div style={{ fontSize:22, fontWeight:800, lineHeight:1.1 }}>{Number(c.band).toFixed(1)}</div>
+            <div style={{ fontSize:11, color:"#6E6C8A", fontWeight:600, marginTop:2 }}>{c.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:11.5, color:"#8B8AA6", marginTop:6 }}>AI estimate for practice, not an official IELTS score.</div>
+      <ul style={{ margin:"10px 0 0", paddingLeft:18, fontSize:13.5, lineHeight:1.6 }}>{ai.criteria.map(c => <li key={c.key}><b>{c.label}:</b> {c.note}</li>)}</ul>
+      <div style={head}>Skeleton check</div>
+      <div style={{ fontSize:13.5, lineHeight:1.6 }}>{ai.skeleton_check}</div>
+      {ai.top_fixes?.length > 0 && <>
+        <div style={head}>Fix these first</div>
+        {ai.top_fixes.map((f,i) => (
+          <div key={i} style={{ background:"#F7F7FB", borderRadius:12, padding:"9px 12px", marginBottom:6, fontSize:13.5, lineHeight:1.5 }}>
+            <div style={{ color:"#B23A3A" }}>✗ {f.original}</div><div style={{ color:"#2F7D4A" }}>✓ {f.better}</div><div style={{ color:"#6E6C8A", fontSize:12.5 }}>{f.why}</div>
+          </div>
+        ))}
+      </>}
+      <div style={head}>Vocabulary check {v.level && <span style={{ fontSize:12, color:"#4F41B8", background:"#ECE9FB", borderRadius:999, padding:"2px 9px", marginLeft:4 }}>{v.level}</span>}</div>
+      {v.wrong_words?.map((w,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}><span style={{ color:"#B23A3A" }}>✗ {w.original}</span> <span style={{ color:"#2F7D4A" }}>✓ {w.correct}</span></div>)}
+      {v.upgrades?.map((u,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}>{u.original} <span aria-hidden="true">→</span> <b style={{ color:"#4F41B8" }}>{u.better}</b></div>)}
+      {v.repeated?.map((r,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}>Repeated: <b>{r.word}</b>. Try {r.alternatives.join(", ")}.</div>)}
+      {ai.strengths?.length > 0 && <>
+        <div style={head}>What you did well</div>
+        <ul style={{ margin:0, paddingLeft:18, fontSize:13.5, lineHeight:1.6 }}>{ai.strengths.map((s,i) => <li key={i}>{s}</li>)}</ul>
+      </>}
+    </div>
+  );
+}
+
+// Listening and Reading homework: answer the questions, Submit once, then see the score and review.
+function HomeworkPage({ lesson, session, setPage, isAdmin }) {
+  const hw = HOMEWORK[lesson.id];
+  const qs = hw.questions;
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [plays, setPlays] = useState(0);
+  const [speaking, setSpeaking] = useState(false);
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+  useEffect(() => () => { if (canSpeak) window.speechSynthesis.cancel(); }, [canSpeak]);
+
+  const play = () => {
+    const u = new SpeechSynthesisUtterance(hw.script);
+    const voice = window.speechSynthesis.getVoices().find(v => v.lang === "en-GB") || window.speechSynthesis.getVoices().find(v => v.lang.startsWith("en"));
+    if (voice) u.voice = voice;
+    u.lang = voice?.lang || "en-GB";
+    u.rate = 0.92;
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setSpeaking(true); setPlays(p => p + 1);
+  };
+
+  const answered = qs.filter((q,i) => isAnswered(q, answers[i])).length;
+  const submit = async () => {
+    const correct = qs.filter((q,i) => isCorrect(q, answers[i]));
+    const score = correct.reduce((s,q) => s + (q.points||10), 0);
+    const total = qs.reduce((s,q) => s + (q.points||10), 0);
+    setSaving(true);
+    try {
+      if (!isAdmin) {
+        await FB.setSubmission(session.email, lesson.id, { type:hw.kind, score, total, correct:correct.length, count:qs.length, submittedAt:new Date().toISOString() });
+        const cur = await FB.getProgress(session.email);
+        const prev = cur[lesson.id] || {};
+        await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone:true, points:(prev.points||0) + (prev.assignmentDone ? 0 : 20) } });
+      }
+      setResult({ score, total, correct:correct.length });
+      if (canSpeak) window.speechSynthesis.cancel();
+      window.scrollTo(0,0);
+    } catch (e) { alert("Could not submit: " + e.message); }
+    setSaving(false);
+  };
+  const retake = () => { setAnswers({}); setResult(null); setPlays(0); window.scrollTo(0,0); };
+  const showScript = hw.kind === "listening" && (result || !canSpeak);
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#F7F7FB" }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:"white", borderBottom:"1px solid #ECEBF3", padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={() => setPage("lesson")} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
+        <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Homework: {hw.title}</div>
+        {!result && <div style={{ fontSize:13, fontWeight:700, color:"#6E6C8A", flexShrink:0 }}>{answered}/{qs.length}</div>}
+      </div>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"18px 16px 60px" }}>
+        {result && (
+          <div style={{ background:"#6A5BD6", color:"white", borderRadius:20, padding:"20px 24px", marginBottom:14 }}>
+            <div style={{ fontSize:13, fontWeight:700, opacity:.9 }}>Homework submitted</div>
+            <div style={{ fontSize:36, fontWeight:800, margin:"2px 0" }}>{Math.round(result.score/result.total*100)}%</div>
+            <div style={{ fontSize:14 }}>{result.correct} of {qs.length} correct</div>
+            <div style={{ display:"flex", gap:10, marginTop:12, flexWrap:"wrap" }}>
+              <button onClick={() => setPage("lesson")} style={{ padding:"10px 18px", borderRadius:12, border:"none", background:"white", color:"#14123F", fontWeight:800, cursor:"pointer" }}>Back to lesson →</button>
+              <button onClick={retake} style={{ padding:"10px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,.6)", background:"transparent", color:"white", fontWeight:700, cursor:"pointer" }}>Try again</button>
+            </div>
+          </div>
+        )}
+        <div style={{ background:"white", borderRadius:16, border:"1px solid #ECEBF3", padding:"16px 18px", marginBottom:12 }}>
+          <div style={{ fontSize:12, fontWeight:800, color:"#5F4FD9", textTransform:"uppercase", letterSpacing:".04em", marginBottom:4 }}>{hw.kind}</div>
+          <div style={{ fontSize:14, lineHeight:1.55, marginBottom:10 }}>{hw.intro}</div>
+          {hw.figure && <div style={{ marginBottom:10 }}>{hw.figure}</div>}
+          {hw.passage && <div style={{ fontSize:14.5, lineHeight:1.75, whiteSpace:"pre-line" }}>{hw.passage}</div>}
+          {hw.kind === "listening" && canSpeak && !result && (
+            <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+              <SubmitBtn disabled={speaking || plays >= 2} onClick={play}>{speaking ? "Playing..." : plays === 0 ? "▶ Play the recording" : plays === 1 ? "▶ Play again" : "No plays left"}</SubmitBtn>
+              <span style={{ fontSize:12.5, color:"#6E6C8A" }}>{2 - plays} of 2 plays left. The real test plays once.</span>
+            </div>
+          )}
+          {showScript && <div style={{ fontSize:13.5, lineHeight:1.7, color:"#55536F", background:"#F7F7FB", borderRadius:12, padding:"10px 14px", marginTop:6 }}><b>Script:</b> {hw.script}</div>}
+        </div>
+        {qs.map((q,i) => (
+          <div key={i} style={{ background:"white", borderRadius:16, padding:"15px 18px", marginBottom:10, border:"1px solid #ECEBF3" }}>
+            <div style={{ fontSize:14.5, fontWeight:700, lineHeight:1.45, marginBottom:10 }}>{i+1}. {q.q}</div>
+            <QuestionInput q={q} value={answers[i]} reviewed={!!result} onChange={v => setAnswers(a => ({ ...a, [i]: v }))} />
+          </div>
+        ))}
+        {!result && <button onClick={submit} disabled={saving || answered < qs.length} style={{ width:"100%", padding:14, borderRadius:14, border:"none", fontWeight:800, fontSize:15, background:answered<qs.length?"#E7E6F0":"#5F4FD9", color:answered<qs.length?"#8B8AA6":"white", cursor:answered<qs.length?"not-allowed":"pointer" }}>
+          {saving ? "Submitting..." : answered < qs.length ? `Answer all questions to submit (${qs.length-answered} left)` : "Submit homework"}
+        </button>}
+      </div>
+    </div>
+  );
+}
+
 // One row per lesson with the result of each submitted step. Used on Grades and in the admin panel.
 function ResultsTable({ modules, progress, submissions }) {
   const cell = { padding:"10px 8px", fontSize:12.5, borderTop:"1px solid #F0EFF6", textAlign:"center", whiteSpace:"nowrap" };
@@ -1209,7 +1448,7 @@ function ResultsTable({ modules, progress, submissions }) {
                 <td style={cell}>{st.video ? (st.video.count ? `${st.video.correct}/${st.video.count}` : yes) : none}</td>
                 <td style={cell}>{st.slides ? yes : none}</td>
                 <td style={cell}>{st.test ? <b>{Math.round(st.test.best/st.test.total*100)}%</b> : lp.quizScore!=null ? `${lp.quizScore} pts` : none}</td>
-                <td style={cell}>{sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
+                <td style={cell}>{sub?.ai ? <b>Band {sub.ai.overall}</b> : sub?.score != null ? <b>{Math.round(sub.score/sub.total*100)}%</b> : sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
                 <td style={{ ...cell, fontWeight:700 }}>{lp.points || 0}</td>
               </tr>
             );
@@ -1262,14 +1501,14 @@ function AssignmentsPage({ session, modules, setPage, setCurrentLesson }) {
       <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 14px" }}>Assignments</h2>
       {list.map(l => {
         const d = assignmentDone(l, myP[l.id]||{}, subs[l.id]);
-        const band = subs[l.id]?.rubric?.overall;
+        const band = subs[l.id]?.ai?.overall ?? subs[l.id]?.rubric?.overall;
         return (
           <button key={l.id} onClick={() => { setCurrentLesson(l); setPage("assignment"); }}
             style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F7F7FB", border:"none", borderRadius:16, padding:"13px 16px", marginBottom:10, cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
             <span style={{ width:36, height:36, borderRadius:12, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:d?"#E2F2E6":"white", color:d?"#3F9C5B":"#8B8AA6", fontWeight:800 }}>{d?"✓":"✎"}</span>
             <span style={{ flex:1, minWidth:0 }}>
               <span style={{ display:"block", fontWeight:700, fontSize:14 }}>{cleanTitle(l.title)}</span>
-              <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:2, textTransform:"capitalize" }}>{l.assignment.type}{d?" · submitted":" · not submitted"}{band!=null?` · Band ${band}`:""}</span>
+              <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:2, textTransform:"capitalize" }}>{HOMEWORK[l.id]?.kind || l.assignment.type}{d?" · submitted":" · not submitted"}{band!=null?` · Band ${band}`:""}{subs[l.id]?.score!=null?` · ${Math.round(subs[l.id].score/subs[l.id].total*100)}%`:""}</span>
             </span>
             <span aria-hidden="true" style={{ color:"#8B8AA6", fontSize:18 }}>›</span>
           </button>
@@ -1964,6 +2203,7 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         {item("dashboard","Grades","grades")}
         {item("leaderboard","Leaderboard","board")}
         <div className="lms-group">Practice</div>
+        {item("skeletons","Essay Skeletons","pen")}
         {item("speaking","Speaking","mic")}
         {link("/skyielts-writing.html","Writing Bands","pen")}
         {link("/essay-checker.html","Essay Checker","check")}
@@ -2822,14 +3062,22 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
             <SubmitBtn onClick={() => setPage("quiz")}>{testSaved ? "Retake the test" : isAdmin ? "Preview the test" : "Start the test"}</SubmitBtn>
           </div>
         )}
-        {loaded && current==="assignment" && hasAssignment && (
-          <div style={{ padding:"10px 6px" }}>
-            <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Assignment</h3>
-            <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{lesson.assignment.prompt}</p>
-            {submission?.rubric?.overall != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Self-assessed Band {submission.rubric.overall}</div>}
-            <SubmitBtn onClick={() => setPage("assignment")}>{steps[currentIdx].done ? "Open: review or retry" : "Write and submit"}</SubmitBtn>
-          </div>
-        )}
+        {loaded && current==="assignment" && hasAssignment && (() => {
+          const hw = HOMEWORK[lesson.id];
+          const sk = skeletonOf(lesson);
+          const stepDone = steps[currentIdx].done;
+          return (
+            <div style={{ padding:"10px 6px" }}>
+              <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Homework{hw ? `: ${hw.kind}` : ""}</h3>
+              <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{hw ? `${hw.title}. ${hw.intro} ${hw.questions.length} questions, marked automatically.` : cleanTitle(lesson.assignment.prompt)}</p>
+              {submission?.score != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Last result: {Math.round(submission.score/submission.total*100)}%</div>}
+              {submission?.ai && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>AI estimate: Band {Number(submission.ai.overall).toFixed(1)}</div>}
+              {!submission?.ai && submission?.rubric?.overall != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Self-assessed Band {submission.rubric.overall}</div>}
+              {sk && <div style={{ marginBottom:16 }}><SkeletonCard sk={sk} /></div>}
+              <SubmitBtn onClick={() => setPage("assignment")}>{stepDone ? "Open: review or retry" : hw ? "Start the homework" : "Write and submit"}</SubmitBtn>
+            </div>
+          );
+        })()}
         {loaded && steps[currentIdx]?.done && currentIdx < steps.length-1 && (
           <div style={{ textAlign:"right", marginTop:12 }}>
             <button onClick={() => setActiveStep(steps[currentIdx+1].key)} style={{ border:"none", background:"none", color:"#5F4FD9", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>Next step: {steps[currentIdx+1].label} →</button>
@@ -3469,7 +3717,9 @@ export default function App() {
 
   // Full-screen pages, without the sidebar
   if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />;
-  if (page === "assignment" && currentLesson) return <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
+  if (page === "assignment" && currentLesson) return HOMEWORK[currentLesson.id]
+    ? <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />
+    : <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
 
   const body =
     page === "admin" && isAdmin ? <AdminPanel session={session} logout={logout} setPage={setPage} modules={modules} /> :
@@ -3478,6 +3728,7 @@ export default function App() {
     page === "speaking" ? <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} /> :
     page === "leaderboard" ? <Leaderboard session={session} setPage={setPage} /> :
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
+    page === "skeletons" ? <SkeletonsPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
     page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} /> :
     <CoursePage key={page==="courses"?"courses":"dashboard"} view={page==="courses"?"courses":"dashboard"} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;

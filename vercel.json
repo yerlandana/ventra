@@ -1,0 +1,1 @@
+{ "functions": { "api/check-writing.js": { "maxDuration": 120 } } }
