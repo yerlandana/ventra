@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 import { SKELETONS, LESSON_SKELETON } from "./skeletons";
-import { HOMEWORK } from "./homework";
+import { HOMEWORK, PRACTICE } from "./homework";
+import { DISCUSSION_TOPICS } from "./discussion";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -1266,6 +1267,206 @@ function SkeletonCard({ sk }) {
   );
 }
 
+const shuffled = (list) => [...list].sort(() => Math.random() - 0.5);
+
+// Reads text aloud with an American voice when the device has one.
+function speakAmerican(text) {
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  const voice = window.speechSynthesis.getVoices().find(v => v.lang === "en-US");
+  if (voice) u.voice = voice;
+  u.lang = "en-US";
+  u.rate = 0.95;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+const HearBtn = ({ text }) => (
+  <button aria-label={`Hear: ${text}`} onClick={() => speakAmerican(text)} style={{ width:32, height:32, borderRadius:999, border:"none", background:"#F1EFFC", cursor:"pointer", flexShrink:0, fontSize:14 }}>🔊</button>
+);
+
+function DiscussionAnswers({ s, color }) {
+  const [level, setLevel] = useState(null);
+  const text = level === "b" ? s.b : s.c;
+  return (
+    <div style={{ marginTop:10 }}>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {[["b","Mock answer B1-B2"],["c","Mock answer C1"]].map(([k,l]) => (
+          <button key={k} aria-pressed={level===k} onClick={() => setLevel(level===k ? null : k)} style={{ padding:"6px 13px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12.5, fontWeight:700, background:level===k?color:"#F4F4F8", color:level===k?"white":"#14123F" }}>{l}</button>
+        ))}
+      </div>
+      {level && (
+        <div className="da-pop" style={{ display:"flex", gap:10, alignItems:"flex-start", marginTop:10, background:"#F7F7FB", borderRadius:12, padding:"10px 12px" }}>
+          <div style={{ flex:1, fontSize:14, lineHeight:1.6 }}>{text}</div>
+          <HearBtn text={text} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IdiomMatchGame({ topic }) {
+  const [round, setRound] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [order] = useState(() => shuffled(topic.idioms));
+  const done = round >= order.length;
+  const current = order[round];
+  const [options, setOptions] = useState(() => shuffled(topic.idioms.map(i => i.meaning)));
+  const next = () => { setPicked(null); setRound(r => r + 1); setOptions(shuffled(topic.idioms.map(i => i.meaning))); };
+  if (done) return <div className="da-pop" style={{ textAlign:"center", padding:"20px 0", fontWeight:800, fontSize:18 }}>🎉 {score} of {order.length}. Nice job!</div>;
+  return (
+    <div>
+      <div style={{ fontSize:12.5, fontWeight:700, color:"#6E6C8A" }}>Round {round+1} of {order.length} · Score {score}</div>
+      <div style={{ fontSize:18, fontWeight:800, margin:"6px 0 12px" }}>What does "{current.phrase}" mean?</div>
+      {options.map(o => {
+        const right = picked && o === current.meaning;
+        const wrong = picked === o && o !== current.meaning;
+        return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); if (o === current.meaning) setScore(x => x + 1); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"11px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14, color:"#14123F", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#ECEBF3"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+      })}
+      {picked && <div className="da-pop" style={{ fontSize:13.5, lineHeight:1.55, margin:"4px 0 10px" }}>"{current.example}"</div>}
+      {picked && <SubmitBtn onClick={next}>Next →</SubmitBtn>}
+    </div>
+  );
+}
+
+function SoundAmericanGame({ topic }) {
+  const [order] = useState(() => shuffled(topic.phrases).map(p => ({ ...p, options:shuffled([p.textbook, p.american]) })));
+  const [round, setRound] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  if (round >= order.length) return <div className="da-pop" style={{ textAlign:"center", padding:"20px 0", fontWeight:800, fontSize:18 }}>🗽 {score} of {order.length}. You sound American!</div>;
+  const current = order[round];
+  return (
+    <div>
+      <div style={{ fontSize:12.5, fontWeight:700, color:"#6E6C8A" }}>Round {round+1} of {order.length} · Score {score}</div>
+      <div style={{ fontSize:18, fontWeight:800, margin:"6px 0 12px" }}>Which sounds more natural in a chat?</div>
+      {current.options.map(o => {
+        const right = picked && o === current.american;
+        const wrong = picked === o && o !== current.american;
+        return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); speakAmerican(current.american); if (o === current.american) setScore(x => x + 1); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"11px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14, color:"#14123F", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#ECEBF3"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+      })}
+      {picked && <SubmitBtn onClick={() => { setPicked(null); setRound(r => r + 1); }}>Next →</SubmitBtn>}
+    </div>
+  );
+}
+
+// Speaking game for class: a random question, one idiom to use, and 60 seconds on the clock.
+function HotSeatGame({ topic }) {
+  const pick = () => ({ q:shuffled(topic.subtopics.flatMap(s => s.questions))[0], idiom:shuffled(topic.idioms)[0] });
+  const [card, setCard] = useState(pick);
+  const [spin, setSpin] = useState(0);
+  const [left, setLeft] = useState(null);
+  useEffect(() => {
+    if (left === null || left <= 0) return;
+    const t = setTimeout(() => setLeft(x => x - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  return (
+    <div>
+      <div key={spin} className="da-pop" style={{ background:topic.bg, borderRadius:16, padding:"18px 16px", marginBottom:12 }}>
+        <div style={{ fontSize:18, fontWeight:800, lineHeight:1.35, color:"#14123F" }}>{card.q}</div>
+        <div style={{ fontSize:13.5, marginTop:8, color:"#14123F" }}>Use this idiom: <b>{card.idiom.phrase}</b> ({card.idiom.meaning})</div>
+      </div>
+      <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+        <SubmitBtn onClick={() => setLeft(60)}>{left === null ? "Start 60 seconds" : "Restart timer"}</SubmitBtn>
+        <button onClick={() => { setCard(pick()); setSpin(x => x + 1); setLeft(null); }} style={{ padding:"10px 16px", borderRadius:12, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontFamily:"inherit", fontWeight:700, color:"#14123F" }}>🎲 New question</button>
+        {left !== null && <span aria-live="polite" style={{ fontWeight:800, fontSize:20, color:left <= 10 ? "#D9534F" : "#14123F" }}>{left > 0 ? `${left}s` : "Time's up!"}</span>}
+      </div>
+    </div>
+  );
+}
+
+function DiscussionTopic({ topic, onBack }) {
+  const [tab, setTab] = useState("talk");
+  const [game, setGame] = useState("hot");
+  const pill = (on, color) => ({ padding:"8px 15px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13.5, fontWeight:700, background:on?color:"#F4F4F8", color:on?"white":"#14123F" });
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+      <button onClick={onBack} style={{ border:"none", background:"none", color:"#5F4FD9", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>← All topics</button>
+      <div style={{ background:topic.bg, borderRadius:20, padding:"20px", display:"flex", alignItems:"center", gap:16, marginBottom:14 }}>
+        <span className="da-float" aria-hidden="true" style={{ fontSize:48 }}>{topic.emoji}</span>
+        <h2 style={{ fontSize:24, fontWeight:800, margin:0, color:"#14123F" }}>{topic.title}</h2>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+        {[["talk","Let's talk"],["sound","Sound American"],["games","Games"]].map(([k,l]) => <button key={k} aria-pressed={tab===k} onClick={() => setTab(k)} style={pill(tab===k, topic.color)}>{l}</button>)}
+      </div>
+      {tab === "talk" && topic.subtopics.map(s => (
+        <div key={s.title} style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:16, padding:"15px 18px", marginBottom:12 }}>
+          <div style={{ fontWeight:800, fontSize:15.5, marginBottom:8 }}>{s.title}</div>
+          {s.questions.map(q => <div key={q} style={{ fontSize:14.5, lineHeight:1.5, marginBottom:4 }}>💬 {q}</div>)}
+          <DiscussionAnswers s={s} color={topic.color} />
+        </div>
+      ))}
+      {tab === "sound" && (
+        <>
+          <h3 style={{ fontSize:17, fontWeight:800, margin:"0 0 10px" }}>C1 idioms</h3>
+          {topic.idioms.map(i => (
+            <div key={i.phrase} style={{ display:"flex", gap:10, alignItems:"flex-start", background:"white", border:"1px solid #ECEBF3", borderRadius:14, padding:"12px 14px", marginBottom:10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:800, fontSize:14.5 }}>{i.phrase}</div>
+                <div style={{ fontSize:13, color:"#6E6C8A", margin:"2px 0 4px" }}>{i.meaning}</div>
+                <div style={{ fontSize:14, lineHeight:1.5 }}>"{i.example}"</div>
+              </div>
+              <HearBtn text={i.example} />
+            </div>
+          ))}
+          <h3 style={{ fontSize:17, fontWeight:800, margin:"18px 0 10px" }}>Textbook vs. everyday American</h3>
+          {topic.phrases.map(p => (
+            <div key={p.american} style={{ display:"flex", gap:10, alignItems:"center", background:"white", border:"1px solid #ECEBF3", borderRadius:14, padding:"12px 14px", marginBottom:10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, color:"#6E6C8A" }}>{p.textbook}</div>
+                <div style={{ fontWeight:800, fontSize:14.5, marginTop:2 }}>{p.american}</div>
+              </div>
+              <HearBtn text={p.american} />
+            </div>
+          ))}
+        </>
+      )}
+      {tab === "games" && (
+        <>
+          <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+            {[["hot","🔥 Hot seat"],["idiom","🧩 Idiom match"],["sound","🗽 Sound American"]].map(([k,l]) => <button key={k} aria-pressed={game===k} onClick={() => setGame(k)} style={pill(game===k, topic.color)}>{l}</button>)}
+          </div>
+          <div style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:16, padding:16 }}>
+            {game === "hot" && <HotSeatGame topic={topic} />}
+            {game === "idiom" && <IdiomMatchGame topic={topic} />}
+            {game === "sound" && <SoundAmericanGame topic={topic} />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DiscussionPage() {
+  const [topicId, setTopicId] = useState(null);
+  useEffect(() => () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); }, []);
+  const topic = DISCUSSION_TOPICS.find(t => t.id === topicId);
+  return (
+    <>
+      <style>{"@keyframes daFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes daPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.da-float{display:inline-block;animation:daFloat 3s ease-in-out infinite}.da-pop{animation:daPop .3s ease-out}.da-card{transition:transform .15s}.da-card:hover{transform:translateY(-3px)}@media (prefers-reduced-motion:reduce){.da-float,.da-pop{animation:none}.da-card{transition:none}}"}</style>
+      {topic ? <DiscussionTopic key={topic.id} topic={topic} onBack={() => setTopicId(null)} /> : (
+        <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+          <div style={{ background:"#14123F", color:"white", borderRadius:20, padding:"22px 20px", marginBottom:16 }}>
+            <h2 style={{ fontSize:26, fontWeight:800, margin:"0 0 6px" }}>Discussion American Style 🗽</h2>
+            <p style={{ margin:0, fontSize:14.5, lineHeight:1.55, opacity:.9 }}>Pick a topic, talk it through, and learn to sound natural. Levels B1-B2, with C1 idioms.</p>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:12 }}>
+            {DISCUSSION_TOPICS.map(t => (
+              <button key={t.id} className="da-card" onClick={() => { setTopicId(t.id); window.scrollTo(0,0); }} style={{ background:t.bg, border:"none", borderRadius:18, padding:"18px 14px", cursor:"pointer", fontFamily:"inherit", textAlign:"left", color:"#14123F" }}>
+                <span className="da-float" aria-hidden="true" style={{ fontSize:34 }}>{t.emoji}</span>
+                <span style={{ display:"block", fontWeight:800, fontSize:14.5, marginTop:8, lineHeight:1.3 }}>{t.title}</span>
+                <span style={{ display:"block", fontSize:12, color:"#55536F", marginTop:3 }}>{t.subtopics.length} discussions</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function SkeletonsPage() {
   const [task, setTask] = useState("Task 1");
   return (
@@ -1338,8 +1539,10 @@ function AiReport({ ai }) {
 }
 
 // Listening and Reading homework: answer the questions, Submit once, then see the score and review.
-function HomeworkPage({ lesson, session, setPage, isAdmin }) {
-  const hw = HOMEWORK[lesson.id];
+function HomeworkPage({ lesson, session, setPage, isAdmin, practice }) {
+  const hw = practice || HOMEWORK[lesson.id];
+  const label = practice ? "Practice" : "Homework";
+  const script = hw.lines ? hw.lines.join(" ") : hw.script;
   const qs = hw.questions;
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
@@ -1350,15 +1553,22 @@ function HomeworkPage({ lesson, session, setPage, isAdmin }) {
   useEffect(() => () => { if (canSpeak) window.speechSynthesis.cancel(); }, [canSpeak]);
 
   const play = () => {
-    const u = new SpeechSynthesisUtterance(hw.script);
-    const voice = window.speechSynthesis.getVoices().find(v => v.lang === "en-GB") || window.speechSynthesis.getVoices().find(v => v.lang.startsWith("en"));
-    if (voice) u.voice = voice;
-    u.lang = voice?.lang || "en-GB";
-    u.rate = 0.92;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
+    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+    voices.sort((x, y) => (y.lang === "en-GB") - (x.lang === "en-GB"));
+    const parts = hw.lines || [hw.script];
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    parts.forEach((line, i) => {
+      const u = new SpeechSynthesisUtterance(line);
+      const voice = voices[i % 2] || voices[0];
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang || "en-GB";
+      u.rate = 0.92;
+      // With only one English voice, a lower pitch marks the second speaker.
+      if (i % 2 && voices.length < 2) u.pitch = 0.7;
+      if (i === parts.length - 1) u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      window.speechSynthesis.speak(u);
+    });
     setSpeaking(true); setPlays(p => p + 1);
   };
 
@@ -1369,7 +1579,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin }) {
     const total = qs.reduce((s,q) => s + (q.points||10), 0);
     setSaving(true);
     try {
-      if (!isAdmin) {
+      if (!isAdmin && !practice) {
         await FB.setSubmission(session.email, lesson.id, { type:hw.kind, score, total, correct:correct.length, count:qs.length, submittedAt:new Date().toISOString() });
         const cur = await FB.getProgress(session.email);
         const prev = cur[lesson.id] || {};
@@ -1388,13 +1598,13 @@ function HomeworkPage({ lesson, session, setPage, isAdmin }) {
     <div style={{ minHeight:"100vh", background:"#F7F7FB" }}>
       <div style={{ position:"sticky", top:0, zIndex:10, background:"white", borderBottom:"1px solid #ECEBF3", padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
         <button onClick={() => setPage("lesson")} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
-        <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Homework: {hw.title}</div>
+        <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{label}: {hw.title}</div>
         {!result && <div style={{ fontSize:13, fontWeight:700, color:"#6E6C8A", flexShrink:0 }}>{answered}/{qs.length}</div>}
       </div>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"18px 16px 60px" }}>
         {result && (
           <div style={{ background:"#6A5BD6", color:"white", borderRadius:20, padding:"20px 24px", marginBottom:14 }}>
-            <div style={{ fontSize:13, fontWeight:700, opacity:.9 }}>Homework submitted</div>
+            <div style={{ fontSize:13, fontWeight:700, opacity:.9 }}>{label} submitted</div>
             <div style={{ fontSize:36, fontWeight:800, margin:"2px 0" }}>{Math.round(result.score/result.total*100)}%</div>
             <div style={{ fontSize:14 }}>{result.correct} of {qs.length} correct</div>
             <div style={{ display:"flex", gap:10, marginTop:12, flexWrap:"wrap" }}>
@@ -1414,7 +1624,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin }) {
               <span style={{ fontSize:12.5, color:"#6E6C8A" }}>{2 - plays} of 2 plays left. The real test plays once.</span>
             </div>
           )}
-          {showScript && <div style={{ fontSize:13.5, lineHeight:1.7, color:"#55536F", background:"#F7F7FB", borderRadius:12, padding:"10px 14px", marginTop:6 }}><b>Script:</b> {hw.script}</div>}
+          {showScript && <div style={{ fontSize:13.5, lineHeight:1.7, color:"#55536F", background:"#F7F7FB", borderRadius:12, padding:"10px 14px", marginTop:6 }}><b>Script:</b> {script}</div>}
         </div>
         {qs.map((q,i) => (
           <div key={i} style={{ background:"white", borderRadius:16, padding:"15px 18px", marginBottom:10, border:"1px solid #ECEBF3" }}>
@@ -1423,7 +1633,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin }) {
           </div>
         ))}
         {!result && <button onClick={submit} disabled={saving || answered < qs.length} style={{ width:"100%", padding:14, borderRadius:14, border:"none", fontWeight:800, fontSize:15, background:answered<qs.length?"#E7E6F0":"#5F4FD9", color:answered<qs.length?"#8B8AA6":"white", cursor:answered<qs.length?"not-allowed":"pointer" }}>
-          {saving ? "Submitting..." : answered < qs.length ? `Answer all questions to submit (${qs.length-answered} left)` : "Submit homework"}
+          {saving ? "Submitting..." : answered < qs.length ? `Answer all questions to submit (${qs.length-answered} left)` : `Submit ${label.toLowerCase()}`}
         </button>}
       </div>
     </div>
@@ -2210,6 +2420,7 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         {item("leaderboard","Leaderboard","board")}
         <div className="lms-group">Practice</div>
         {item("skeletons","Essay Skeletons","pen")}
+        {item("discussion","Discussion American Style","mic")}
         {item("speaking","Speaking","mic")}
         {link("/skyielts-writing.html","Writing Bands","pen")}
         {link("/essay-checker.html","Essay Checker","check")}
@@ -2853,7 +3064,7 @@ const SubmitBtn = ({ disabled, onClick, children }) => (
   <button onClick={onClick} disabled={disabled} style={{ padding:"11px 22px", borderRadius:12, border:"none", fontWeight:800, fontSize:14, background:disabled?"#E7E6F0":"#5F4FD9", color:disabled?"#8B8AA6":"white", cursor:disabled?"not-allowed":"pointer" }}>{children}</button>
 );
 
-function LessonPage({ lesson, session, setPage, isAdmin, openLesson }) {
+function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractice }) {
   const [addType, setAddType] = useState("video");
   const [addSection, setAddSection] = useState("topic"); // topic | discussion | hometask
   const [addUrl, setAddUrl] = useState("");
@@ -2986,8 +3197,6 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson }) {
   const renderMat = (mat) => {
     const isYt = mat.type==="video" && youtubeId(mat.url);
     const isFile = mat.type==="video" && isVideoFile(mat);
-    const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
-    const tall = mat.type==="pdf";
     const opened = isOpened(mat);
     return (
       <div key={mat.id} style={{ background:"white", borderRadius:16, padding:14, marginBottom:12, border:"1px solid #ECEBF3" }}>
@@ -3005,9 +3214,6 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson }) {
           <iframe width="100%" height="220" title={mat.title||"Video"} src={`https://www.youtube.com/embed/${youtubeId(mat.url)}`} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12 }} />
         )}
         {isFile && mat!==lessonVideo && <video src={mat.url} controls style={{ width:"100%", display:"block", borderRadius:12, marginTop:12 }} />}
-        {preview && (
-          <iframe width="100%" height={tall?480:320} title={mat.title||"Preview"} src={preview} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12, background:"#F7F7FB" }} />
-        )}
         {mat.text && <div style={{ marginTop:10, fontSize:13.5, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{mat.text}</div>}
       </div>
     );
@@ -3090,6 +3296,19 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson }) {
           </div>
         )}
       </div>
+
+      {PRACTICE[lesson.id] && (
+        <div style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:20, padding:16, marginBottom:20 }}>
+          <div style={{ fontWeight:800, fontSize:16, marginBottom:4 }}>Practice recordings</div>
+          <div style={{ fontSize:13, color:"#6E6C8A", marginBottom:12 }}>Extra listening with 10 questions each, marked automatically. Try them as many times as you like.</div>
+          {PRACTICE[lesson.id].map(p => (
+            <button key={p.title} onClick={() => openPractice(p)} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F7F7FB", border:"none", borderRadius:14, padding:"12px 16px", marginBottom:8, cursor:"pointer", fontFamily:"inherit", color:"#14123F" }}>
+              <span style={{ flex:1, fontWeight:700, fontSize:14 }}>{p.title}</span>
+              <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {lesson.mockLink && (
         <button onClick={() => openLesson(lesson.mockLink)} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F1EFFC", border:"none", borderRadius:16, padding:"14px 18px", marginBottom:20, cursor:"pointer", fontFamily:"inherit", color:"#14123F" }}>
@@ -3674,6 +3893,7 @@ export default function App() {
   const [session, setSession] = useState(getSession);
   const [page, setPage] = useState("course");
   const [currentLesson, setCurrentLesson] = useState(null);
+  const [practice, setPractice] = useState(null);
   const [modules, setModules] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
@@ -3730,6 +3950,7 @@ export default function App() {
 
   // Full-screen pages, without the sidebar
   if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />;
+  if (page === "practice" && currentLesson && practice) return <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} practice={practice} />;
   if (page === "assignment" && currentLesson) return HOMEWORK[currentLesson.id]
     ? <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />
     : <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
@@ -3742,8 +3963,9 @@ export default function App() {
     page === "leaderboard" ? <Leaderboard session={session} setPage={setPage} /> :
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
+    page === "discussion" ? <DiscussionPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
-    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} openLesson={(id) => setCurrentLesson(modules.flatMap(m => m.lessons).find(l => l.id === id))} /> :
+    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} openLesson={(id) => setCurrentLesson(modules.flatMap(m => m.lessons).find(l => l.id === id))} openPractice={(p) => { setPractice(p); setPage("practice"); }} /> :
     <CoursePage key={page==="courses"?"courses":"dashboard"} view={page==="courses"?"courses":"dashboard"} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
 
   return (
