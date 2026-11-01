@@ -390,10 +390,10 @@ const INITIAL_MODULES = [
     lessons: [
       {
         id: "1-1", n: 1,
-        title: "Listening — MCQ & Matching Information | Present Simple vs Present Continuous",
-        tag: "Listening", materials: [],
-        quiz: { questions: [{"type":"mc","q":"In the IELTS Listening test, how many sections (parts) are there in total?","options":["2","3","4","5"],"answer":2,"points":10,"img":"headphones"},{"type":"mc","q":"How long do you get at the END of the IELTS Listening test to transfer your answers to the answer sheet (on paper)?","options":["5 minutes","10 minutes","30 seconds","15 minutes"],"answer":1,"points":10,"img":"clock"},{"type":"mc","q":"In a Listening Multiple Choice (MCQ) question, what is the best strategy before the audio starts?","options":["Read the question and underline keywords","Close your eyes and relax","Write random answers first","Read the next section instead"],"answer":0,"points":10,"img":"headphones"},{"type":"mc","q":"In Matching Information tasks, you usually have to match items to a list of options. What is a common trap?","options":["Options may be used more than once or not at all","The audio repeats every answer twice","All options are always used once","The answers appear in alphabetical order"],"answer":0,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Simple.","options":["She is going to school every day.","She goes to school every day.","She go to school every day.","She going to school every day."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Continuous.","options":["Look! The train arrives now.","Look! The train is arriving now.","Look! The train arrive now.","Look! The train arriving now."],"answer":1,"points":10,"img":"departureBoard"},{"type":"mc","q":"Which time expression typically signals the Present Simple?","options":["right now","at the moment","usually","Listen!"],"answer":2,"points":10},{"type":"mc","q":"Which time expression typically signals the Present Continuous?","options":["every morning","at the moment","on Mondays","never"],"answer":1,"points":10},{"type":"mc","q":"In MCQ Listening, the speaker often mentions a wrong option first, then corrects it. This technique is called using a:","options":["distractor","synonym chain","filler","false start only"],"answer":0,"points":10,"img":"speechBubble"},{"type":"mc","q":"Complete: 'Water _______ at 100 degrees Celsius.' (a general truth)","options":["is boiling","boils","boil","are boiling"],"answer":1,"points":10},{"type":"mc","q":"Complete: 'Please be quiet — the baby _______.' (action happening now)","options":["sleeps","sleep","is sleeping","slept"],"answer":2,"points":10},{"type":"mc","q":"Which verb is a STATIVE verb that is normally NOT used in the Present Continuous?","options":["run","know","eat","write"],"answer":1,"points":10},{"type":"mc","q":"In Section 1 of the IELTS Listening test, the conversation is usually about a/an:","options":["academic lecture","everyday social situation","group seminar discussion","scientific debate"],"answer":1,"points":10,"img":"headphones"},{"type":"tf","q":"In the IELTS Listening test, you hear each recording only ONCE.","answer":true,"points":10,"img":"headphones"},{"type":"tf","q":"Spelling does not matter in the IELTS Listening test; close spelling is always accepted.","answer":false,"points":10},{"type":"tf","q":"The Present Continuous is used for actions happening at or around the moment of speaking.","answer":true,"points":10},{"type":"tf","q":"Stative verbs such as 'believe', 'love' and 'understand' are commonly used in the Present Continuous.","answer":false,"points":10},{"type":"tf","q":"In Matching Information tasks, the answers always appear in the same order as the audio.","answer":false,"points":10},{"type":"fitb","q":"The Listening question type where you choose the correct option from A, B, C or D is called _______ choice.","answer":"multiple","points":10},{"type":"fitb","q":"We add '-s' or '-es' to the verb in the Present Simple for the third person _______ (he/she/it).","answer":"singular","points":10},{"type":"fitb","q":"Complete with Present Continuous: 'They _______ watching a film right now.' Use the correct form of 'be'.","answer":"are","points":10},{"type":"fitb","q":"A word that has the same meaning as another and is often used in audio to 'paraphrase' the question is a _______.","answer":"synonym","points":10,"img":"speechBubble"},{"type":"fitb","q":"Complete with Present Simple: 'He _______ coffee every morning.' (verb: drink)","answer":"drinks","points":10},{"type":"match","q":"Match each time expression to the correct tense it usually signals","pairs":[["every day","Present Simple"],["right now","Present Continuous"],["once a week","Habitual routine"],["Listen!","Action in progress"]],"points":20},{"type":"match","q":"Match each IELTS Listening feature to its description","pairs":[["Section 1","Everyday conversation"],["Section 4","Academic monologue"],["Distractor","Misleading wrong option"],["Matching task","Link items to a list"]],"points":20,"img":"headphones"}]},
-        assignment: { type: "writing", prompt: "Write 8 sentences about your daily routine using Present Simple, and 5 sentences about what is happening right now using Present Continuous." }
+        title: "Listening Part 1: Form & Note Completion",
+        tag: "Listening", materials: [], mockLink: "mock-1",
+        quiz: { questions: [{"type":"mc","q":"How many questions are there in IELTS Listening Part 1?","options":["5","10","20","40"],"answer":1,"points":10,"img":"headphones"},{"type":"mc","q":"What does Part 1 usually sound like?","options":["An academic lecture","A conversation between two people about an everyday situation","A university seminar","A talk by one speaker on a science topic"],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Which task type is most common in Part 1?","options":["Form or note completion","Essay writing","Diagram labelling","Matching headings"],"answer":0,"points":10},{"type":"mc","q":"The instruction says ONE WORD AND/OR A NUMBER. Which answer is allowed?","options":["the green bridge","12 Hill Road","Tuesday","on Tuesday morning"],"answer":2,"points":10},{"type":"mc","q":"What should you do in the time before the audio starts?","options":["Relax and wait","Read the form and predict the type of each answer","Write random answers","Read Part 4"],"answer":1,"points":10,"img":"clock"},{"type":"mc","q":"The gap says: Phone: ___ . What type of answer do you expect?","options":["A name","A number","A date","A place"],"answer":1,"points":10},{"type":"mc","q":"You hear: \"It's on the 5th, sorry, the 15th of May.\" What do you write?","options":["5 May","15 May","5 or 15 May","Nothing"],"answer":1,"points":10},{"type":"mc","q":"You hear: \"H, A, double R, I, S.\" What do you write?","options":["Haris","Harris","Harriss","Hariss"],"answer":1,"points":10},{"type":"mc","q":"In a phone number, speakers often say \"oh\" for:","options":["0","1","8","the letter H only"],"answer":0,"points":10},{"type":"mc","q":"You missed an answer. What should you do?","options":["Stop and think about it","Ask for the audio again","Leave it, follow the next question and guess at the end","Go back to the first question"],"answer":2,"points":10},{"type":"tf","q":"You hear each recording only once in the real test.","answer":true,"points":10},{"type":"tf","q":"Spelling mistakes in a Part 1 answer can lose the mark.","answer":true,"points":10},{"type":"tf","q":"Going over the word limit can lose the mark, even if the idea is correct.","answer":true,"points":10},{"type":"tf","q":"The answers in a Part 1 form usually come in the same order as the audio.","answer":true,"points":10},{"type":"tf","q":"The first number a speaker says is always the correct answer.","answer":false,"points":10},{"type":"fitb","q":"A wrong answer mentioned on purpose to confuse you is called a _______.","answer":"distractor","points":10},{"type":"fitb","q":"Before listening, you try to guess the type of each answer. This skill is called _______.","answer":"predicting","points":10},{"type":"fitb","q":"A speaker spells a name. \"T, T\" can also be said as _______ T.","answer":"double","points":10},{"type":"fitb","q":"Part 1 is the _______ of the four Listening parts.","answer":"easiest","points":10},{"type":"match","q":"Match each gap to the type of answer you expect","pairs":[["Family name: ___","A spelled word"],["Phone: ___","A number"],["Start date: ___","A day and month"],["Fee: £ ___","An amount of money"]],"points":20},{"type":"match","q":"Match each phrase to what it signals","pairs":[["sorry, I mean","A correction"],["double T","Two letters the same"],["in the end","The final decision"],["oh","The number zero"]],"points":20,"img":"headphones"}]},
+        assignment: { type: "writing", prompt: "Listen to the phone call and complete the enrolment form. Write ONE WORD AND/OR A NUMBER for each answer." }
       },
       {
         id: "1-2", n: 2,
@@ -714,6 +714,12 @@ const SLIDES_POINTS = 5;
 const isMock = (lesson) => lesson.tag === "Mock" || lesson.tag === "Final";
 const hasDeck = (lesson) => /^\d+-\d+$/.test(lesson.id);
 const cleanTitle = (s) => (s || "").replace(/\s*[—–]\s*/g, ": ");
+// These lessons were rewritten in code, so the code replaces the copy saved in Firestore. Uploaded materials stay.
+const CODE_LESSONS = ["1-1"];
+const withCodeLessons = (mods) => mods.map(m => ({ ...m, lessons: m.lessons.map(l => {
+  const fresh = CODE_LESSONS.includes(l.id) && INITIAL_MODULES.flatMap(x => x.lessons).find(x => x.id === l.id);
+  return fresh ? { ...fresh, materials: l.materials } : l;
+}) }));
 // Three questions spread across the lesson's bank pause the video; the rest make up the test.
 function videoQuestions(lesson) {
   if (isMock(lesson)) return [];
@@ -2847,7 +2853,7 @@ const SubmitBtn = ({ disabled, onClick, children }) => (
   <button onClick={onClick} disabled={disabled} style={{ padding:"11px 22px", borderRadius:12, border:"none", fontWeight:800, fontSize:14, background:disabled?"#E7E6F0":"#5F4FD9", color:disabled?"#8B8AA6":"white", cursor:disabled?"not-allowed":"pointer" }}>{children}</button>
 );
 
-function LessonPage({ lesson, session, setPage, isAdmin }) {
+function LessonPage({ lesson, session, setPage, isAdmin, openLesson }) {
   const [addType, setAddType] = useState("video");
   const [addSection, setAddSection] = useState("topic"); // topic | discussion | hometask
   const [addUrl, setAddUrl] = useState("");
@@ -3084,6 +3090,13 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
           </div>
         )}
       </div>
+
+      {lesson.mockLink && (
+        <button onClick={() => openLesson(lesson.mockLink)} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F1EFFC", border:"none", borderRadius:16, padding:"14px 18px", marginBottom:20, cursor:"pointer", fontFamily:"inherit", color:"#14123F" }}>
+          <span style={{ flex:1, fontWeight:800, fontSize:14.5 }}>Practise under test conditions: Mock Test 1</span>
+          <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>
+        </button>
+      )}
 
       {isAdmin && (
         <div style={{ background:"#F7F7FB", borderRadius:18, padding:18, marginBottom:20 }}>
@@ -3670,7 +3683,7 @@ export default function App() {
     const load = async () => {
       try {
         const mods = await FB.getModules();
-        setModules(mods || INITIAL_MODULES);
+        setModules(mods ? withCodeLessons(mods) : INITIAL_MODULES);
       } catch (e) {
         setModules(INITIAL_MODULES);
       }
@@ -3730,7 +3743,7 @@ export default function App() {
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
-    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} /> :
+    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} openLesson={(id) => setCurrentLesson(modules.flatMap(m => m.lessons).find(l => l.id === id))} /> :
     <CoursePage key={page==="courses"?"courses":"dashboard"} view={page==="courses"?"courses":"dashboard"} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
 
   return (

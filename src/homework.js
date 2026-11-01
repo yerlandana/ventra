@@ -1,5 +1,5 @@
 // Auto-graded homework for the Listening and Reading lessons.
-// Listening scripts are read aloud by the browser. Each set ends with two grammar questions from the lesson.
+// Listening scripts are read aloud by the browser. Most sets end with grammar questions from the lesson.
 const MapOfPark = () => (
   <svg viewBox="0 0 420 240" role="img" aria-label="Plan of a park with the main gate at the bottom and places labelled A to D" style={{ width:"100%", maxWidth:460, display:"block", margin:"0 auto" }}>
     <rect x="2" y="2" width="416" height="236" rx="12" fill="#F1EFFC" stroke="#5F4FD9"/>
@@ -28,15 +28,19 @@ const gap = (q, answer, alt = []) => ({ type:"fitb", q, answer, alt, points:10 }
 const match = (q, pairs) => ({ type:"match", q, pairs, points:20 });
 
 export const HOMEWORK = {
-  "1-1": { kind:"listening", title:"Booking a sports class", intro:"A caller phones a sports centre. Read the questions first, then listen.",
-    script:"Good morning, City Sports Centre. Hi, I would like to join a yoga class. I was thinking about Monday. I'm afraid Monday is full, and the Friday class has moved to the morning. Mornings are difficult because I work then. What about Wednesday evening? Yes, there are places on Wednesday at seven. By the way, swimming is in the main pool, tennis is outdoors behind the car park, and badminton is in the small hall upstairs. How much is a class? Usually twelve pounds, but members pay eight.",
+  "1-1": { kind:"listening", title:"Enrolling on a language course", intro:"A student phones a language centre. Read the form first and predict each answer, then listen. Write ONE WORD AND/OR A NUMBER for each answer.",
+    script:"Good morning, Riverside Language Centre. Hello, I would like to join an evening English class. Of course, I will take your details. What is your family name? It is Harris. That is H, A, double R, I, S. Thank you. And your address? 27 Park Road. Park, like a city park. And the postcode? B S 6, 4 T N. What is your phone number? It is oh seven seven one four, five two nine, three six. Sorry, the last part is three eight. Thank you. Which evening would you like? I thought about Tuesday, but I work late that day, so Thursday, please. Fine. The course starts on the 5th of March. Sorry, I am looking at the old list. It starts on the 12th of March. How much is it? The full price is 180 pounds, but students pay 150. I am a student, so that is good. Do I need to bring my passport? No, just one photo for your card on the first day. And how did you hear about us? I looked at your website, but I first saw you in a newspaper. Lovely. Your teacher will be Mr Dawson. That is D, A, W, S, O, N. See you in March.",
     questions:[
-      mc("Which day does the caller choose?", ["Monday","Wednesday","Friday"], 1),
-      mc("Why does the caller not want the Friday class?", ["It is full","It is too expensive","The caller works in the mornings"], 2),
-      mc("How much do members pay?", ["£7","£8","£12"], 1),
-      match("Match each sport to its place.", [["Swimming","main pool"],["Tennis","behind the car park"],["Badminton","small hall"]]),
-      gap("Grammar: Look! She ___ (run) to the bus right now.", "is running", ["she is running"]),
-      mc("Grammar: Choose the correct sentence.", ["I am knowing the answer.","I know the answer.","I knowing the answer."], 1),
+      gap("Family name: ___", "Harris"),
+      gap("Address: 27 ___ Road", "Park"),
+      gap("Postcode: ___", "BS6 4TN", ["BS64TN"]),
+      gap("Phone: ___", "07714 52938", ["0771452938","07714529 38","0771 452 938","07714 529 38"]),
+      gap("Class day: ___", "Thursday"),
+      gap("Start date: ___ March", "12", ["12th","the 12th","twelfth"]),
+      gap("Student fee: £ ___", "150", ["one hundred and fifty"]),
+      gap("Bring on the first day: one ___", "photo", ["photograph"]),
+      gap("First heard about the centre in a: ___", "newspaper"),
+      gap("Teacher: Mr ___", "Dawson"),
     ]},
   "1-2": { kind:"reading", title:"The city library", intro:"Read the passage, then answer. Use only the information in the text.",
     passage:"The Central Library opened in 1990 and quickly became the busiest public building in the city. Although its reading rooms were popular from the start, the digital archive was not available until 2005, when a government grant paid for the scanning of old newspapers.\n\nToday, the library lends about two million items a year. Most visitors are students, who use the quiet rooms during exam periods. Opening hours were extended in 2018 after a survey showed that many people could only visit in the evening. A small café was added in the same year.",
