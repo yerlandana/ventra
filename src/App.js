@@ -7,6 +7,9 @@ import { HOMEWORK, PRACTICE } from "./homework";
 import { DISCUSSION_TOPICS } from "./discussion";
 import WorkbookPage from "./WorkbookPage";
 import DailyPage, { DailyStrip } from "./DailyPage";
+import WordGames from "./WordGames";
+import { LESSON_WORDS } from "./lessonWords";
+import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
 import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
@@ -723,6 +726,7 @@ const INITIAL_MODULES = [
 // ─── LESSON STEPS: video, presentation, test, assignment ───
 const VIDEO_POINTS = 5; // per correct in-video question
 const SLIDES_POINTS = 5;
+const WORDS_POINTS = 15;
 const isMock = (lesson) => lesson.tag === "Mock" || lesson.tag === "Final";
 const hasDeck = (lesson) => /^\d+-\d+$/.test(lesson.id);
 const cleanTitle = (s) => (s || "").replace(/\s*[—–]\s*/g, ": ");
@@ -1805,10 +1809,10 @@ function ResultsTable({ modules, progress, submissions }) {
   return (modules||[]).map(m => (
     <div key={m.id} style={{ background:"white", borderRadius:16, border:"1px solid #ECEBF3", marginBottom:12, overflowX:"auto" }}>
       <div style={{ fontWeight:800, fontSize:13.5, padding:"12px 14px" }}>{m.title}</div>
-      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:520 }}>
+      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:580 }}>
         <thead><tr style={{ color:"#8B8AA6", fontSize:11, textTransform:"uppercase", letterSpacing:".04em" }}>
           <th style={{ textAlign:"left", padding:"0 14px 8px", fontWeight:700 }}>Lesson</th>
-          {["Video","Slides","Test","Task","Points"].map(h => <th key={h} style={{ padding:"0 8px 8px", fontWeight:700 }}>{h}</th>)}
+          {["Video","Slides","Test","Task","Words","Points"].map(h => <th key={h} style={{ padding:"0 8px 8px", fontWeight:700 }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {m.lessons.map(l => {
@@ -1822,6 +1826,7 @@ function ResultsTable({ modules, progress, submissions }) {
                 <td style={cell}>{st.slides ? yes : none}</td>
                 <td style={cell}>{st.test ? <b>{Math.round(st.test.best/st.test.total*100)}%</b> : lp.quizScore!=null ? `${lp.quizScore} pts` : none}</td>
                 <td style={cell}>{sub?.ai ? <b>Band {sub.ai.overall}</b> : sub?.score != null ? <b>{Math.round(sub.score/sub.total*100)}%</b> : sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
+                <td style={cell}>{st.words ? <b>{Math.round((st.words.match + st.words.type + st.words.gaps) / 3)}%</b> : none}</td>
                 <td style={{ ...cell, fontWeight:700 }}>{lp.points || 0}</td>
               </tr>
             );
@@ -3416,8 +3421,10 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractic
     hasDeck(lesson) && { key:"slides", label:"Presentation", done:!!stepsDone.slides },
     { key:"test", label:"Test", done:!!stepsDone.test || lp.quizScore != null },
     hasAssignment && { key:"assignment", label:"Assignment", done:assignmentDone(lesson, lp, submission) },
+    LESSON_WORDS[lesson.id] && { key:"words", label:"Words", done:!!stepsDone.words, optional:true },
   ].filter(Boolean);
-  const firstOpen = steps.findIndex(s => !s.done);
+  // The Words step is optional, so it never holds back the lesson or the next module.
+  const firstOpen = steps.findIndex(s => !s.done && !s.optional);
   const free = isAdmin || !!lp.quizDone;
   const isLocked = (i) => !free && firstOpen !== -1 && i > firstOpen;
   const current = activeStep || (firstOpen === -1 ? steps[0].key : steps[firstOpen].key);
@@ -3448,7 +3455,8 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractic
     try {
       const updated = await saveStep(session.email, lesson.id, key, { ...data, at:new Date().toISOString() }, gain);
       setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
-      setActiveStep(null);
+      // Other steps move on to the next open one. The optional Words step stays put so the student sees the saved result.
+      setActiveStep(key === "words" ? "words" : null);
       toast(gain ? `Submitted · +${gain} pts` : "Submitted");
     } catch (e) { alert("Could not submit: " + e.message); }
   };
@@ -3565,7 +3573,7 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractic
           return (
             <button key={s.key} disabled={locked} aria-current={on ? "step" : undefined} onClick={() => setActiveStep(s.key)}
               style={{ padding:"10px 8px", borderRadius:14, border:`2px solid ${on?"#5F4FD9":"transparent"}`, background:s.done?"#E9F6EC":on?"#F1EFFC":"#F7F7FB", color:locked?"#A9A8BD":"#14123F", cursor:locked?"not-allowed":"pointer", fontWeight:700, fontSize:13, fontFamily:"inherit", minWidth:0 }}>
-              <span style={{ display:"block", fontSize:11.5, color:s.done?"#3F9C5B":locked?"#A9A8BD":"#5F4FD9", fontWeight:800 }}>{s.done?"✓ Submitted":locked?"🔒 Locked":`Step ${i+1}`}</span>
+              <span style={{ display:"block", fontSize:11.5, color:s.done?"#3F9C5B":locked?"#A9A8BD":"#5F4FD9", fontWeight:800 }}>{s.done?"✓ Submitted":locked?"🔒 Locked":s.optional?"Optional":`Step ${i+1}`}</span>
               <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
             </button>
           );
@@ -3592,6 +3600,15 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractic
             <SubmitBtn onClick={() => setPage("quiz")}>{testSaved ? "Retake the test" : isAdmin ? "Preview the test" : "Start the test"}</SubmitBtn>
           </div>
         )}
+        {loaded && current==="words" && LESSON_WORDS[lesson.id] && (() => {
+          // Lessons that have a grammar unit in the Workbook link straight to it.
+          const unit = WORKBOOK_LEVELS.c.grammarUnits.find(g => g.lesson === lesson.n);
+          return (
+            <WordGames key={lesson.id} words={LESSON_WORDS[lesson.id]} saved={stepsDone.words} canSubmit={!isAdmin}
+              onSubmit={(r) => submitStep("words", r, stepsDone.words ? 0 : WORDS_POINTS)}
+              onWorkbook={unit ? () => { try { sessionStorage.setItem("lms_workbook_open", `c|g-${unit.id}`); } catch (e) { /* opens the first unit instead */ } setPage("workbook"); } : null} />
+          );
+        })()}
         {loaded && current==="assignment" && hasAssignment && (() => {
           const hw = HOMEWORK[lesson.id];
           const sk = skeletonOf(lesson);

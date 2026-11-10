@@ -71,9 +71,18 @@ const modelNote = (answers, key, to) => checkLine(answers, key, [to])
   ? { t: "ok", m: `Exactly like the model: ${to}` }
   : { t: "model", m: `Model answer: ${to}` };
 
+const readOpened = (readOnly) => {
+  if (readOnly) return null;
+  try {
+    const parts = (sessionStorage.getItem("lms_workbook_open") || "").split("|");
+    return LEVELS[parts[0]] && parts[1] ? parts : null;
+  } catch (e) { return null; }
+};
+
 export default function WorkbookPage({ email, name, store, readOnly = false, initial = null }) {
-  const [level, setLevel] = useState("6");
-  const [unitId, setUnitId] = useState(null);
+  // A lesson can open a unit directly: it leaves "level|unit" in session storage, which is cleared once read.
+  const [level, setLevel] = useState(() => { const o = readOpened(readOnly); return o ? o[0] : "6"; });
+  const [unitId, setUnitId] = useState(() => { const o = readOpened(readOnly); return o ? o[1] : null; });
   const [answers, setAnswers] = useState({});
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("");
@@ -81,6 +90,7 @@ export default function WorkbookPage({ email, name, store, readOnly = false, ini
   const [askClear, setAskClear] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
   const [copyText, setCopyText] = useState("");
+  useEffect(() => { try { sessionStorage.removeItem("lms_workbook_open"); } catch (e) { /* nothing to clear */ } }, []);
   const answersRef = useRef({});
   const dirty = useRef(false);
   const timer = useRef(null);
