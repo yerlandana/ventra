@@ -5,6 +5,9 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, ge
 import { SKELETONS, LESSON_SKELETON } from "./skeletons";
 import { HOMEWORK, PRACTICE } from "./homework";
 import { DISCUSSION_TOPICS } from "./discussion";
+import WorkbookPage from "./WorkbookPage";
+import DailyPage, { DailyStrip } from "./DailyPage";
+import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -51,7 +54,7 @@ async function resolveSession(user) {
   if (!student) throw new Error("no-access");
   if (student.status === "revoked") throw new Error("revoked");
   await FB.updateStudent(email, { lastLogin: new Date().toISOString() });
-  return { email, role: "student", name: student.name || user.displayName || email };
+  return { email, role: "student", name: student.name || user.displayName || email, masterclassOnly: student.plan === "masterclass" };
 }
 
 // ─── FIRESTORE HELPERS ───
@@ -97,6 +100,14 @@ const FB = {
   },
   setSubmission: async (email, lessonId, data) => {
     await setDoc(doc(db, "submissions", email), { [lessonId]: data }, { merge: true });
+  },
+  // Workbook answers live in the student's submissions document, which only the student and the teacher can read.
+  getWorkbook: async (email) => {
+    const snap = await getDoc(doc(db, "submissions", email));
+    return snap.exists() ? (snap.data().workbook || null) : null;
+  },
+  setWorkbook: async (email, workbook) => {
+    await setDoc(doc(db, "submissions", email), { workbook }, { merge: true });
   },
   // Modules — каждый урок хранится отдельно
   getModules: async () => {
@@ -1467,6 +1478,150 @@ function DiscussionPage() {
   );
 }
 
+const SPEAK_SECONDS = (n) => n >= 60 ? `${Math.floor(n/60)}:${String(n%60).padStart(2,"0")}` : `${n}s`;
+
+function MasterclassPhraseGame({ onDone }) {
+  const [rounds] = useState(() => shuffled(MC_GAME.flatMap(g => g.rounds.map(([prompt, answer]) => ({
+    ask:g.ask, prompt, answer, options:shuffled([answer, ...shuffled(g.rounds.map(r => r[1]).filter(x => x !== answer)).slice(0,2)]),
+  })))));
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const r = rounds[i];
+  const next = () => {
+    if (i + 1 === rounds.length) { onDone(Math.round(score / rounds.length * 100)); return; }
+    setPicked(null); setI(i + 1);
+  };
+  return (
+    <div style={{ background:"white", borderRadius:20, padding:18 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, fontWeight:700, color:"#5D5A8C" }}><span>Round {i+1} of {rounds.length}</span><span>⭐ {score}</span></div>
+      <div style={{ height:6, borderRadius:6, background:"#F1EFFC", margin:"8px 0 14px" }}><div style={{ height:"100%", width:`${(i+1)/rounds.length*100}%`, borderRadius:6, background:"#C9973A", transition:"width .2s" }} /></div>
+      <div className="da-pop" key={i}>
+        <div style={{ fontSize:13, fontWeight:700, color:"#5D5A8C" }}>{r.ask}</div>
+        <div style={{ fontSize:20, fontWeight:800, color:"#15225A", margin:"2px 0 14px" }}>{r.prompt}</div>
+        {r.options.map(o => {
+          const right = picked && o === r.answer;
+          const wrong = picked === o && o !== r.answer;
+          return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); if (o === r.answer) { setScore(x => x + 1); speakAmerican(o); } }} style={{ display:"block", width:"100%", textAlign:"left", padding:"12px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14.5, fontWeight:600, color:"#15225A", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#E4E1F8"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+        })}
+      </div>
+      {picked && <SubmitBtn onClick={next}>{i + 1 === rounds.length ? "Finish" : "Next →"}</SubmitBtn>}
+    </div>
+  );
+}
+
+function MasterclassSpeaking({ onDone }) {
+  const [i, setI] = useState(0);
+  const [left, setLeft] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+  const q = MC_SPEAKING[i];
+  useEffect(() => {
+    if (left === null || left <= 0) return;
+    const t = setTimeout(() => setLeft(x => x - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  const start = () => { setPreparing(false); setLeft(q.seconds); };
+  const next = () => {
+    if (i + 1 === MC_SPEAKING.length) { onDone(100); return; }
+    setLeft(null); setPreparing(false); setI(i + 1);
+  };
+  return (
+    <div style={{ background:"white", borderRadius:20, padding:18 }}>
+      <div style={{ fontSize:13, fontWeight:800, color:"#8A6414" }}>{q.part} · Question {i+1} of {MC_SPEAKING.length}</div>
+      <div className="da-pop" key={i} style={{ fontSize:18, fontWeight:800, lineHeight:1.4, color:"#15225A", margin:"6px 0 10px", whiteSpace:"pre-line" }}>{q.q}</div>
+      <div style={{ background:"#FBF5E6", color:"#6F5010", borderRadius:12, padding:"9px 13px", fontSize:13.5, marginBottom:14 }}>Try this phrase: <b>{q.tip}</b></div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        {q.prep && left === null && <SubmitBtn onClick={() => { setPreparing(true); setLeft(q.prep); }}>Prepare for 1 minute</SubmitBtn>}
+        <SubmitBtn onClick={start}>{`Speak for ${SPEAK_SECONDS(q.seconds)}`}</SubmitBtn>
+        <button onClick={next} style={{ padding:"10px 16px", borderRadius:12, border:"1px solid #E4E1F8", background:"white", cursor:"pointer", fontFamily:"inherit", fontWeight:700, color:"#15225A" }}>{i + 1 === MC_SPEAKING.length ? "Finish" : "Next question →"}</button>
+        {left !== null && <span aria-live="polite" style={{ fontWeight:800, fontSize:20, color:left <= 10 ? "#D9534F" : "#15225A" }}>{left > 0 ? `${preparing ? "Prepare: " : ""}${SPEAK_SECONDS(left)}` : "Time's up!"}</span>}
+      </div>
+    </div>
+  );
+}
+
+const MasterclassPie = () => {
+  let from = 0;
+  const stops = MC_PIE.map(([, pct, color]) => { const stop = `${color} ${from}% ${from + pct}%`; from += pct; return stop; }).join(",");
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:18, flexWrap:"wrap", margin:"14px 0" }}>
+      <div role="img" aria-label={MC_PIE.map(([n, pct]) => `${n} ${pct}%`).join(", ")} style={{ width:150, height:150, borderRadius:"50%", flexShrink:0, background:`conic-gradient(${stops})` }} />
+      <div>{MC_PIE.map(([n, pct, color]) => <div key={n} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13.5, marginBottom:4 }}><span style={{ width:12, height:12, borderRadius:3, background:color }} />{n}: <b>{pct}%</b></div>)}</div>
+    </div>
+  );
+};
+
+const MASTERCLASS_LEVELS = [
+  { key:"deck", icon:"📊", title:"Presentation: B1 to C1 phrases", sub:"Go through the slides together" },
+  { key:"game", icon:"🎮", title:"Phrase game", sub:"19 rounds: upgrade your words and idioms" },
+  { key:"listening", icon:"🎧", title:"Mock: Listening Part 1", sub:"10 questions, form completion" },
+  { key:"reading", icon:"📖", title:"Mock: Reading Part 1", sub:"10 questions, one passage" },
+  { key:"speaking", icon:"🎤", title:"Mock: Speaking", sub:"Parts 1, 2 and 3 with a timer" },
+  { key:"writing", icon:"🥧", title:"Writing: pie chart skeleton", sub:"Complete the report using the skeleton" },
+];
+
+function MasterclassPage({ session, onBack, logout }) {
+  const [level, setLevel] = useState(null);
+  const [done, setDone] = useState({});
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => setDone(p.masterclass || {})).catch(() => {});
+    return () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); };
+  }, [session.email]);
+  const finish = (key, pct) => {
+    const best = Math.max(pct, done[key] || 0);
+    setDone(d => ({ ...d, [key]: best }));
+    FB.setProgress(session.email, { masterclass: { [key]: best } }).catch(() => {});
+  };
+  const backToMap = () => { setLevel(null); window.scrollTo(0,0); };
+  const finishAndBack = (key) => (pct) => { finish(key, pct); backToMap(); };
+  const stars = (pct) => pct >= 80 ? "⭐⭐⭐" : pct >= 50 ? "⭐⭐" : "⭐";
+  const css = "@keyframes daFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes daPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.da-float{display:inline-block;animation:daFloat 3s ease-in-out infinite}.da-pop{animation:daPop .3s ease-out}@media (prefers-reduced-motion:reduce){.da-float,.da-pop{animation:none}}";
+
+  if (level === "listening") return <HomeworkPage practice={{ ...PRACTICE["1-1"][0], label:"Mock" }} onExit={backToMap} onDone={(pct) => finish("listening", pct)} />;
+  if (level === "reading") return <HomeworkPage practice={MC_READING} onExit={backToMap} onDone={(pct) => finish("reading", pct)} />;
+  if (level === "writing") return <HomeworkPage practice={{ ...MC_WRITING, figure:<><SkeletonCard sk={SKELETONS.pie} /><MasterclassPie /></> }} onExit={backToMap} onDone={(pct) => finish("writing", pct)} />;
+
+  const shell = (children) => (
+    <div style={{ minHeight:"100vh", background:"#15225A", padding:"16px 16px 50px" }}>
+      <style>{css}</style>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>{children}</div>
+    </div>
+  );
+  const backBtn = (label, onClick) => <button onClick={onClick} style={{ border:"none", background:"none", color:"#E4BF6C", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>← {label}</button>;
+
+  if (level === "deck") return shell(<>
+    {backBtn("Back to the map", backToMap)}
+    <iframe title={MC_DECK.title} src={`/decks/extra/${MC_DECK.file}.html`} allowFullScreen frameBorder="0" style={{ width:"100%", aspectRatio:"16 / 10", display:"block", borderRadius:16, background:"#100E35", marginBottom:14 }} />
+    <SubmitBtn onClick={() => finishAndBack("deck")(100)}>I finished the presentation</SubmitBtn>
+  </>);
+  if (level === "game") return shell(<>{backBtn("Back to the map", backToMap)}<MasterclassPhraseGame onDone={finishAndBack("game")} /></>);
+  if (level === "speaking") return shell(<>{backBtn("Back to the map", backToMap)}<MasterclassSpeaking onDone={finishAndBack("speaking")} /></>);
+
+  const count = MASTERCLASS_LEVELS.filter(l => done[l.key] != null).length;
+  return shell(<>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+      {onBack ? backBtn("My Courses", onBack) : <span />}
+      {!onBack && <button onClick={logout} style={{ border:"none", background:"none", color:"#E4BF6C", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>Logout</button>}
+    </div>
+    <div style={{ color:"white", marginBottom:16 }}>
+      <span className="da-float" aria-hidden="true" style={{ fontSize:40 }}>🏆</span>
+      <h1 style={{ fontSize:28, fontWeight:800, margin:"4px 0" }}>IELTS<span style={{ color:"#E4BF6C" }}>8</span> Masterclass</h1>
+      <div style={{ fontSize:14, opacity:.85 }}>{count === MASTERCLASS_LEVELS.length ? "🎉 All levels complete. Well done!" : `${count} of ${MASTERCLASS_LEVELS.length} levels complete`}</div>
+      <div style={{ height:8, borderRadius:8, background:"rgba(255,255,255,.15)", marginTop:10 }}><div style={{ height:"100%", width:`${count/MASTERCLASS_LEVELS.length*100}%`, borderRadius:8, background:"#C9973A", transition:"width .3s" }} /></div>
+    </div>
+    {MASTERCLASS_LEVELS.map((l, i) => (
+      <button key={l.key} onClick={() => { setLevel(l.key); window.scrollTo(0,0); }} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", textAlign:"left", background:"white", border:"none", borderRadius:16, padding:"13px 16px", marginBottom:10, cursor:"pointer", fontFamily:"inherit", color:"#15225A" }}>
+        <span aria-hidden="true" style={{ width:44, height:44, borderRadius:14, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:done[l.key]!=null?"#FBF5E6":"#F1EFFC" }}>{l.icon}</span>
+        <span style={{ flex:1, minWidth:0 }}>
+          <span style={{ display:"block", fontWeight:800, fontSize:14.5 }}>Level {i+1}: {l.title}</span>
+          <span style={{ display:"block", fontSize:12.5, color:"#5D5A8C", marginTop:2 }}>{l.sub}{done[l.key]!=null ? ` · Best ${done[l.key]}%` : ""}</span>
+        </span>
+        <span style={{ flexShrink:0, fontSize:13 }}>{done[l.key]!=null ? stars(done[l.key]) : <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>}</span>
+      </button>
+    ))}
+  </>);
+}
+
 function SkeletonsPage() {
   const [task, setTask] = useState("Task 1");
   return (
@@ -1539,9 +1694,10 @@ function AiReport({ ai }) {
 }
 
 // Listening and Reading homework: answer the questions, Submit once, then see the score and review.
-function HomeworkPage({ lesson, session, setPage, isAdmin, practice }) {
+function HomeworkPage({ lesson, session, setPage, isAdmin, practice, onExit, onDone }) {
   const hw = practice || HOMEWORK[lesson.id];
-  const label = practice ? "Practice" : "Homework";
+  const label = practice ? (practice.label || "Practice") : "Homework";
+  const exit = onExit || (() => setPage("lesson"));
   const script = hw.lines ? hw.lines.join(" ") : hw.script;
   const qs = hw.questions;
   const [answers, setAnswers] = useState({});
@@ -1586,6 +1742,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin, practice }) {
         await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone:true, points:(prev.points||0) + (prev.assignmentDone ? 0 : 20) } });
       }
       setResult({ score, total, correct:correct.length });
+      if (onDone) onDone(Math.round(score / total * 100));
       if (canSpeak) window.speechSynthesis.cancel();
       window.scrollTo(0,0);
     } catch (e) { alert("Could not submit: " + e.message); }
@@ -1597,7 +1754,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin, practice }) {
   return (
     <div style={{ minHeight:"100vh", background:"#F7F7FB" }}>
       <div style={{ position:"sticky", top:0, zIndex:10, background:"white", borderBottom:"1px solid #ECEBF3", padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => setPage("lesson")} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
+        <button onClick={exit} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
         <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{label}: {hw.title}</div>
         {!result && <div style={{ fontSize:13, fontWeight:700, color:"#6E6C8A", flexShrink:0 }}>{answered}/{qs.length}</div>}
       </div>
@@ -1608,7 +1765,7 @@ function HomeworkPage({ lesson, session, setPage, isAdmin, practice }) {
             <div style={{ fontSize:36, fontWeight:800, margin:"2px 0" }}>{Math.round(result.score/result.total*100)}%</div>
             <div style={{ fontSize:14 }}>{result.correct} of {qs.length} correct</div>
             <div style={{ display:"flex", gap:10, marginTop:12, flexWrap:"wrap" }}>
-              <button onClick={() => setPage("lesson")} style={{ padding:"10px 18px", borderRadius:12, border:"none", background:"white", color:"#14123F", fontWeight:800, cursor:"pointer" }}>Back to lesson →</button>
+              <button onClick={exit} style={{ padding:"10px 18px", borderRadius:12, border:"none", background:"white", color:"#14123F", fontWeight:800, cursor:"pointer" }}>{onExit ? "Back to the map" : "Back to lesson"} →</button>
               <button onClick={retake} style={{ padding:"10px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,.6)", background:"transparent", color:"white", fontWeight:700, cursor:"pointer" }}>Try again</button>
             </div>
           </div>
@@ -2114,6 +2271,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [resultFor, setResultFor] = useState(null); // email whose IELTS-result panel is open
   const [lessonsFor, setLessonsFor] = useState(null); // email whose lesson results are open
   const [lessonsSubs, setLessonsSubs] = useState({});
+  const [workbookFor, setWorkbookFor] = useState(null); // email whose workbook is open
+  const [workbookData, setWorkbookData] = useState(null);
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -2146,6 +2305,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
     refresh();
   };
 
+  const toggleMasterclass = async (email, on) => {
+    await FB.updateStudent(email, { plan: on ? null : "masterclass" });
+    refresh();
+  };
+
   const toggleSpeaking = async (email, on) => {
     await FB.updateStudent(email, { speaking: !on });
     refresh();
@@ -2163,6 +2327,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (lessonsFor === email) { setLessonsFor(null); return; }
     setLessonsSubs({}); setLessonsFor(email);
     setLessonsSubs(await FB.getSubmissions(email));
+  };
+
+  const toggleWorkbook = async (email) => {
+    if (workbookFor === email) { setWorkbookFor(null); return; }
+    setWorkbookData(null); setWorkbookFor(email);
+    setWorkbookData((await FB.getWorkbook(email)) || { answers: "" });
   };
 
   const remove = async (email) => {
@@ -2230,6 +2400,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
           {msg && <div style={{ marginTop:8, fontSize:12, color:"#0a0a0a" }}>{msg}</div>}
         </div>
 
+        <LessonVideosPanel modules={mods} />
+
         <div style={{ background:"white", borderRadius:10, border:"1px solid #e5e5e5", overflow:"hidden" }}>
           <div style={{ padding:"10px 14px", borderBottom:"1px solid #e5e5e5", fontWeight:700, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Students ({list.length})</div>
           {loadingStudents && <div style={{ padding:24, textAlign:"center", color:"#888", fontSize:13 }}>Loading…</div>}
@@ -2262,6 +2434,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>setResultFor(resultOpen?null:email)} title="Set IELTS band & upload certificate" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${ieltsBand!=null?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:ieltsBand!=null?"#e8f3ec":"white", color:ieltsBand!=null?"#155e37":"#666" }}>
                   🎓 Result {resultOpen?"▲":"▼"}
                 </button>
+                <button onClick={()=>toggleWorkbook(email)} title="Writing Workbook answers and progress" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${workbookFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  📓 Workbook {workbookFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -2271,6 +2446,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>toggleSpeaking(email, !!info.speaking)} title="Paid Speaking World access" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${info.speaking?"#B8860B":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:info.speaking?"#fff7e0":"white", color:info.speaking?"#8a5a12":"#666" }}>
                   {info.speaking?"🎤 Speaking ✓":"🎤 Open"}
                 </button>
+                <button aria-pressed={info.plan==="masterclass"} onClick={()=>toggleMasterclass(email, info.plan==="masterclass")} title="Give this student access to the Masterclass only" style={{ padding:"5px 11px", borderRadius:999, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background:info.plan==="masterclass"?"#C9973A":"#F1EFFC", color:info.plan==="masterclass"?"#15225A":"#2A2680" }}>
+                  {info.plan==="masterclass"?"✓ Masterclass only":"Masterclass only"}
+                </button>
                 <button onClick={()=>toggle(email,info.status)} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   {active?"Revoke":"Restore"}
                 </button>
@@ -2279,6 +2457,15 @@ function AdminPanel({ session, logout, setPage, modules }) {
               {lessonsFor===email && (
                 <div style={{ padding:"10px 14px 6px", background:"#F7F7FB" }}>
                   <ResultsTable modules={mods} progress={allProgress[email]||{}} submissions={lessonsSubs} />
+                </div>
+              )}
+              {workbookFor===email && (
+                <div style={{ padding:"12px 14px 16px", background:"#F7F7FB" }}>
+                  {workbookData === null
+                    ? <div style={{ fontSize:12, color:"#888" }}>Loading...</div>
+                    : !workbookData.answers
+                      ? <div style={{ fontSize:13, color:"#666" }}>{info.name} has not started the workbook yet.</div>
+                      : <WorkbookPage key={email} readOnly email={email} name={info.name} initial={workbookData} />}
                 </div>
               )}
               {resultOpen && (
@@ -2378,6 +2565,7 @@ const ICONS = {
   mic:<><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></>,
   globe:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></>,
   leaf:<path d="M5 19C4 10 10 4 20 4c0 10-6 16-15 15zM5 19l8-8"/>,
+  sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
   pen:<path d="M4 20l1-5L16 4l4 4L9 19z"/>,
   check:<><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></>,
   admin:<><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></>,
@@ -2414,12 +2602,14 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         <button className="lms-logo" onClick={() => go("course")}>IELTS<span>8</span></button>
         <div className="lms-group">Main menu</div>
         {item("course","Dashboard","home")}
+        {item("daily","Daily English","sun")}
         {item("courses","My Courses","courses")}
         {item("assignments","Assignments","tasks")}
         {item("dashboard","Grades","grades")}
         {item("leaderboard","Leaderboard","board")}
         <div className="lms-group">Practice</div>
         {item("skeletons","Essay Skeletons","pen")}
+        {item("workbook","Writing Workbook","pen")}
         {item("discussion","Discussion American Style","mic")}
         {item("speaking","Speaking","mic")}
         {link("/skyielts-writing.html","Writing Bands","pen")}
@@ -2621,6 +2811,11 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
                 </div>
               </div>
 
+              <div style={{ margin:"26px 0 0" }}>
+                {sectionHead("Today", viewAll("daily"))}
+                <DailyStrip onOpen={() => setPage("daily")} />
+              </div>
+
               <div style={{ margin:"26px 0" }}>
                 {sectionHead("Courses Enrolled", viewAll("courses"))}
                 <div style={{ background:"#F7F7FB", borderRadius:20, padding:"16px 20px" }}>
@@ -2702,9 +2897,18 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
         {view === "courses" && (
         <div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <h2 style={{ margin:0, fontSize:24, fontWeight:800 }}>My Courses</h2>
-            <div style={{ fontSize:13, fontWeight:700, color:"#5F4FD9" }}>{doneCount}/{allLessons.length} lessons</div>
+            <h2 style={{ margin:0, fontSize:24, fontWeight:800, color:"#15225A" }}>My Courses</h2>
+            <div style={{ fontSize:13, fontWeight:700, color:"#2A2680" }}>{doneCount}/{allLessons.length} lessons</div>
           </div>
+
+          <button onClick={() => setPage("masterclass")} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", textAlign:"left", background:"linear-gradient(135deg,#2A2680,#15225A)", border:"none", borderRadius:16, padding:"16px 18px", marginBottom:14, cursor:"pointer", fontFamily:"inherit", color:"white" }}>
+            <span aria-hidden="true" style={{ fontSize:30 }}>🏆</span>
+            <span style={{ flex:1, minWidth:0 }}>
+              <span style={{ display:"block", fontWeight:800, fontSize:16, color:"#E4BF6C" }}>Masterclass</span>
+              <span style={{ display:"block", fontSize:13, lineHeight:1.4, opacity:.9, marginTop:2 }}>Six levels: phrases, Listening and Reading Part 1, Speaking and a pie chart</span>
+            </span>
+            <span aria-hidden="true" style={{ color:"#E4BF6C", fontSize:20 }}>›</span>
+          </button>
 
           <div>
         {mods.map((m, i) => {
@@ -2714,15 +2918,15 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
           const lessonsDone = m.lessons.filter(l => myProgress[l.id]?.quizDone).length;
           const prev = i > 0 ? mods[i-1] : null;
           const canUnlockHere = !unlocked && prev && moduleComplete(prev) && !hasReflection(prev);
-          const accent = complete ? "#1E7A4F" : unlocked ? "#5F4FD9" : "#94a3b8";
+          const accent = complete ? "#C9973A" : unlocked ? "#2A2680" : "#A9A3DA";
           return (
-            <div key={m.id} style={{ background:"white", border:"1px solid #e5e7eb", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
+            <div key={m.id} style={{ background:"white", border:"1px solid #E4E1F8", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
               {/* unit header */}
-              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderLeft:`4px solid ${accent}`, background:"#f8fafc" }}>
-                <div style={{ width:30, height:30, borderRadius:8, background:accent, color:"white", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{complete?"✓":unlocked?(i+1):"🔒"}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderLeft:`4px solid ${accent}`, background:"#F1EFFC" }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:accent, color:complete?"#15225A":"white", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{complete?"✓":unlocked?(i+1):"🔒"}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:800, fontSize:14, color:"#111827", lineHeight:1.3 }}>{m.title}</div>
-                  <div style={{ fontSize:11.5, color: complete?"#1E7A4F":"#6b7280", marginTop:2, fontWeight:600 }}>
+                  <div style={{ fontWeight:800, fontSize:14, color:"#15225A", lineHeight:1.3 }}>{m.title}</div>
+                  <div style={{ fontSize:11.5, color: complete?"#8A6414":"#5D5A8C", marginTop:2, fontWeight:600 }}>
                     {unlocked ? `${lessonsDone}/${m.lessons.length} Completed`
                       : canUnlockHere ? "🔓 Открой mock-тестом предыдущего модуля"
                       : "🔒 Заблокировано"}
@@ -2737,31 +2941,31 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
                 const ld = !!lp.quizDone;
                 return (
                   <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #f1f3f5", cursor:"pointer" }}>
-                    <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#1E7A4F":"#c0c7d0" }}>{ld ? "✓" : "📄"}</span>
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #E4E1F8", cursor:"pointer" }}>
+                    <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#C9973A":"#A9A3DA" }}>{ld ? "✓" : "📄"}</span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:600, fontSize:13.5, color:"#111827", lineHeight:1.35 }}>{l.n ? `Lesson ${l.n}: ` : ""}{cleanTitle(l.title)}</div>
-                      <div style={{ fontSize:11, color: ld?"#1E7A4F":"#9aa3b2", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
+                      <div style={{ fontWeight:600, fontSize:13.5, color:"#15225A", lineHeight:1.35 }}>{l.n ? `Lesson ${l.n}: ` : ""}{cleanTitle(l.title)}</div>
+                      <div style={{ fontSize:11, color: ld?"#8A6414":"#5D5A8C", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
                     </div>
-                    <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
+                    <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:l.tag==="Mock"||l.tag==="Final"?"#C9973A":"#2A2680", color:l.tag==="Mock"||l.tag==="Final"?"#15225A":"white", fontWeight:700, flexShrink:0 }}>{l.tag}</span>
                   </div>
                 );
               })}
 
               {/* unlock CTA for the next module */}
               {!unlocked && canUnlockHere && (
-                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5" }}>
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #E4E1F8" }}>
                   <button onClick={() => { setReflectMod(prev); setRBand(reflections[prev.id]?.band || 6.5); }}
-                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Пройти mock-тест и открыть</button>
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#C9973A", color:"#15225A", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Пройти mock-тест и открыть</button>
                 </div>
               )}
 
               {/* reflection gate */}
               {unlocked && complete && !reflected && (
-                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5", background:"#fff8ec" }}>
-                  <div style={{ fontSize:12.5, color:"#8a5a12", fontWeight:600, marginBottom:8 }}>🛬 Модуль пройден! Запиши mock-балл + короткий отзыв, чтобы открыть следующий.</div>
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #E4E1F8", background:"#FBF5E6" }}>
+                  <div style={{ fontSize:12.5, color:"#6F5010", fontWeight:600, marginBottom:8 }}>🛬 Модуль пройден! Запиши mock-балл + короткий отзыв, чтобы открыть следующий.</div>
                   <button onClick={() => { setReflectMod(m); setRBand(reflections[m.id]?.band || 6.5); }}
-                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Добавить балл и отзыв</button>
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#C9973A", color:"#15225A", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Добавить балл и отзыв</button>
                 </div>
               )}
             </div>
@@ -2771,12 +2975,12 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
         {/* ── FINISH / REWARD cloud ── */}
         <div style={{ display:"flex", gap:14, alignItems:"stretch" }}>
           <div style={{ width:42, display:"flex", justifyContent:"center" }}>
-            <div style={{ width:42, height:42, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, background: allDone?"#B8860B":"#94a3b8", boxShadow:`0 4px 12px ${(allDone?"#B8860B":"#94a3b8")}55`, border:"3px solid white" }}>🏆</div>
+            <div style={{ width:42, height:42, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, background: allDone?"#C9973A":"#A9A3DA", boxShadow:`0 4px 12px ${(allDone?"#C9973A":"#A9A3DA")}55`, border:"3px solid white" }}>🏆</div>
           </div>
           <div onClick={() => allDone && setRewardOpen(true)}
             style={{ flex:1, borderRadius:22, padding:"16px 18px", cursor: allDone?"pointer":"default",
-              background: allDone ? "linear-gradient(135deg,#5F4FD9,#0d2540)" : "#f1f5f9", color: allDone?"white":"#64748b",
-              boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #cbd5e1" }}>
+              background: allDone ? "linear-gradient(135deg,#2A2680,#15225A)" : "#F1EFFC", color: allDone?"white":"#5D5A8C",
+              boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #B6AFF0" }}>
             <div style={{ fontWeight:800, fontSize:15 }}>{cert ? "🎓 Certificate received!" : "🏆 Finish line — your reward"}</div>
             <div style={{ fontSize:12, opacity:0.85, marginTop:4 }}>
               {cert ? `Your IELTS: Band ${fmtBand(cert.band)} · target was Band ${fmtBand(meta.goal)}. Tap to see admissions →`
@@ -2904,6 +3108,74 @@ function embedSrc(url) {
   return u; // direct PDF or any framable page
 }
 
+// Teacher tool: one row per lesson for its video link. A lesson's first video is step 1 on the platform.
+function LessonVideosPanel({ modules }) {
+  const lessons = (modules || []).flatMap(m => m.lessons).filter(l => !isMock(l));
+  const initial = (l) => ((l.materials || []).find(m => m.type === "video") || {}).url || "";
+  const [open, setOpen] = useState(false);
+  const [edits, setEdits] = useState({});
+  const [stored, setStored] = useState({});
+  const [busy, setBusy] = useState(null);
+  const [note, setNote] = useState({});
+  const current = (l) => stored[l.id] ?? initial(l);
+  const shown = (l) => edits[l.id] ?? current(l);
+  const withVideo = lessons.filter(l => current(l)).length;
+
+  const save = async (l) => {
+    const url = shown(l).trim();
+    if (url && !/^https?:\/\//i.test(url)) { setNote(n => ({ ...n, [l.id]: "Paste the full link, starting with https://" })); return; }
+    setBusy(l.id);
+    try {
+      const mats = (await FB.getLessonMaterials(l.id)) || [];
+      const i = mats.findIndex(m => m.type === "video");
+      const old = i >= 0 ? mats[i] : null;
+      let next;
+      if (!url) next = mats.filter((_, k) => k !== i);
+      else if (old) next = mats.map((m, k) => { if (k !== i) return m; const { storagePath, ...rest } = m; return { ...rest, url }; });
+      else next = [{ type:"video", section:"topic", url, title:"Lesson video", text:"", id:Date.now() }, ...mats];
+      await FB.setLessonMaterials(l.id, next);
+      if (old && old.storagePath) await FB.deleteLessonFile(old.storagePath).catch(() => {});
+      setStored(st => ({ ...st, [l.id]: url }));
+      setEdits(ed => { const { [l.id]: gone, ...rest } = ed; return rest; });
+      setNote(n => ({ ...n, [l.id]: !url ? "Removed." : youtubeId(url) ? "Saved. YouTube video." : "Saved. This is not a YouTube link, so the questions will show under the video." }));
+    } catch (e) { setNote(n => ({ ...n, [l.id]: "Could not save: " + e.message })); }
+    setBusy(null);
+  };
+
+  return (
+    <div style={{ background:"white", borderRadius:10, border:"1px solid #e5e5e5", overflow:"hidden", marginBottom:14 }}>
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={{ display:"flex", width:"100%", alignItems:"center", gap:10, padding:"12px 14px", border:"none", background:"white", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+        <span style={{ fontWeight:700, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666", flex:1 }}>🎬 Lesson videos</span>
+        <span style={{ fontSize:12, fontWeight:700, color:withVideo === lessons.length && lessons.length ? "#1E7A4F" : "#666" }}>{withVideo} of {lessons.length} lessons</span>
+        <span aria-hidden="true" style={{ color:"#888" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding:"0 14px 14px", borderTop:"1px solid #e5e5e5" }}>
+          <p style={{ fontSize:12.5, color:"#666", lineHeight:1.5, margin:"10px 0 12px" }}>Paste the YouTube link for each lesson. The video becomes step 1, and it stops for three questions. In YouTube Studio set the video to <b>Unlisted</b> or <b>Public</b> and keep <b>Allow embedding</b> turned on. Clear the box and press Save to remove a video.</p>
+          {lessons.map(l => {
+            const has = !!current(l);
+            const dirty = shown(l).trim() !== current(l);
+            return (
+              <div key={l.id} style={{ padding:"8px 0", borderTop:"1px solid #f1f3f5" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#111827", marginBottom:5 }}>
+                  <span aria-hidden="true" style={{ color:has ? "#1E7A4F" : "#c0c7d0" }}>{has ? "✓ " : "○ "}</span>
+                  Lesson {l.n}: {cleanTitle(l.title)}
+                </div>
+                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                  <input value={shown(l)} onChange={e => setEdits(ed => ({ ...ed, [l.id]: e.target.value }))} placeholder="https://youtu.be/..." aria-label={`Video link for lesson ${l.n}`}
+                    style={{ flex:1, minWidth:200, padding:"8px 10px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
+                  <button onClick={() => save(l)} disabled={busy === l.id || !dirty} style={{ padding:"8px 16px", borderRadius:8, border:"none", fontWeight:700, fontSize:13, background:dirty ? "#5F4FD9" : "#E7E6F0", color:dirty ? "white" : "#8B8AA6", cursor:dirty ? "pointer" : "default" }}>{busy === l.id ? "Saving..." : "Save"}</button>
+                </div>
+                {note[l.id] && <div style={{ fontSize:12, color:note[l.id].startsWith("Could not") || note[l.id].startsWith("Paste") ? "#B3261E" : "#1E7A4F", marginTop:4 }}>{note[l.id]}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const YT_API = { promise: null };
 function loadYouTubeApi() {
   if (YT_API.promise) return YT_API.promise;
@@ -2924,7 +3196,10 @@ const isVideoFile = (mat) => !!mat.storagePath || /\.(mp4|webm|mov|m4v|ogv)(\?|$
 function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
   const yt = youtubeId(mat.url);
   const file = isVideoFile(mat);
-  const controllable = !!(yt || file);
+  // A YouTube video that cannot be embedded (private, embedding turned off, removed) must not trap the student:
+  // its questions then sit under the player, like those of other hosts.
+  const [ytFailed, setYtFailed] = useState(false);
+  const controllable = !!((yt && !ytFailed) || file);
   const [answers, setAnswers] = useState({});
   const [pending, setPending] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -2945,10 +3220,15 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
         play: () => videoRef.current?.play().catch(() => {}),
         seek: (t) => { if (videoRef.current) videoRef.current.currentTime = t; },
       };
-    } else if (yt) {
+    } else if (yt && !ytFailed) {
       loadYouTubeApi().then(YT => {
         if (dead || !ytBox.current) return;
-        const p = new YT.Player(ytBox.current, { videoId: yt, width:"100%", height:"100%", playerVars:{ rel:0, fs:0, modestbranding:1 } });
+        // playsinline keeps the video on the page on iPhone, so the questions can still appear over it.
+        const p = new YT.Player(ytBox.current, {
+          videoId: yt, width:"100%", height:"100%",
+          playerVars:{ rel:0, fs:0, modestbranding:1, playsinline:1 },
+          events:{ onError: (e) => { if (!dead && [2, 100, 101, 150, 153].includes(e.data)) setYtFailed(true); } },
+        });
         player.current = {
           time: () => p.getCurrentTime?.() || 0,
           duration: () => p.getDuration?.() || 0,
@@ -2960,7 +3240,7 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
       });
     }
     return () => { dead = true; player.current = null; };
-  }, [file, yt]);
+  }, [file, yt, ytFailed]);
 
   // Questions sit at even points through the video; skipping ahead returns to the first unanswered one.
   useEffect(() => {
@@ -2990,8 +3270,15 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
     <div>
       <div style={{ position:"relative", aspectRatio:"16 / 9", background:"#100E35", borderRadius:16, overflow:"hidden" }}>
         {file && <video ref={videoRef} src={mat.url} controls controlsList="nofullscreen nodownload" playsInline style={{ width:"100%", height:"100%", display:"block" }} />}
-        {yt && <div style={{ width:"100%", height:"100%" }}><div ref={ytBox} /></div>}
-        {!controllable && <iframe title={mat.title||"Lesson video"} src={embedSrc(mat.url)} allowFullScreen frameBorder="0" style={{ width:"100%", height:"100%", display:"block" }} />}
+        {yt && !ytFailed && <div style={{ width:"100%", height:"100%" }}><div ref={ytBox} /></div>}
+        {yt && ytFailed && (
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:20, textAlign:"center", color:"white" }}>
+            <div style={{ fontSize:15, fontWeight:700 }}>This video cannot play on this page.</div>
+            <a href={`https://www.youtube.com/watch?v=${yt}`} target="_blank" rel="noreferrer" style={{ background:"#C9973A", color:"#15225A", padding:"10px 18px", borderRadius:12, fontWeight:800, textDecoration:"none" }}>Watch on YouTube</a>
+            <div style={{ fontSize:13, opacity:.85 }}>Then answer the questions below.</div>
+          </div>
+        )}
+        {!controllable && !yt && <iframe title={mat.title||"Lesson video"} src={embedSrc(mat.url)} allowFullScreen frameBorder="0" style={{ width:"100%", height:"100%", display:"block" }} />}
         {open && (
           <div style={{ position:"absolute", inset:0, background:"rgba(16,14,53,.88)", display:"flex", alignItems:"center", justifyContent:"center", padding:14, overflowY:"auto" }}>
             <div style={{ background:"white", borderRadius:16, padding:"16px 18px", width:"100%", maxWidth:520, margin:"auto" }}>
@@ -3056,6 +3343,34 @@ function DeckStep({ lesson, saved, canSubmit, onSubmit }) {
         </div>
         {!saved && canSubmit && <SubmitBtn disabled={!reachedEnd || saving} onClick={submit}>{saving ? "Submitting..." : "Submit presentation"}</SubmitBtn>}
       </div>
+    </div>
+  );
+}
+
+// The author's own decks, shown next to a lesson's main deck. They are optional and do not count towards the step.
+const EXTRA_DECKS = {
+  "1-1": [{ file:"b1-c1-idioms-sentences", title:"B1 to C1: idioms and sentences" }],
+  "1-4": [{ file:"writing-5-to-6", title:"5.0 to 6.0: Task 2 grammar, vocabulary and topics" }],
+  "1-5": [{ file:"b1-c1-phrases-idioms", title:"B1 to C1: phrases, idioms and speaking grammar" }],
+  "3-2": [{ file:"describing-a-person", title:"Describing a person" }],
+};
+
+function ExtraDecks({ decks }) {
+  const [open, setOpen] = useState(null);
+  return (
+    <div style={{ marginTop:18, borderTop:"1px solid #ECEBF3", paddingTop:14 }}>
+      <div style={{ fontWeight:800, fontSize:15, marginBottom:8 }}>Extra presentations</div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {decks.map(d => (
+          <button key={d.file} aria-pressed={open===d.file} onClick={() => setOpen(open===d.file ? null : d.file)} style={{ padding:"8px 14px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, background:open===d.file?"#5F4FD9":"#F1EFFC", color:open===d.file?"white":"#14123F" }}>{d.title}</button>
+        ))}
+      </div>
+      {open && (
+        <div style={{ marginTop:12 }}>
+          <iframe key={open} title={decks.find(d => d.file===open).title} src={`/decks/extra/${open}.html`} allowFullScreen frameBorder="0" style={{ width:"100%", aspectRatio:"16 / 10", display:"block", borderRadius:16, background:"#100E35" }} />
+          <a href={`/decks/extra/${open}.html`} target="_blank" rel="noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:13, color:"#5F4FD9", fontWeight:700 }}>Open in a new tab</a>
+        </div>
+      )}
     </div>
   );
 }
@@ -3264,7 +3579,10 @@ function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractic
             onSubmit={(correct, count) => submitStep("video", { correct, count }, correct * VIDEO_POINTS)} />
         )}
         {loaded && current==="slides" && (
-          <DeckStep lesson={lesson} saved={stepsDone.slides} canSubmit={!isAdmin} onSubmit={() => submitStep("slides", {}, SLIDES_POINTS)} />
+          <>
+            <DeckStep lesson={lesson} saved={stepsDone.slides} canSubmit={!isAdmin} onSubmit={() => submitStep("slides", {}, SLIDES_POINTS)} />
+            {EXTRA_DECKS[lesson.id] && <ExtraDecks decks={EXTRA_DECKS[lesson.id]} />}
+          </>
         )}
         {loaded && current==="test" && (
           <div style={{ padding:"10px 6px" }}>
@@ -3948,6 +4266,9 @@ export default function App() {
 
   const isAdmin = session.email === ADMIN_EMAIL;
 
+  // Masterclass students see nothing else.
+  if (session.masterclassOnly || page === "masterclass") return <MasterclassPage session={session} onBack={session.masterclassOnly ? null : () => setPage("courses")} logout={logout} />;
+
   // Full-screen pages, without the sidebar
   if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />;
   if (page === "practice" && currentLesson && practice) return <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} practice={practice} />;
@@ -3963,6 +4284,8 @@ export default function App() {
     page === "leaderboard" ? <Leaderboard session={session} setPage={setPage} /> :
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
+    page === "daily" ? <DailyPage /> :
+    page === "workbook" ? <WorkbookPage key={session.email} email={session.email} name={session.name} store={{ load: () => FB.getWorkbook(session.email), save: (w) => FB.setWorkbook(session.email, w) }} /> :
     page === "discussion" ? <DiscussionPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
     page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} openLesson={(id) => setCurrentLesson(modules.flatMap(m => m.lessons).find(l => l.id === id))} openPractice={(p) => { setPractice(p); setPage("practice"); }} /> :
