@@ -1,0 +1,426 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Describing a Person</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap">
+<style>
+/* Layout: fixed 1920x1080 stage scaled to the window, indigo slides, geometric arches and rings at the edges, controls in a bottom bar. */
+:root{
+  --indigo:#2A2680; --indigo-2:#221F6E; --navy:#15225A; --lav:#B6AFF0; --gold:#C9973A; --gold-2:#E4BF6C;
+  --ink:#FFFFFF; --soft:#D9D5FA; --muted:#A9A3DA; --line:rgba(214,208,255,.16); --card:rgba(21,34,90,.55);
+  --bad:#F2999B; --good:#E4BF6C; --ground:#100E35; --bar:rgba(16,14,53,.92);
+  --font:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);overflow:hidden}
+#deck{position:fixed;inset:0 0 calc(64px + env(safe-area-inset-bottom,0px)) 0;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale(var(--k,.5));transform-origin:50% 50%;overflow:hidden;border-radius:4px;box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.slide{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 82% 12%,#3B36A3 0,rgba(59,54,163,0) 46%),radial-gradient(circle at 8% 100%,#211D6B 0,rgba(33,29,107,0) 40%),var(--indigo)}
+.slide *{box-sizing:border-box}
+.slide h1,.slide h2,.slide p{margin:0}
+.decor{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.pad{position:absolute;inset:80px 128px 120px 128px;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:52px}
+.h2{font-size:86px;font-weight:800;line-height:1.05;letter-spacing:-.02em;text-wrap:balance;max-width:1500px}
+.h2 em{font-style:normal;color:var(--gold-2)}
+.lead{font-size:36px;line-height:1.4;color:var(--soft);max-width:1300px}
+.foot{position:absolute;left:128px;right:128px;bottom:44px;z-index:1;display:flex;justify-content:space-between;align-items:center;font-size:21px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+.foot b{color:var(--gold-2);font-weight:700}
+
+/* entrance animation */
+.a{opacity:0;transform:translateY(26px)}
+.slide.on .a{animation:up .7s cubic-bezier(.2,.75,.25,1) forwards;animation-delay:calc(var(--d,0) * 110ms + 120ms)}
+@keyframes up{to{opacity:1;transform:none}}
+.slide.on .draw{stroke-dasharray:1600;stroke-dashoffset:1600;animation:draw 1.8s ease forwards .1s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.slide.on .spin{transform-origin:center;transform-box:fill-box;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* idiom rows */
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:70px 600px 1fr;gap:28px;align-items:baseline;padding:28px 0;border-top:1px solid var(--line)}
+.row:last-child{border-bottom:1px solid var(--line)}
+.num{font-size:38px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.idm{font-size:46px;font-weight:700;line-height:1.15}
+.ex{font-size:35px;line-height:1.38;color:var(--soft)}
+.ex b,.hl{color:var(--gold-2);font-weight:700}
+
+.card{background:var(--card);border:1px solid rgba(182,175,240,.24);border-radius:28px;padding:36px 40px;display:flex;flex-direction:column;gap:16px}
+.ctag{font-size:24px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-2)}
+.ctxt{font-size:35px;line-height:1.42;color:var(--ink)}
+.cnote{font-size:29px;line-height:1.4;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:86px;height:50px;padding:0 18px;border-radius:999px;background:var(--gold);color:#1A1446;font-weight:800;font-size:25px;letter-spacing:.02em}
+.chip.l{background:transparent;border:2px solid var(--lav);color:var(--lav)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.gap{display:inline-block;min-width:170px;border-bottom:4px solid var(--gold-2);margin:0 6px}
+.ladder{display:flex;flex-direction:column;gap:22px}
+.step{display:grid;grid-template-columns:110px 1fr 380px;gap:32px;align-items:center;padding:26px 34px;border-radius:24px;background:var(--card);border:1px solid rgba(182,175,240,.18)}
+.step .ctxt{font-size:38px}
+.why{font-size:27px;line-height:1.35;color:var(--muted)}
+.bad{color:var(--bad)} .good{color:var(--good)}
+.mark{font-weight:800;margin-right:12px}
+
+/* reading: sentence anatomy */
+.anat{font-size:52px;line-height:1.55;font-weight:600}
+.slide.on .anat .x{animation:dim .8s ease forwards 1.9s}
+.slide.on .anat .core{animation:core .8s ease forwards 1.9s}
+@keyframes dim{to{opacity:.32}}
+@keyframes core{to{color:var(--gold-2)}}
+
+/* cover */
+.cover-logo{position:absolute;left:128px;top:120px;display:flex;align-items:center;gap:28px;z-index:1}
+.cover-logo span{font-size:54px;font-weight:800;letter-spacing:.12em}
+.slide.on .logo8 circle{stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.6s ease forwards}
+.slide.on .logo8 circle:nth-child(2){animation-delay:.5s}
+.slide.on .logo-word{animation:up .8s ease forwards 1.1s}
+.logo-word{opacity:0;transform:translateY(20px)}
+.cover-title{position:absolute;left:128px;top:370px;z-index:1;display:flex;flex-direction:column;gap:30px;max-width:1300px}
+.cover-title h1{font-size:150px;font-weight:800;line-height:.98;letter-spacing:-.035em}
+.cover-title h1 i{font-style:normal;color:var(--gold-2)}
+.cover-title p{font-size:38px;line-height:1.35;color:var(--soft);max-width:1100px}
+
+/* checklist */
+.check{display:flex;flex-direction:column;gap:20px}
+.ci{display:grid;grid-template-columns:90px 1fr;gap:30px;align-items:center;font-size:44px;font-weight:600;line-height:1.25}
+.ci .n{width:70px;height:70px;border-radius:50%;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:var(--gold-2)}
+.slide.on .ci{animation:slidein .7s cubic-bezier(.2,.75,.25,1) forwards;animation-delay:calc(var(--d) * 380ms + 300ms)}
+.ci{opacity:0;transform:translateX(-40px)}
+@keyframes slidein{to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .a,.ci,.logo-word{opacity:1!important;transform:none!important;animation:none!important}
+  .slide.on .draw,.slide.on .logo8 circle{animation:none;stroke-dashoffset:0}
+  .slide.on .spin{animation:none}
+}
+
+/* bottom bar */
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:12px;height:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bar);border-top:1px solid var(--line);backdrop-filter:blur(10px)}
+#name{flex:1;min-width:0;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+#count b{color:var(--ink)}
+.btn{appearance:none;border:1px solid var(--line);background:#1C1950;color:var(--ink);font:inherit;font-size:14px;font-weight:600;height:36px;min-width:36px;padding:0 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.btn:hover{background:#26226A}
+.btn:focus-visible{outline:2px solid var(--gold-2);outline-offset:2px}
+.btn:disabled{opacity:.35;cursor:default}
+#prog{position:fixed;left:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));height:3px;background:var(--gold);z-index:6;width:0;transition:width .3s ease}
+</style>
+
+<div id="deck"><div id="stage">
+
+<!-- 1 cover -->
+<section class="slide" data-name="Cover" data-decor="cover">
+  <div class="cover-logo">
+    <svg class="logo8" width="96" height="140" viewBox="0 0 96 140" aria-hidden="true">
+      <circle cx="48" cy="38" r="30" fill="none" stroke="#C9973A" stroke-width="9"/>
+      <circle cx="48" cy="100" r="34" fill="none" stroke="#B6AFF0" stroke-width="9"/>
+    </svg>
+    <span class="logo-word">IELTS<b style="color:var(--gold-2)">8</b></span>
+  </div>
+  <div class="cover-title">
+    <h1 class="a" style="--d:6">Describing<br>a <i>person</i></h1>
+    <p class="a" style="--d:8">Appearance, personality and relationships: the language you need to talk about people at B1 to B2</p>
+  </div>
+  <div class="foot"><span class="a" style="--d:10">Dana Yerlanova · IELTS 8.0 · TESOL</span><span class="a" style="--d:10">ielts8.kz</span></div>
+</section>
+
+<!-- 2 plan -->
+<section class="slide" data-name="Today's plan" data-decor="b">
+  <div class="pad">
+    <h2 class="h2 a">Today's plan</h2>
+    <div class="g2" style="gap:28px 40px">
+      <div class="card a" style="--d:1"><div class="num">1</div><div class="idm">Appearance</div><p class="cnote">Face, hair, build, age and style, with the right word order.</p></div>
+      <div class="card a" style="--d:2"><div class="num">2</div><div class="idm">Personality</div><p class="cnote">Positive and negative adjectives, and how to soften them.</p></div>
+      <div class="card a" style="--d:3"><div class="num">3</div><div class="idm">Relationships</div><p class="cnote">Phrases for family, friends and people you admire.</p></div>
+      <div class="card a" style="--d:4"><div class="num">4</div><div class="idm">Speaking and Writing</div><p class="cnote">A Part 2 plan, a model answer and the mistakes to avoid.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Describing a person</span><b>2 / 15</b></div>
+</section>
+
+<!-- 3 structure -->
+<section class="slide" data-name="Four parts of a description" data-decor="c">
+  <div class="pad">
+    <h2 class="h2 a">A good description <em>has four parts</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1;grid-template-columns:70px 480px 1fr"><span class="num">1</span><span class="idm">Who they are</span><span class="ex">My grandfather is the person I admire most.</span></div>
+      <div class="row a" style="--d:2;grid-template-columns:70px 480px 1fr"><span class="num">2</span><span class="idm">What they look like</span><span class="ex">He is tall, with <b>grey hair</b> and a warm smile.</span></div>
+      <div class="row a" style="--d:3;grid-template-columns:70px 480px 1fr"><span class="num">3</span><span class="idm">What they are like</span><span class="ex">He is <b>patient</b> and always ready to listen.</span></div>
+      <div class="row a" style="--d:4;grid-template-columns:70px 480px 1fr"><span class="num">4</span><span class="idm">Why they matter</span><span class="ex">He taught me that <b>hard work pays off</b>.</span></div>
+    </div>
+    <p class="lead a" style="--d:6">Keep appearance short. Examiners care more about personality and your reasons.</p>
+  </div>
+  <div class="foot"><span>Describing a person</span><b>3 / 15</b></div>
+</section>
+
+<!-- 4 face and hair -->
+<section class="slide" data-name="Appearance: face and hair" data-decor="a">
+  <div class="pad">
+    <h2 class="h2 a">Appearance: <em>face and hair</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1"><span class="num">1</span><span class="idm">shoulder-length hair</span><span class="ex">She has <b>shoulder-length</b>, wavy hair.</span></div>
+      <div class="row a" style="--d:2"><span class="num">2</span><span class="idm">fair / dark</span><span class="ex">He has <b>fair</b> skin and <b>dark</b> eyes.</span></div>
+      <div class="row a" style="--d:3"><span class="num">3</span><span class="idm">an oval face</span><span class="ex">She has <b>an oval face</b> and high cheekbones.</span></div>
+      <div class="row a" style="--d:4"><span class="num">4</span><span class="idm">freckles</span><span class="ex">He has <b>freckles</b> across his nose.</span></div>
+      <div class="row a" style="--d:5"><span class="num">5</span><span class="idm">a short beard</span><span class="ex">My brother has <b>a short beard</b> now.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Appearance</span><b>4 / 15</b></div>
+</section>
+
+<!-- 5 build age style -->
+<section class="slide" data-name="Appearance: build, age and style" data-decor="b">
+  <div class="pad">
+    <h2 class="h2 a">Appearance: <em>build, age and style</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1;grid-template-columns:70px 640px 1fr"><span class="num">1</span><span class="idm">well-built, of medium height</span><span class="ex">He is <b>well-built</b> and <b>of medium height</b>.</span></div>
+      <div class="row a" style="--d:2;grid-template-columns:70px 640px 1fr"><span class="num">2</span><span class="idm">in her early thirties</span><span class="ex">My cousin is <b>in her early thirties</b>.</span></div>
+      <div class="row a" style="--d:3;grid-template-columns:70px 640px 1fr"><span class="num">3</span><span class="idm">casually dressed</span><span class="ex">He is always <b>casually dressed</b>, in jeans and trainers.</span></div>
+      <div class="row a" style="--d:4;grid-template-columns:70px 640px 1fr"><span class="num">4</span><span class="idm">smart, well-groomed</span><span class="ex">My boss is always <b>smart</b> and <b>well-groomed</b>.</span></div>
+      <div class="row a" style="--d:5;grid-template-columns:70px 640px 1fr"><span class="num">5</span><span class="idm">attractive</span><span class="ex">She is not beautiful, but she is very <b>attractive</b>.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Appearance</span><b>5 / 15</b></div>
+</section>
+
+<!-- 6 adjective order -->
+<section class="slide" data-name="Appearance: adjective order" data-decor="c">
+  <div class="pad" style="gap:40px">
+    <h2 class="h2 a">Put adjectives <em>in the right order</em></h2>
+    <div class="card a" style="--d:1;flex-direction:row;align-items:center;gap:22px;flex-wrap:wrap">
+      <span class="chip">opinion</span><span class="ctxt">→</span><span class="chip">size</span><span class="ctxt">→</span><span class="chip">age</span><span class="ctxt">→</span><span class="chip">colour</span><span class="ctxt">→</span><span class="chip">material</span><span class="ctxt">→</span><span class="idm">noun</span>
+    </div>
+    <div class="rows">
+      <div class="row a" style="--d:3;grid-template-columns:70px 1fr"><span class="num">1</span><span class="ex" style="font-size:42px;color:var(--ink)">a <b>lovely little old</b> lady</span></div>
+      <div class="row a" style="--d:4;grid-template-columns:70px 1fr"><span class="num">2</span><span class="ex" style="font-size:42px;color:var(--ink)">a <b>handsome middle-aged</b> man</span></div>
+      <div class="row a" style="--d:5;grid-template-columns:70px 1fr"><span class="num">3</span><span class="ex" style="font-size:42px;color:var(--ink)">She has <b>long dark wavy</b> hair.</span></div>
+    </div>
+    <p class="lead a" style="--d:7">Use two or three adjectives at most. More sounds unnatural.</p>
+  </div>
+  <div class="foot"><span>Appearance</span><b>6 / 15</b></div>
+</section>
+
+<!-- 7 positive personality -->
+<section class="slide" data-name="Personality: positive" data-decor="a">
+  <div class="pad">
+    <h2 class="h2 a">Personality: <em>positive qualities</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1"><span class="num">1</span><span class="idm">easy-going</span><span class="ex">My sister is <b>easy-going</b>, so she never argues.</span></div>
+      <div class="row a" style="--d:2"><span class="num">2</span><span class="idm">reliable</span><span class="ex">He is <b>reliable</b>, so I know he'll arrive on time.</span></div>
+      <div class="row a" style="--d:3"><span class="num">3</span><span class="idm">generous</span><span class="ex">She is <b>generous</b> and always shares her lunch.</span></div>
+      <div class="row a" style="--d:4"><span class="num">4</span><span class="idm">hard-working</span><span class="ex">He is <b>hard-working</b> and rarely takes a day off.</span></div>
+      <div class="row a" style="--d:5"><span class="num">5</span><span class="idm">down-to-earth</span><span class="ex">Despite being famous, she is very <b>down-to-earth</b>.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Personality</span><b>7 / 15</b></div>
+</section>
+
+<!-- 8 negative personality -->
+<section class="slide" data-name="Personality: soften the negative" data-decor="b">
+  <div class="pad">
+    <h2 class="h2 a">Personality: <em>soften the negative</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1"><span class="num">1</span><span class="idm">stubborn</span><span class="ex">He can be <b>a bit</b> stubborn when he is sure he is right.</span></div>
+      <div class="row a" style="--d:2"><span class="num">2</span><span class="idm">moody</span><span class="ex">She <b>tends to</b> be moody in the morning.</span></div>
+      <div class="row a" style="--d:3"><span class="num">3</span><span class="idm">impatient</span><span class="ex">I'm <b>quite</b> impatient with slow service.</span></div>
+      <div class="row a" style="--d:4"><span class="num">4</span><span class="idm">bossy</span><span class="ex">My older brother is <b>a little</b> bossy sometimes.</span></div>
+      <div class="row a" style="--d:5"><span class="num">5</span><span class="idm">reserved</span><span class="ex">He is <b>rather</b> reserved with people he doesn't know.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Personality</span><b>8 / 15</b></div>
+</section>
+
+<!-- 9 show don't tell -->
+<section class="slide" data-name="Personality: add an example" data-decor="c">
+  <div class="pad" style="gap:40px">
+    <h2 class="h2 a">Adjective + <em>example</em></h2>
+    <div class="ladder">
+      <div class="step a" style="--d:1"><span class="chip l">B1</span><p class="ctxt">She is generous.</p><p class="why">An adjective alone</p></div>
+      <div class="step a" style="--d:3"><span class="chip l">B2</span><p class="ctxt">She is generous. She <span class="hl">always pays for the coffee</span>, even when she is short of money.</p><p class="why">A short example proves it</p></div>
+      <div class="step a" style="--d:5"><span class="chip">B2+</span><p class="ctxt">She is <span class="hl">the kind of person who</span> always pays for the coffee, even when she is short of money.</p><p class="why">One smooth sentence</p></div>
+    </div>
+    <p class="lead a" style="--d:7">One adjective with one example is stronger than five adjectives in a row.</p>
+  </div>
+  <div class="foot"><span>Personality</span><b>9 / 15</b></div>
+</section>
+
+<!-- 10 relationships -->
+<section class="slide" data-name="Relationships and feelings" data-decor="a">
+  <div class="pad">
+    <h2 class="h2 a">Relationships <em>and feelings</em></h2>
+    <div class="rows">
+      <div class="row a" style="--d:1"><span class="num">1</span><span class="idm">get on well with</span><span class="ex">I <b>get on well with</b> my cousin.</span></div>
+      <div class="row a" style="--d:2"><span class="num">2</span><span class="idm">have a lot in common</span><span class="ex">We <b>have a lot in common</b>, especially music.</span></div>
+      <div class="row a" style="--d:3"><span class="num">3</span><span class="idm">look up to</span><span class="ex">I really <b>look up to</b> my grandfather.</span></div>
+      <div class="row a" style="--d:4"><span class="num">4</span><span class="idm">take after</span><span class="ex">She <b>takes after</b> her mother in everything.</span></div>
+      <div class="row a" style="--d:5"><span class="num">5</span><span class="idm">keep in touch</span><span class="ex">We <b>keep in touch</b> every week, even though she lives abroad.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Relationships</span><b>10 / 15</b></div>
+</section>
+
+<!-- 11 useful structures -->
+<section class="slide" data-name="Useful structures" data-decor="b">
+  <div class="pad" style="gap:40px">
+    <h2 class="h2 a">Three structures <em>to sound natural</em></h2>
+    <div class="g3">
+      <div class="card a" style="--d:1"><div class="num">1</div><p class="ctxt">He is <span class="hl">the kind of person who</span> never gives up.</p><p class="cnote">Use <b>who</b> for people, not which.</p></div>
+      <div class="card a" style="--d:2"><div class="num">2</div><p class="ctxt">She is <span class="hl">someone I can</span> always rely on.</p><p class="cnote">Short and very common in speaking.</p></div>
+      <div class="card a" style="--d:3"><div class="num">3</div><p class="ctxt"><span class="hl">What I admire most about</span> him is his patience.</p><p class="cnote">Good for your reason in Part 2.</p></div>
+    </div>
+    <p class="lead a" style="--d:6">Use each structure once. Repeating the same one sounds memorised.</p>
+  </div>
+  <div class="foot"><span>Describing a person</span><b>11 / 15</b></div>
+</section>
+
+<!-- 12 speaking part 2 -->
+<section class="slide" data-name="Speaking: Part 2 plan" data-decor="c">
+  <div class="pad" style="gap:40px">
+    <h2 class="h2 a">Speaking <em>Part 2</em></h2>
+    <div class="g2" style="gap:36px;align-items:stretch">
+      <div class="card a" style="--d:1">
+        <p class="idm" style="font-size:42px">Describe a person you admire.</p>
+        <p class="ctxt" style="font-size:33px">You should say:<br>who this person is<br>how you know them<br>what they are like<br>and explain why you admire them.</p>
+      </div>
+      <div class="card a" style="--d:2">
+        <p class="idm" style="font-size:42px">Your two-minute plan</p>
+        <p class="ctxt" style="font-size:33px"><span class="hl">15 sec</span> who they are<br><span class="hl">20 sec</span> what they look like<br><span class="hl">45 sec</span> personality + one example<br><span class="hl">40 sec</span> why you admire them</p>
+      </div>
+    </div>
+    <p class="lead a" style="--d:4">You have one minute to prepare. Write only keywords, not sentences.</p>
+  </div>
+  <div class="foot"><span>Speaking</span><b>12 / 15</b></div>
+</section>
+
+<!-- 13 model answer -->
+<section class="slide" data-name="Speaking: model answer" data-decor="a">
+  <div class="pad" style="gap:34px">
+    <h2 class="h2 a">Model <em>answer</em></h2>
+    <div class="card a" style="--d:1;gap:0">
+      <p class="ctxt" style="font-size:40px;line-height:1.5;color:var(--soft)">I'd like to talk about my grandmother, who is the person I admire most. She is <b>in her early seventies</b>, quite short, with silver hair and a <b>warm smile</b>. <b>What I admire most about her</b> is her determination. She raised four children on her own and still found time to help the neighbours. When I failed my first exam, she told me that mistakes are part of learning, so I should keep going. She is <b>the kind of person who</b> never complains. I really <b>look up to</b> her, and I hope I <b>take after</b> her.</p>
+    </div>
+    <p class="cnote a" style="--d:3;font-size:28px">Appearance takes one sentence. The rest is personality, a real example and the reason.</p>
+  </div>
+  <div class="foot"><span>Speaking</span><b>13 / 15</b></div>
+</section>
+
+<!-- 14 mistakes -->
+<section class="slide" data-name="Common mistakes" data-decor="b">
+  <div class="pad" style="gap:36px">
+    <h2 class="h2 a">Common <em>mistakes</em></h2>
+    <div class="g2" style="gap:28px 36px">
+      <div class="card a" style="--d:1"><p class="ctxt bad"><span class="mark">✗</span>He has 30 years.</p><p class="ctxt good"><span class="mark">✓</span>He is 30 years old.</p></div>
+      <div class="card a" style="--d:2"><p class="ctxt bad"><span class="mark">✗</span>Her hairs are black.</p><p class="ctxt good"><span class="mark">✓</span>Her hair is black.</p></div>
+      <div class="card a" style="--d:3"><p class="ctxt bad"><span class="mark">✗</span>She is very sympathetic.</p><p class="ctxt good"><span class="mark">✓</span>She is very good-looking.</p><p class="cnote">Sympathetic means understanding, not attractive.</p></div>
+      <div class="card a" style="--d:4"><p class="ctxt bad"><span class="mark">✗</span>He looks as his father.</p><p class="ctxt good"><span class="mark">✓</span>He looks like his father.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Describing a person</span><b>14 / 15</b></div>
+</section>
+
+<!-- 15 checklist -->
+<section class="slide" data-name="Your checklist" data-decor="c">
+  <div class="pad" style="gap:44px">
+    <h2 class="h2 a">Your <em>checklist</em></h2>
+    <div class="check">
+      <div class="ci" style="--d:1"><span class="n">1</span><span>Say who the person is and how you know them</span></div>
+      <div class="ci" style="--d:2"><span class="n">2</span><span>Give two or three details about appearance</span></div>
+      <div class="ci" style="--d:3"><span class="n">3</span><span>Choose three personality adjectives, not ten</span></div>
+      <div class="ci" style="--d:4"><span class="n">4</span><span>Add a short example for each adjective</span></div>
+      <div class="ci" style="--d:5"><span class="n">5</span><span>Soften negative words: a bit, tends to, rather</span></div>
+      <div class="ci" style="--d:6"><span class="n">6</span><span>Finish with why this person matters to you</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>Dana Yerlanova · ielts8.kz</span><b>15 / 15</b></div>
+</section>
+
+</div></div>
+
+<div id="prog"></div>
+<nav id="bar" aria-label="Slide controls">
+  <span id="name">Describing a person</span>
+  <button class="btn" id="prev" type="button" aria-label="Previous slide">←</button>
+  <span id="count"><b>1</b> / 15</span>
+  <button class="btn" id="next" type="button" aria-label="Next slide">→</button>
+  <button class="btn" id="full" type="button" aria-label="Full screen">⤢</button>
+</nav>
+
+<script>
+(function(){
+  var NAVY='#15225A', LAV='#B6AFF0', GOLD='#C9973A';
+  var D={
+    a:'<circle cx="1790" cy="120" r="150" fill="'+NAVY+'"/>'+
+      '<circle class="draw" cx="1790" cy="120" r="215" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".55"/>'+
+      '<path class="draw" d="M1560 1080 A 260 260 0 0 1 2080 1080" fill="none" stroke="'+LAV+'" stroke-width="34" opacity=".16"/>'+
+      '<circle cx="1610" cy="300" r="10" fill="'+GOLD+'"/>',
+    b:'<path class="draw" d="M1920 120 A 190 190 0 0 0 1920 500" fill="none" stroke="'+LAV+'" stroke-width="30" opacity=".2"/>'+
+      '<circle cx="1860" cy="1010" r="150" fill="'+NAVY+'"/>'+
+      '<circle class="spin" cx="1860" cy="1010" r="215" fill="none" stroke="'+GOLD+'" stroke-width="3" stroke-dasharray="6 16" opacity=".8"/>'+
+      '<circle cx="1700" cy="70" r="9" fill="'+GOLD+'"/>',
+    c:'<circle cx="1890" cy="80" r="110" fill="'+NAVY+'"/>'+
+      '<path class="draw" d="M1920 640 A 200 200 0 0 0 1920 1040" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".6"/>'+
+      '<path class="draw" d="M1920 700 A 140 140 0 0 0 1920 980" fill="none" stroke="'+GOLD+'" stroke-width="3" opacity=".8"/>'+
+      '<path d="M1920 760 A 80 80 0 0 0 1920 920" fill="'+NAVY+'"/>',
+    cover:'<circle cx="1560" cy="470" r="330" fill="'+NAVY+'"/>'+
+      '<circle class="draw" cx="1560" cy="470" r="420" fill="none" stroke="'+LAV+'" stroke-width="3" opacity=".5"/>'+
+      '<circle class="spin" cx="1560" cy="470" r="490" fill="none" stroke="'+GOLD+'" stroke-width="3" stroke-dasharray="8 20" opacity=".7"/>'+
+      '<path class="draw" d="M1240 1080 A 320 320 0 0 1 1880 1080" fill="none" stroke="'+LAV+'" stroke-width="44" opacity=".18"/>'+
+      '<path d="M1440 470 A 120 120 0 0 1 1680 470 Z" fill="'+GOLD+'" opacity=".9"/>'+
+      '<circle cx="1180" cy="150" r="12" fill="'+GOLD+'"/>'
+  };
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  slides.forEach(function(s){
+    var v=s.getAttribute('data-decor'); if(!D[v]) return;
+    var svg='<svg class="decor" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">'+D[v]+'</svg>';
+    s.insertAdjacentHTML('afterbegin',svg);
+  });
+  var stage=document.getElementById('stage'), deck=document.getElementById('deck');
+  var cnt=document.getElementById('count'), nm=document.getElementById('name'), prog=document.getElementById('prog');
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+  var i=0;
+  function fit(){
+    var w=deck.clientWidth, h=deck.clientHeight;
+    var k=Math.min(w/1920,h/1080)*0.98;
+    stage.style.setProperty('--k',k);
+  }
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,k){ s.hidden=(k!==i); s.classList.toggle('on',k===i); });
+    cnt.innerHTML='<b>'+(i+1)+'</b> / '+slides.length;
+    nm.textContent='Describing a person · '+slides[i].getAttribute('data-name');
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    prev.disabled=(i===0); next.disabled=(i===slides.length-1);
+    try{ history.replaceState(null,'','#s'+(i+1)); }catch(e){}
+  }
+  prev.addEventListener('click',function(){go(i-1)});
+  next.addEventListener('click',function(){go(i+1)});
+  document.getElementById('full').addEventListener('click',function(){
+    try{
+      if(document.fullscreenElement){ document.exitFullscreen(); }
+      else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); }
+    }catch(e){}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1)}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1)}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(slides.length-1)}
+  });
+  stage.addEventListener('click',function(e){
+    var r=stage.getBoundingClientRect();
+    if(e.clientX < r.left + r.width*0.3) go(i-1); else go(i+1);
+  });
+  var tx=null;
+  deck.addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(tx===null) return; var dx=e.changedTouches[0].clientX-tx; tx=null;
+    if(Math.abs(dx)>40) go(dx<0?i+1:i-1);
+  });
+  window.addEventListener('resize',fit);
+  fit();
+  var m=/^#s(\d+)$/.exec(location.hash||'');
+  go(m?parseInt(m[1],10)-1:0);
+})();
+</script>
+
+</body></html>

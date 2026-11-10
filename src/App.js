@@ -2,6 +2,15 @@
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { SKELETONS, LESSON_SKELETON } from "./skeletons";
+import { HOMEWORK, PRACTICE } from "./homework";
+import { DISCUSSION_TOPICS } from "./discussion";
+import WorkbookPage from "./WorkbookPage";
+import DailyPage, { DailyStrip } from "./DailyPage";
+import WordGames from "./WordGames";
+import { LESSON_WORDS } from "./lessonWords";
+import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
+import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -48,7 +57,7 @@ async function resolveSession(user) {
   if (!student) throw new Error("no-access");
   if (student.status === "revoked") throw new Error("revoked");
   await FB.updateStudent(email, { lastLogin: new Date().toISOString() });
-  return { email, role: "student", name: student.name || user.displayName || email };
+  return { email, role: "student", name: student.name || user.displayName || email, masterclassOnly: student.plan === "masterclass" };
 }
 
 // ─── FIRESTORE HELPERS ───
@@ -94,6 +103,14 @@ const FB = {
   },
   setSubmission: async (email, lessonId, data) => {
     await setDoc(doc(db, "submissions", email), { [lessonId]: data }, { merge: true });
+  },
+  // Workbook answers live in the student's submissions document, which only the student and the teacher can read.
+  getWorkbook: async (email) => {
+    const snap = await getDoc(doc(db, "submissions", email));
+    return snap.exists() ? (snap.data().workbook || null) : null;
+  },
+  setWorkbook: async (email, workbook) => {
+    await setDoc(doc(db, "submissions", email), { workbook }, { merge: true });
   },
   // Modules — каждый урок хранится отдельно
   getModules: async () => {
@@ -388,10 +405,10 @@ const INITIAL_MODULES = [
     lessons: [
       {
         id: "1-1", n: 1,
-        title: "Listening — MCQ & Matching Information | Present Simple vs Present Continuous",
-        tag: "Listening", materials: [],
-        quiz: { questions: [{"type":"mc","q":"In the IELTS Listening test, how many sections (parts) are there in total?","options":["2","3","4","5"],"answer":2,"points":10,"img":"headphones"},{"type":"mc","q":"How long do you get at the END of the IELTS Listening test to transfer your answers to the answer sheet (on paper)?","options":["5 minutes","10 minutes","30 seconds","15 minutes"],"answer":1,"points":10,"img":"clock"},{"type":"mc","q":"In a Listening Multiple Choice (MCQ) question, what is the best strategy before the audio starts?","options":["Read the question and underline keywords","Close your eyes and relax","Write random answers first","Read the next section instead"],"answer":0,"points":10,"img":"headphones"},{"type":"mc","q":"In Matching Information tasks, you usually have to match items to a list of options. What is a common trap?","options":["Options may be used more than once or not at all","The audio repeats every answer twice","All options are always used once","The answers appear in alphabetical order"],"answer":0,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Simple.","options":["She is going to school every day.","She goes to school every day.","She go to school every day.","She going to school every day."],"answer":1,"points":10},{"type":"mc","q":"Choose the correct sentence using the Present Continuous.","options":["Look! The train arrives now.","Look! The train is arriving now.","Look! The train arrive now.","Look! The train arriving now."],"answer":1,"points":10,"img":"departureBoard"},{"type":"mc","q":"Which time expression typically signals the Present Simple?","options":["right now","at the moment","usually","Listen!"],"answer":2,"points":10},{"type":"mc","q":"Which time expression typically signals the Present Continuous?","options":["every morning","at the moment","on Mondays","never"],"answer":1,"points":10},{"type":"mc","q":"In MCQ Listening, the speaker often mentions a wrong option first, then corrects it. This technique is called using a:","options":["distractor","synonym chain","filler","false start only"],"answer":0,"points":10,"img":"speechBubble"},{"type":"mc","q":"Complete: 'Water _______ at 100 degrees Celsius.' (a general truth)","options":["is boiling","boils","boil","are boiling"],"answer":1,"points":10},{"type":"mc","q":"Complete: 'Please be quiet — the baby _______.' (action happening now)","options":["sleeps","sleep","is sleeping","slept"],"answer":2,"points":10},{"type":"mc","q":"Which verb is a STATIVE verb that is normally NOT used in the Present Continuous?","options":["run","know","eat","write"],"answer":1,"points":10},{"type":"mc","q":"In Section 1 of the IELTS Listening test, the conversation is usually about a/an:","options":["academic lecture","everyday social situation","group seminar discussion","scientific debate"],"answer":1,"points":10,"img":"headphones"},{"type":"tf","q":"In the IELTS Listening test, you hear each recording only ONCE.","answer":true,"points":10,"img":"headphones"},{"type":"tf","q":"Spelling does not matter in the IELTS Listening test; close spelling is always accepted.","answer":false,"points":10},{"type":"tf","q":"The Present Continuous is used for actions happening at or around the moment of speaking.","answer":true,"points":10},{"type":"tf","q":"Stative verbs such as 'believe', 'love' and 'understand' are commonly used in the Present Continuous.","answer":false,"points":10},{"type":"tf","q":"In Matching Information tasks, the answers always appear in the same order as the audio.","answer":false,"points":10},{"type":"fitb","q":"The Listening question type where you choose the correct option from A, B, C or D is called _______ choice.","answer":"multiple","points":10},{"type":"fitb","q":"We add '-s' or '-es' to the verb in the Present Simple for the third person _______ (he/she/it).","answer":"singular","points":10},{"type":"fitb","q":"Complete with Present Continuous: 'They _______ watching a film right now.' Use the correct form of 'be'.","answer":"are","points":10},{"type":"fitb","q":"A word that has the same meaning as another and is often used in audio to 'paraphrase' the question is a _______.","answer":"synonym","points":10,"img":"speechBubble"},{"type":"fitb","q":"Complete with Present Simple: 'He _______ coffee every morning.' (verb: drink)","answer":"drinks","points":10},{"type":"match","q":"Match each time expression to the correct tense it usually signals","pairs":[["every day","Present Simple"],["right now","Present Continuous"],["once a week","Habitual routine"],["Listen!","Action in progress"]],"points":20},{"type":"match","q":"Match each IELTS Listening feature to its description","pairs":[["Section 1","Everyday conversation"],["Section 4","Academic monologue"],["Distractor","Misleading wrong option"],["Matching task","Link items to a list"]],"points":20,"img":"headphones"}]},
-        assignment: { type: "writing", prompt: "Write 8 sentences about your daily routine using Present Simple, and 5 sentences about what is happening right now using Present Continuous." }
+        title: "Listening Part 1: Form & Note Completion",
+        tag: "Listening", materials: [], mockLink: "mock-1",
+        quiz: { questions: [{"type":"mc","q":"How many questions are there in IELTS Listening Part 1?","options":["5","10","20","40"],"answer":1,"points":10,"img":"headphones"},{"type":"mc","q":"What does Part 1 usually sound like?","options":["An academic lecture","A conversation between two people about an everyday situation","A university seminar","A talk by one speaker on a science topic"],"answer":1,"points":10,"img":"speechBubble"},{"type":"mc","q":"Which task type is most common in Part 1?","options":["Form or note completion","Essay writing","Diagram labelling","Matching headings"],"answer":0,"points":10},{"type":"mc","q":"The instruction says ONE WORD AND/OR A NUMBER. Which answer is allowed?","options":["the green bridge","12 Hill Road","Tuesday","on Tuesday morning"],"answer":2,"points":10},{"type":"mc","q":"What should you do in the time before the audio starts?","options":["Relax and wait","Read the form and predict the type of each answer","Write random answers","Read Part 4"],"answer":1,"points":10,"img":"clock"},{"type":"mc","q":"The gap says: Phone: ___ . What type of answer do you expect?","options":["A name","A number","A date","A place"],"answer":1,"points":10},{"type":"mc","q":"You hear: \"It's on the 5th, sorry, the 15th of May.\" What do you write?","options":["5 May","15 May","5 or 15 May","Nothing"],"answer":1,"points":10},{"type":"mc","q":"You hear: \"H, A, double R, I, S.\" What do you write?","options":["Haris","Harris","Harriss","Hariss"],"answer":1,"points":10},{"type":"mc","q":"In a phone number, speakers often say \"oh\" for:","options":["0","1","8","the letter H only"],"answer":0,"points":10},{"type":"mc","q":"You missed an answer. What should you do?","options":["Stop and think about it","Ask for the audio again","Leave it, follow the next question and guess at the end","Go back to the first question"],"answer":2,"points":10},{"type":"tf","q":"You hear each recording only once in the real test.","answer":true,"points":10},{"type":"tf","q":"Spelling mistakes in a Part 1 answer can lose the mark.","answer":true,"points":10},{"type":"tf","q":"Going over the word limit can lose the mark, even if the idea is correct.","answer":true,"points":10},{"type":"tf","q":"The answers in a Part 1 form usually come in the same order as the audio.","answer":true,"points":10},{"type":"tf","q":"The first number a speaker says is always the correct answer.","answer":false,"points":10},{"type":"fitb","q":"A wrong answer mentioned on purpose to confuse you is called a _______.","answer":"distractor","points":10},{"type":"fitb","q":"Before listening, you try to guess the type of each answer. This skill is called _______.","answer":"predicting","points":10},{"type":"fitb","q":"A speaker spells a name. \"T, T\" can also be said as _______ T.","answer":"double","points":10},{"type":"fitb","q":"Part 1 is the _______ of the four Listening parts.","answer":"easiest","points":10},{"type":"match","q":"Match each gap to the type of answer you expect","pairs":[["Family name: ___","A spelled word"],["Phone: ___","A number"],["Start date: ___","A day and month"],["Fee: £ ___","An amount of money"]],"points":20},{"type":"match","q":"Match each phrase to what it signals","pairs":[["sorry, I mean","A correction"],["double T","Two letters the same"],["in the end","The final decision"],["oh","The number zero"]],"points":20,"img":"headphones"}]},
+        assignment: { type: "writing", prompt: "Listen to the phone call and complete the enrolment form. Write ONE WORD AND/OR A NUMBER for each answer." }
       },
       {
         id: "1-2", n: 2,
@@ -709,9 +726,16 @@ const INITIAL_MODULES = [
 // ─── LESSON STEPS: video, presentation, test, assignment ───
 const VIDEO_POINTS = 5; // per correct in-video question
 const SLIDES_POINTS = 5;
+const WORDS_POINTS = 15;
 const isMock = (lesson) => lesson.tag === "Mock" || lesson.tag === "Final";
 const hasDeck = (lesson) => /^\d+-\d+$/.test(lesson.id);
 const cleanTitle = (s) => (s || "").replace(/\s*[—–]\s*/g, ": ");
+// These lessons were rewritten in code, so the code replaces the copy saved in Firestore. Uploaded materials stay.
+const CODE_LESSONS = ["1-1"];
+const withCodeLessons = (mods) => mods.map(m => ({ ...m, lessons: m.lessons.map(l => {
+  const fresh = CODE_LESSONS.includes(l.id) && INITIAL_MODULES.flatMap(x => x.lessons).find(x => x.id === l.id);
+  return fresh ? { ...fresh, materials: l.materials } : l;
+}) }));
 // Three questions spread across the lesson's bank pause the video; the rest make up the test.
 function videoQuestions(lesson) {
   if (isMock(lesson)) return [];
@@ -725,7 +749,7 @@ function testQuestions(lesson) {
 }
 const normAnswer = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 function isCorrect(q, a) {
-  if (q.type === "fitb") return normAnswer(a) === normAnswer(q.answer);
+  if (q.type === "fitb") return [q.answer, ...(q.alt || [])].some(x => normAnswer(a) === normAnswer(x));
   if (q.type === "match") return !!a && q.pairs.every(([k, v]) => a[k] === v);
   return a === q.answer;
 }
@@ -741,7 +765,7 @@ async function saveStep(email, lessonId, key, data, gain = 0) {
 const assignmentDone = (lesson, lp, submission) => {
   if (lp.assignmentDone) return true;
   if (!submission) return false;
-  return lesson.assignment.type === "writing" ? !!submission.text : !!submission.rubric;
+  return lesson.assignment.type === "writing" ? !!submission.text : !!(submission.rubric || submission.ai);
 };
 
 // One answer control, shared by the in-video questions and the test.
@@ -913,6 +937,8 @@ function AssignmentPage({ lesson, session, setPage }) {
   const [notes, setNotes] = useState("");
   const [previous, setPrevious] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const skeleton = skeletonOf(lesson);
 
   // Load existing submission + restore timer
   useEffect(() => {
@@ -922,7 +948,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       const prior = s[lesson.id];
       if (prior) {
         setPrevious(prior);
-        if (prior.rubric || (!useRubric && prior.text)) { setStage("done"); return; }
+        if (prior.ai || prior.rubric || (!useRubric && prior.text)) { setStage("done"); return; }
         if (prior.text) setText(prior.text);
       }
       if (useTimer) {
@@ -965,7 +991,25 @@ function AssignmentPage({ lesson, session, setPage }) {
         startedAt: startedAt ? new Date(startedAt).toISOString() : null,
         submittedAt: new Date().toISOString(),
       });
-      if (!useRubric) {
+      if (useRubric) {
+        // The AI gives the band; if it can't be reached, the student grades themselves instead.
+        setStage("checking");
+        setAiError("");
+        try {
+          const ai = await requestAiCheck({ type: aType, prompt: lesson.assignment.prompt, text, skeleton: skeletonOutline(skeleton) });
+          const sub = { text, type: aType, startedAt: startedAt ? new Date(startedAt).toISOString() : null, submittedAt: new Date().toISOString(), ai };
+          await FB.setSubmission(session.email, lesson.id, sub);
+          const existing = await FB.getProgress(session.email);
+          const prev = existing[lesson.id] || {};
+          await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + (prev.assignmentDone ? 0 : 20) } });
+          if (useTimer) localStorage.removeItem(timerKey);
+          setPrevious(sub);
+          setStage("done");
+        } catch (e) {
+          setAiError(e.message);
+          setStage("rubric");
+        }
+      } else {
         const existing = await FB.getProgress(session.email);
         const prev = existing[lesson.id] || {};
         await FB.setProgress(session.email, {
@@ -974,8 +1018,6 @@ function AssignmentPage({ lesson, session, setPage }) {
         if (useTimer) localStorage.removeItem(timerKey);
         setPrevious({ text, type: aType, submittedAt: new Date().toISOString() });
         setStage("done");
-      } else {
-        setStage("rubric");
       }
     } finally { setSaving(false); }
   };
@@ -1000,7 +1042,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       const existing = await FB.getProgress(session.email);
       const prev = existing[lesson.id] || {};
       await FB.setProgress(session.email, {
-        [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + 20 }
+        [lesson.id]: { ...prev, assignmentDone: true, points: (prev.points || 0) + (prev.assignmentDone ? 0 : 20) }
       });
       if (useTimer) localStorage.removeItem(timerKey);
       setPrevious(sub);
@@ -1031,7 +1073,7 @@ function AssignmentPage({ lesson, session, setPage }) {
     <div style={{ minHeight:"100vh", background:"#fafafa", fontFamily:"inherit" }}>
       <div style={{ background:"white", borderBottom:"1px solid #e5e5e5", padding:"10px 14px", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0, zIndex:50 }}>
         <button onClick={() => setPage("lesson")} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", background:"white", color:"#0a0a0a", cursor:"pointer", fontWeight:600, fontSize:12, flexShrink:0 }}>← Back</button>
-        <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {lesson.title}</div>
+        <div style={{ fontWeight:700, fontSize:13, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Assignment · {cleanTitle(lesson.title)}</div>
         {stage === "writing" && useTimer && startedAt && (
           <div style={{ flexShrink:0, padding:"4px 10px", borderRadius:999, background: timesUp ? "#0a0a0a" : (lowTime ? "#0a0a0a" : "#f4f4f4"), color: (timesUp || lowTime) ? "white" : "#0a0a0a", fontWeight:800, fontSize:12, fontVariantNumeric:"tabular-nums", letterSpacing:"0.5px" }}>
             {timesUp ? "TIME'S UP" : fmtTime(remaining)}
@@ -1042,7 +1084,7 @@ function AssignmentPage({ lesson, session, setPage }) {
       <div style={{ maxWidth:700, margin:"0 auto", padding:"14px" }}>
         <div style={{ background:"white", borderRadius:10, padding:"14px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
           <div style={{ fontWeight:700, marginBottom:8, fontSize:11, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Task</div>
-          <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{lesson.assignment.prompt}</div>
+          <div style={{ color:"#0a0a0a", lineHeight:1.6, whiteSpace:"pre-line", fontSize:13.5 }}>{cleanTitle(lesson.assignment.prompt)}</div>
         </div>
 
         {/* INTRO — start the 1h timer for essays */}
@@ -1051,10 +1093,23 @@ function AssignmentPage({ lesson, session, setPage }) {
             <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:6 }}>Ready to start?</div>
             <div style={{ fontSize:12.5, color:"#666", lineHeight:1.55, marginBottom:12 }}>
               You'll have <b>60 minutes</b> to write your essay (recommended: at least {minWords} words).
-              The timer keeps running even if you reload the page. After submitting, you'll grade yourself
-              with the IELTS band rubric.
+              The timer keeps running even if you reload the page. After you submit, AI gives you an estimated
+              band and checks your vocabulary.
             </div>
             <button onClick={startWork} style={{ width:"100%", padding:12, borderRadius:8, border:"1px solid #0a0a0a", background:"#0a0a0a", color:"white", fontWeight:700, fontSize:13, cursor:"pointer", letterSpacing:"0.2px" }}>Start · 60:00</button>
+          </div>
+        )}
+
+        {skeleton && (stage === "intro" || stage === "writing") && (
+          <details open style={{ background:"white", borderRadius:10, padding:"12px 16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            <summary style={{ cursor:"pointer", fontWeight:800, fontSize:13, marginBottom:8 }}>Essay skeleton</summary>
+            <SkeletonCard sk={skeleton} />
+          </details>
+        )}
+
+        {stage === "checking" && (
+          <div role="status" style={{ background:"white", borderRadius:10, padding:"30px 16px", marginBottom:12, border:"1px solid #e5e5e5", textAlign:"center", fontWeight:700 }}>
+            AI is checking your work. This can take up to a minute.
           </div>
         )}
 
@@ -1077,7 +1132,7 @@ function AssignmentPage({ lesson, session, setPage }) {
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
               <button onClick={submitText} disabled={!canSubmitText}
                 style={{ padding:"10px 18px", borderRadius:8, border:"1px solid #0a0a0a", background: canSubmitText ? "#0a0a0a" : "#e5e5e5", color: canSubmitText ? "white" : "#888", fontWeight:700, fontSize:13, cursor: canSubmitText ? "pointer" : "not-allowed", borderColor: canSubmitText ? "#0a0a0a" : "#e5e5e5" }}>
-                {saving ? "Saving…" : (useRubric ? "Submit · grade myself →" : "Submit")}
+                {saving ? "Saving…" : (useRubric ? "Submit for AI check" : "Submit")}
               </button>
             </div>
           </div>
@@ -1086,6 +1141,11 @@ function AssignmentPage({ lesson, session, setPage }) {
         {/* RUBRIC — self-assessment */}
         {stage === "rubric" && (
           <div style={{ background:"white", borderRadius:10, padding:"16px", marginBottom:12, border:"1px solid #e5e5e5" }}>
+            {aiError && (
+              <div style={{ background:"#FDF3E3", color:"#7A5206", borderRadius:8, padding:"10px 12px", fontSize:12.5, lineHeight:1.5, marginBottom:12 }}>
+                AI check failed: {aiError}. Your text is saved. Grade yourself below, or <button onClick={submitText} style={{ border:"none", background:"none", padding:0, color:"#5F4FD9", fontWeight:800, cursor:"pointer", fontSize:12.5 }}>try the AI check again</button>.
+              </div>
+            )}
             <div style={{ fontWeight:800, fontSize:14, color:"#0a0a0a", marginBottom:4 }}>Grade yourself · IELTS bands</div>
             <div style={{ fontSize:12, color:"#666", marginBottom:14, lineHeight:1.5 }}>
               Be honest. Reading the descriptors and scoring yourself trains your eye for what examiners look at.
@@ -1141,6 +1201,8 @@ function AssignmentPage({ lesson, session, setPage }) {
               <div style={{ fontSize:11, color:"#888" }}>{previous.submittedAt ? new Date(previous.submittedAt).toLocaleString("en-GB") : ""}</div>
             </div>
 
+            {previous.ai && <div style={{ marginBottom:14 }}><AiReport ai={previous.ai} /></div>}
+
             {previous.rubric && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(78px, 1fr))", gap:8, marginBottom:14 }}>
                 <div style={{ background:"#0a0a0a", color:"white", borderRadius:8, padding:"10px 8px", textAlign:"center" }}>
@@ -1185,6 +1247,560 @@ function AssignmentPage({ lesson, session, setPage }) {
 // ══════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════
+// Fill-in parts of a skeleton are shown as highlighted chips.
+const SkeletonFrame = ({ text }) => text.split(/(\[[^\]]+\])/).map((part, i) => part.startsWith("[")
+  ? <span key={i} style={{ background:"#FBF0D6", color:"#7A5206", borderRadius:5, padding:"0 5px", fontWeight:700 }}>{part.slice(1,-1)}</span>
+  : <span key={i}>{part}</span>);
+
+function SkeletonCard({ sk }) {
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:10 }}>
+        <h3 style={{ margin:0, fontSize:17, fontWeight:800 }}>{sk.title} skeleton</h3>
+        <span style={{ fontSize:12, fontWeight:700, color:"#4F41B8", background:"#ECE9FB", borderRadius:999, padding:"3px 10px" }}>{sk.task} · {sk.words}</span>
+      </div>
+      <div style={{ display:"grid", gap:8 }}>
+        {sk.paragraphs.map(p => (
+          <div key={p.label} style={{ background:"#F7F7FB", borderRadius:12, padding:"11px 14px" }}>
+            <div style={{ fontSize:11.5, fontWeight:800, color:"#5F4FD9", textTransform:"uppercase", letterSpacing:".04em", marginBottom:4 }}>{p.label}</div>
+            <div style={{ fontSize:14, lineHeight:1.7 }}><SkeletonFrame text={p.frame} /></div>
+            {p.example && <div style={{ fontSize:12.5, color:"#6E6C8A", marginTop:5, lineHeight:1.5 }}>{p.example}</div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:12.5, fontWeight:800, margin:"14px 0 7px" }}>Phrases to use</div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+        {sk.phrases.map(p => <span key={p} style={{ fontSize:12.5, background:"#F1EFFC", color:"#3D318F", borderRadius:8, padding:"4px 9px" }}>{p}</span>)}
+      </div>
+      {sk.avoid?.length > 0 && <>
+        <div style={{ fontSize:12.5, fontWeight:800, margin:"14px 0 7px" }}>Avoid</div>
+        {sk.avoid.map(([bad, good]) => (
+          <div key={bad} style={{ fontSize:13, lineHeight:1.55, marginBottom:4 }}><span style={{ color:"#B23A3A" }}>✗ {bad}</span> <span style={{ color:"#2F7D4A" }}>✓ {good}</span></div>
+        ))}
+      </>}
+    </div>
+  );
+}
+
+const shuffled = (list) => [...list].sort(() => Math.random() - 0.5);
+
+// Reads text aloud with an American voice when the device has one.
+function speakAmerican(text) {
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  const voice = window.speechSynthesis.getVoices().find(v => v.lang === "en-US");
+  if (voice) u.voice = voice;
+  u.lang = "en-US";
+  u.rate = 0.95;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+const HearBtn = ({ text }) => (
+  <button aria-label={`Hear: ${text}`} onClick={() => speakAmerican(text)} style={{ width:32, height:32, borderRadius:999, border:"none", background:"#F1EFFC", cursor:"pointer", flexShrink:0, fontSize:14 }}>🔊</button>
+);
+
+function DiscussionAnswers({ s, color }) {
+  const [level, setLevel] = useState(null);
+  const text = level === "b" ? s.b : s.c;
+  return (
+    <div style={{ marginTop:10 }}>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {[["b","Mock answer B1-B2"],["c","Mock answer C1"]].map(([k,l]) => (
+          <button key={k} aria-pressed={level===k} onClick={() => setLevel(level===k ? null : k)} style={{ padding:"6px 13px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12.5, fontWeight:700, background:level===k?color:"#F4F4F8", color:level===k?"white":"#14123F" }}>{l}</button>
+        ))}
+      </div>
+      {level && (
+        <div className="da-pop" style={{ display:"flex", gap:10, alignItems:"flex-start", marginTop:10, background:"#F7F7FB", borderRadius:12, padding:"10px 12px" }}>
+          <div style={{ flex:1, fontSize:14, lineHeight:1.6 }}>{text}</div>
+          <HearBtn text={text} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IdiomMatchGame({ topic }) {
+  const [round, setRound] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [order] = useState(() => shuffled(topic.idioms));
+  const done = round >= order.length;
+  const current = order[round];
+  const [options, setOptions] = useState(() => shuffled(topic.idioms.map(i => i.meaning)));
+  const next = () => { setPicked(null); setRound(r => r + 1); setOptions(shuffled(topic.idioms.map(i => i.meaning))); };
+  if (done) return <div className="da-pop" style={{ textAlign:"center", padding:"20px 0", fontWeight:800, fontSize:18 }}>🎉 {score} of {order.length}. Nice job!</div>;
+  return (
+    <div>
+      <div style={{ fontSize:12.5, fontWeight:700, color:"#6E6C8A" }}>Round {round+1} of {order.length} · Score {score}</div>
+      <div style={{ fontSize:18, fontWeight:800, margin:"6px 0 12px" }}>What does "{current.phrase}" mean?</div>
+      {options.map(o => {
+        const right = picked && o === current.meaning;
+        const wrong = picked === o && o !== current.meaning;
+        return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); if (o === current.meaning) setScore(x => x + 1); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"11px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14, color:"#14123F", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#ECEBF3"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+      })}
+      {picked && <div className="da-pop" style={{ fontSize:13.5, lineHeight:1.55, margin:"4px 0 10px" }}>"{current.example}"</div>}
+      {picked && <SubmitBtn onClick={next}>Next →</SubmitBtn>}
+    </div>
+  );
+}
+
+function SoundAmericanGame({ topic }) {
+  const [order] = useState(() => shuffled(topic.phrases).map(p => ({ ...p, options:shuffled([p.textbook, p.american]) })));
+  const [round, setRound] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  if (round >= order.length) return <div className="da-pop" style={{ textAlign:"center", padding:"20px 0", fontWeight:800, fontSize:18 }}>🗽 {score} of {order.length}. You sound American!</div>;
+  const current = order[round];
+  return (
+    <div>
+      <div style={{ fontSize:12.5, fontWeight:700, color:"#6E6C8A" }}>Round {round+1} of {order.length} · Score {score}</div>
+      <div style={{ fontSize:18, fontWeight:800, margin:"6px 0 12px" }}>Which sounds more natural in a chat?</div>
+      {current.options.map(o => {
+        const right = picked && o === current.american;
+        const wrong = picked === o && o !== current.american;
+        return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); speakAmerican(current.american); if (o === current.american) setScore(x => x + 1); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"11px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14, color:"#14123F", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#ECEBF3"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+      })}
+      {picked && <SubmitBtn onClick={() => { setPicked(null); setRound(r => r + 1); }}>Next →</SubmitBtn>}
+    </div>
+  );
+}
+
+// Speaking game for class: a random question, one idiom to use, and 60 seconds on the clock.
+function HotSeatGame({ topic }) {
+  const pick = () => ({ q:shuffled(topic.subtopics.flatMap(s => s.questions))[0], idiom:shuffled(topic.idioms)[0] });
+  const [card, setCard] = useState(pick);
+  const [spin, setSpin] = useState(0);
+  const [left, setLeft] = useState(null);
+  useEffect(() => {
+    if (left === null || left <= 0) return;
+    const t = setTimeout(() => setLeft(x => x - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  return (
+    <div>
+      <div key={spin} className="da-pop" style={{ background:topic.bg, borderRadius:16, padding:"18px 16px", marginBottom:12 }}>
+        <div style={{ fontSize:18, fontWeight:800, lineHeight:1.35, color:"#14123F" }}>{card.q}</div>
+        <div style={{ fontSize:13.5, marginTop:8, color:"#14123F" }}>Use this idiom: <b>{card.idiom.phrase}</b> ({card.idiom.meaning})</div>
+      </div>
+      <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+        <SubmitBtn onClick={() => setLeft(60)}>{left === null ? "Start 60 seconds" : "Restart timer"}</SubmitBtn>
+        <button onClick={() => { setCard(pick()); setSpin(x => x + 1); setLeft(null); }} style={{ padding:"10px 16px", borderRadius:12, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontFamily:"inherit", fontWeight:700, color:"#14123F" }}>🎲 New question</button>
+        {left !== null && <span aria-live="polite" style={{ fontWeight:800, fontSize:20, color:left <= 10 ? "#D9534F" : "#14123F" }}>{left > 0 ? `${left}s` : "Time's up!"}</span>}
+      </div>
+    </div>
+  );
+}
+
+function DiscussionTopic({ topic, onBack }) {
+  const [tab, setTab] = useState("talk");
+  const [game, setGame] = useState("hot");
+  const pill = (on, color) => ({ padding:"8px 15px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13.5, fontWeight:700, background:on?color:"#F4F4F8", color:on?"white":"#14123F" });
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+      <button onClick={onBack} style={{ border:"none", background:"none", color:"#5F4FD9", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>← All topics</button>
+      <div style={{ background:topic.bg, borderRadius:20, padding:"20px", display:"flex", alignItems:"center", gap:16, marginBottom:14 }}>
+        <span className="da-float" aria-hidden="true" style={{ fontSize:48 }}>{topic.emoji}</span>
+        <h2 style={{ fontSize:24, fontWeight:800, margin:0, color:"#14123F" }}>{topic.title}</h2>
+      </div>
+      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+        {[["talk","Let's talk"],["sound","Sound American"],["games","Games"]].map(([k,l]) => <button key={k} aria-pressed={tab===k} onClick={() => setTab(k)} style={pill(tab===k, topic.color)}>{l}</button>)}
+      </div>
+      {tab === "talk" && topic.subtopics.map(s => (
+        <div key={s.title} style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:16, padding:"15px 18px", marginBottom:12 }}>
+          <div style={{ fontWeight:800, fontSize:15.5, marginBottom:8 }}>{s.title}</div>
+          {s.questions.map(q => <div key={q} style={{ fontSize:14.5, lineHeight:1.5, marginBottom:4 }}>💬 {q}</div>)}
+          <DiscussionAnswers s={s} color={topic.color} />
+        </div>
+      ))}
+      {tab === "sound" && (
+        <>
+          <h3 style={{ fontSize:17, fontWeight:800, margin:"0 0 10px" }}>C1 idioms</h3>
+          {topic.idioms.map(i => (
+            <div key={i.phrase} style={{ display:"flex", gap:10, alignItems:"flex-start", background:"white", border:"1px solid #ECEBF3", borderRadius:14, padding:"12px 14px", marginBottom:10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:800, fontSize:14.5 }}>{i.phrase}</div>
+                <div style={{ fontSize:13, color:"#6E6C8A", margin:"2px 0 4px" }}>{i.meaning}</div>
+                <div style={{ fontSize:14, lineHeight:1.5 }}>"{i.example}"</div>
+              </div>
+              <HearBtn text={i.example} />
+            </div>
+          ))}
+          <h3 style={{ fontSize:17, fontWeight:800, margin:"18px 0 10px" }}>Textbook vs. everyday American</h3>
+          {topic.phrases.map(p => (
+            <div key={p.american} style={{ display:"flex", gap:10, alignItems:"center", background:"white", border:"1px solid #ECEBF3", borderRadius:14, padding:"12px 14px", marginBottom:10 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, color:"#6E6C8A" }}>{p.textbook}</div>
+                <div style={{ fontWeight:800, fontSize:14.5, marginTop:2 }}>{p.american}</div>
+              </div>
+              <HearBtn text={p.american} />
+            </div>
+          ))}
+        </>
+      )}
+      {tab === "games" && (
+        <>
+          <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+            {[["hot","🔥 Hot seat"],["idiom","🧩 Idiom match"],["sound","🗽 Sound American"]].map(([k,l]) => <button key={k} aria-pressed={game===k} onClick={() => setGame(k)} style={pill(game===k, topic.color)}>{l}</button>)}
+          </div>
+          <div style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:16, padding:16 }}>
+            {game === "hot" && <HotSeatGame topic={topic} />}
+            {game === "idiom" && <IdiomMatchGame topic={topic} />}
+            {game === "sound" && <SoundAmericanGame topic={topic} />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DiscussionPage() {
+  const [topicId, setTopicId] = useState(null);
+  useEffect(() => () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); }, []);
+  const topic = DISCUSSION_TOPICS.find(t => t.id === topicId);
+  return (
+    <>
+      <style>{"@keyframes daFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes daPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.da-float{display:inline-block;animation:daFloat 3s ease-in-out infinite}.da-pop{animation:daPop .3s ease-out}.da-card{transition:transform .15s}.da-card:hover{transform:translateY(-3px)}@media (prefers-reduced-motion:reduce){.da-float,.da-pop{animation:none}.da-card{transition:none}}"}</style>
+      {topic ? <DiscussionTopic key={topic.id} topic={topic} onBack={() => setTopicId(null)} /> : (
+        <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+          <div style={{ background:"#14123F", color:"white", borderRadius:20, padding:"22px 20px", marginBottom:16 }}>
+            <h2 style={{ fontSize:26, fontWeight:800, margin:"0 0 6px" }}>Discussion American Style 🗽</h2>
+            <p style={{ margin:0, fontSize:14.5, lineHeight:1.55, opacity:.9 }}>Pick a topic, talk it through, and learn to sound natural. Levels B1-B2, with C1 idioms.</p>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:12 }}>
+            {DISCUSSION_TOPICS.map(t => (
+              <button key={t.id} className="da-card" onClick={() => { setTopicId(t.id); window.scrollTo(0,0); }} style={{ background:t.bg, border:"none", borderRadius:18, padding:"18px 14px", cursor:"pointer", fontFamily:"inherit", textAlign:"left", color:"#14123F" }}>
+                <span className="da-float" aria-hidden="true" style={{ fontSize:34 }}>{t.emoji}</span>
+                <span style={{ display:"block", fontWeight:800, fontSize:14.5, marginTop:8, lineHeight:1.3 }}>{t.title}</span>
+                <span style={{ display:"block", fontSize:12, color:"#55536F", marginTop:3 }}>{t.subtopics.length} discussions</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+const SPEAK_SECONDS = (n) => n >= 60 ? `${Math.floor(n/60)}:${String(n%60).padStart(2,"0")}` : `${n}s`;
+
+function MasterclassPhraseGame({ onDone }) {
+  const [rounds] = useState(() => shuffled(MC_GAME.flatMap(g => g.rounds.map(([prompt, answer]) => ({
+    ask:g.ask, prompt, answer, options:shuffled([answer, ...shuffled(g.rounds.map(r => r[1]).filter(x => x !== answer)).slice(0,2)]),
+  })))));
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const r = rounds[i];
+  const next = () => {
+    if (i + 1 === rounds.length) { onDone(Math.round(score / rounds.length * 100)); return; }
+    setPicked(null); setI(i + 1);
+  };
+  return (
+    <div style={{ background:"white", borderRadius:20, padding:18 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, fontWeight:700, color:"#5D5A8C" }}><span>Round {i+1} of {rounds.length}</span><span>⭐ {score}</span></div>
+      <div style={{ height:6, borderRadius:6, background:"#F1EFFC", margin:"8px 0 14px" }}><div style={{ height:"100%", width:`${(i+1)/rounds.length*100}%`, borderRadius:6, background:"#C9973A", transition:"width .2s" }} /></div>
+      <div className="da-pop" key={i}>
+        <div style={{ fontSize:13, fontWeight:700, color:"#5D5A8C" }}>{r.ask}</div>
+        <div style={{ fontSize:20, fontWeight:800, color:"#15225A", margin:"2px 0 14px" }}>{r.prompt}</div>
+        {r.options.map(o => {
+          const right = picked && o === r.answer;
+          const wrong = picked === o && o !== r.answer;
+          return <button key={o} disabled={!!picked} onClick={() => { setPicked(o); if (o === r.answer) { setScore(x => x + 1); speakAmerican(o); } }} style={{ display:"block", width:"100%", textAlign:"left", padding:"12px 14px", borderRadius:12, marginBottom:8, cursor:picked?"default":"pointer", fontFamily:"inherit", fontSize:14.5, fontWeight:600, color:"#15225A", border:`1.5px solid ${right?"#3F9C5B":wrong?"#D9534F":"#E4E1F8"}`, background:right?"#E9F6EC":wrong?"#FDECEA":"white" }}>{o}</button>;
+        })}
+      </div>
+      {picked && <SubmitBtn onClick={next}>{i + 1 === rounds.length ? "Finish" : "Next →"}</SubmitBtn>}
+    </div>
+  );
+}
+
+function MasterclassSpeaking({ onDone }) {
+  const [i, setI] = useState(0);
+  const [left, setLeft] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+  const q = MC_SPEAKING[i];
+  useEffect(() => {
+    if (left === null || left <= 0) return;
+    const t = setTimeout(() => setLeft(x => x - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  const start = () => { setPreparing(false); setLeft(q.seconds); };
+  const next = () => {
+    if (i + 1 === MC_SPEAKING.length) { onDone(100); return; }
+    setLeft(null); setPreparing(false); setI(i + 1);
+  };
+  return (
+    <div style={{ background:"white", borderRadius:20, padding:18 }}>
+      <div style={{ fontSize:13, fontWeight:800, color:"#8A6414" }}>{q.part} · Question {i+1} of {MC_SPEAKING.length}</div>
+      <div className="da-pop" key={i} style={{ fontSize:18, fontWeight:800, lineHeight:1.4, color:"#15225A", margin:"6px 0 10px", whiteSpace:"pre-line" }}>{q.q}</div>
+      <div style={{ background:"#FBF5E6", color:"#6F5010", borderRadius:12, padding:"9px 13px", fontSize:13.5, marginBottom:14 }}>Try this phrase: <b>{q.tip}</b></div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        {q.prep && left === null && <SubmitBtn onClick={() => { setPreparing(true); setLeft(q.prep); }}>Prepare for 1 minute</SubmitBtn>}
+        <SubmitBtn onClick={start}>{`Speak for ${SPEAK_SECONDS(q.seconds)}`}</SubmitBtn>
+        <button onClick={next} style={{ padding:"10px 16px", borderRadius:12, border:"1px solid #E4E1F8", background:"white", cursor:"pointer", fontFamily:"inherit", fontWeight:700, color:"#15225A" }}>{i + 1 === MC_SPEAKING.length ? "Finish" : "Next question →"}</button>
+        {left !== null && <span aria-live="polite" style={{ fontWeight:800, fontSize:20, color:left <= 10 ? "#D9534F" : "#15225A" }}>{left > 0 ? `${preparing ? "Prepare: " : ""}${SPEAK_SECONDS(left)}` : "Time's up!"}</span>}
+      </div>
+    </div>
+  );
+}
+
+const MasterclassPie = () => {
+  let from = 0;
+  const stops = MC_PIE.map(([, pct, color]) => { const stop = `${color} ${from}% ${from + pct}%`; from += pct; return stop; }).join(",");
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:18, flexWrap:"wrap", margin:"14px 0" }}>
+      <div role="img" aria-label={MC_PIE.map(([n, pct]) => `${n} ${pct}%`).join(", ")} style={{ width:150, height:150, borderRadius:"50%", flexShrink:0, background:`conic-gradient(${stops})` }} />
+      <div>{MC_PIE.map(([n, pct, color]) => <div key={n} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13.5, marginBottom:4 }}><span style={{ width:12, height:12, borderRadius:3, background:color }} />{n}: <b>{pct}%</b></div>)}</div>
+    </div>
+  );
+};
+
+const MASTERCLASS_LEVELS = [
+  { key:"deck", icon:"📊", title:"Presentation: B1 to C1 phrases", sub:"Go through the slides together" },
+  { key:"game", icon:"🎮", title:"Phrase game", sub:"19 rounds: upgrade your words and idioms" },
+  { key:"listening", icon:"🎧", title:"Mock: Listening Part 1", sub:"10 questions, form completion" },
+  { key:"reading", icon:"📖", title:"Mock: Reading Part 1", sub:"10 questions, one passage" },
+  { key:"speaking", icon:"🎤", title:"Mock: Speaking", sub:"Parts 1, 2 and 3 with a timer" },
+  { key:"writing", icon:"🥧", title:"Writing: pie chart skeleton", sub:"Complete the report using the skeleton" },
+];
+
+function MasterclassPage({ session, onBack, logout }) {
+  const [level, setLevel] = useState(null);
+  const [done, setDone] = useState({});
+  useEffect(() => {
+    FB.getProgress(session.email).then(p => setDone(p.masterclass || {})).catch(() => {});
+    return () => { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); };
+  }, [session.email]);
+  const finish = (key, pct) => {
+    const best = Math.max(pct, done[key] || 0);
+    setDone(d => ({ ...d, [key]: best }));
+    FB.setProgress(session.email, { masterclass: { [key]: best } }).catch(() => {});
+  };
+  const backToMap = () => { setLevel(null); window.scrollTo(0,0); };
+  const finishAndBack = (key) => (pct) => { finish(key, pct); backToMap(); };
+  const stars = (pct) => pct >= 80 ? "⭐⭐⭐" : pct >= 50 ? "⭐⭐" : "⭐";
+  const css = "@keyframes daFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes daPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.da-float{display:inline-block;animation:daFloat 3s ease-in-out infinite}.da-pop{animation:daPop .3s ease-out}@media (prefers-reduced-motion:reduce){.da-float,.da-pop{animation:none}}";
+
+  if (level === "listening") return <HomeworkPage practice={{ ...PRACTICE["1-1"][0], label:"Mock" }} onExit={backToMap} onDone={(pct) => finish("listening", pct)} />;
+  if (level === "reading") return <HomeworkPage practice={MC_READING} onExit={backToMap} onDone={(pct) => finish("reading", pct)} />;
+  if (level === "writing") return <HomeworkPage practice={{ ...MC_WRITING, figure:<><SkeletonCard sk={SKELETONS.pie} /><MasterclassPie /></> }} onExit={backToMap} onDone={(pct) => finish("writing", pct)} />;
+
+  const shell = (children) => (
+    <div style={{ minHeight:"100vh", background:"#15225A", padding:"16px 16px 50px" }}>
+      <style>{css}</style>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>{children}</div>
+    </div>
+  );
+  const backBtn = (label, onClick) => <button onClick={onClick} style={{ border:"none", background:"none", color:"#E4BF6C", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>← {label}</button>;
+
+  if (level === "deck") return shell(<>
+    {backBtn("Back to the map", backToMap)}
+    <iframe title={MC_DECK.title} src={`/decks/extra/${MC_DECK.file}.html`} allowFullScreen frameBorder="0" style={{ width:"100%", aspectRatio:"16 / 10", display:"block", borderRadius:16, background:"#100E35", marginBottom:14 }} />
+    <SubmitBtn onClick={() => finishAndBack("deck")(100)}>I finished the presentation</SubmitBtn>
+  </>);
+  if (level === "game") return shell(<>{backBtn("Back to the map", backToMap)}<MasterclassPhraseGame onDone={finishAndBack("game")} /></>);
+  if (level === "speaking") return shell(<>{backBtn("Back to the map", backToMap)}<MasterclassSpeaking onDone={finishAndBack("speaking")} /></>);
+
+  const count = MASTERCLASS_LEVELS.filter(l => done[l.key] != null).length;
+  return shell(<>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+      {onBack ? backBtn("My Courses", onBack) : <span />}
+      {!onBack && <button onClick={logout} style={{ border:"none", background:"none", color:"#E4BF6C", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>Logout</button>}
+    </div>
+    <div style={{ color:"white", marginBottom:16 }}>
+      <span className="da-float" aria-hidden="true" style={{ fontSize:40 }}>🏆</span>
+      <h1 style={{ fontSize:28, fontWeight:800, margin:"4px 0" }}>IELTS<span style={{ color:"#E4BF6C" }}>8</span> Masterclass</h1>
+      <div style={{ fontSize:14, opacity:.85 }}>{count === MASTERCLASS_LEVELS.length ? "🎉 All levels complete. Well done!" : `${count} of ${MASTERCLASS_LEVELS.length} levels complete`}</div>
+      <div style={{ height:8, borderRadius:8, background:"rgba(255,255,255,.15)", marginTop:10 }}><div style={{ height:"100%", width:`${count/MASTERCLASS_LEVELS.length*100}%`, borderRadius:8, background:"#C9973A", transition:"width .3s" }} /></div>
+    </div>
+    {MASTERCLASS_LEVELS.map((l, i) => (
+      <button key={l.key} onClick={() => { setLevel(l.key); window.scrollTo(0,0); }} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", textAlign:"left", background:"white", border:"none", borderRadius:16, padding:"13px 16px", marginBottom:10, cursor:"pointer", fontFamily:"inherit", color:"#15225A" }}>
+        <span aria-hidden="true" style={{ width:44, height:44, borderRadius:14, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, background:done[l.key]!=null?"#FBF5E6":"#F1EFFC" }}>{l.icon}</span>
+        <span style={{ flex:1, minWidth:0 }}>
+          <span style={{ display:"block", fontWeight:800, fontSize:14.5 }}>Level {i+1}: {l.title}</span>
+          <span style={{ display:"block", fontSize:12.5, color:"#5D5A8C", marginTop:2 }}>{l.sub}{done[l.key]!=null ? ` · Best ${done[l.key]}%` : ""}</span>
+        </span>
+        <span style={{ flexShrink:0, fontSize:13 }}>{done[l.key]!=null ? stars(done[l.key]) : <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>}</span>
+      </button>
+    ))}
+  </>);
+}
+
+function SkeletonsPage() {
+  const [task, setTask] = useState("Task 1");
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"8px 0 40px" }}>
+      <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 12px" }}>Essay Skeletons</h2>
+      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+        {["Task 1","Task 2"].map(t => <button key={t} aria-pressed={task===t} onClick={() => setTask(t)} style={{ padding:"7px 16px", borderRadius:999, border:"none", cursor:"pointer", fontWeight:700, fontSize:13, background:task===t?"#5F4FD9":"#F1EFFC", color:task===t?"white":"#3D318F" }}>{t}</button>)}
+      </div>
+      {Object.values(SKELETONS).filter(s => s.task === task).map(sk => (
+        <div key={sk.title} style={{ border:"1px solid #ECEBF3", borderRadius:18, padding:16, marginBottom:14 }}><SkeletonCard sk={sk} /></div>
+      ))}
+    </div>
+  );
+}
+
+const skeletonOf = (lesson) => SKELETONS[LESSON_SKELETON[lesson.id]];
+const skeletonOutline = (sk) => sk ? sk.paragraphs.map(p => `${p.label}: ${p.frame}`).join("\n") : "";
+
+async function requestAiCheck({ type, prompt, text, skeleton }) {
+  const res = await fetch("/api/check-writing", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", Authorization:`Bearer ${await auth.currentUser.getIdToken()}` },
+    body:JSON.stringify({ type, prompt, text, skeleton }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "The AI check is not available");
+  return data;
+}
+
+// The band, criteria and vocabulary check returned by the AI.
+function AiReport({ ai }) {
+  const v = ai.vocabulary || {};
+  const head = { fontSize:13, fontWeight:800, margin:"16px 0 7px" };
+  return (
+    <div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(112px,1fr))", gap:8 }}>
+        <div style={{ background:"#6A5BD6", color:"white", borderRadius:14, padding:"12px 10px", textAlign:"center" }}>
+          <div style={{ fontSize:28, fontWeight:800, lineHeight:1.1 }}>{Number(ai.overall).toFixed(1)}</div>
+          <div style={{ fontSize:11.5, fontWeight:600 }}>Estimated band</div>
+        </div>
+        {ai.criteria.map(c => (
+          <div key={c.key} style={{ background:"#F7F7FB", borderRadius:14, padding:"12px 10px", textAlign:"center" }}>
+            <div style={{ fontSize:22, fontWeight:800, lineHeight:1.1 }}>{Number(c.band).toFixed(1)}</div>
+            <div style={{ fontSize:11, color:"#6E6C8A", fontWeight:600, marginTop:2 }}>{c.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:11.5, color:"#8B8AA6", marginTop:6 }}>AI estimate for practice, not an official IELTS score.</div>
+      <ul style={{ margin:"10px 0 0", paddingLeft:18, fontSize:13.5, lineHeight:1.6 }}>{ai.criteria.map(c => <li key={c.key}><b>{c.label}:</b> {c.note}</li>)}</ul>
+      <div style={head}>Skeleton check</div>
+      <div style={{ fontSize:13.5, lineHeight:1.6 }}>{ai.skeleton_check}</div>
+      {ai.top_fixes?.length > 0 && <>
+        <div style={head}>Fix these first</div>
+        {ai.top_fixes.map((f,i) => (
+          <div key={i} style={{ background:"#F7F7FB", borderRadius:12, padding:"9px 12px", marginBottom:6, fontSize:13.5, lineHeight:1.5 }}>
+            <div style={{ color:"#B23A3A" }}>✗ {f.original}</div><div style={{ color:"#2F7D4A" }}>✓ {f.better}</div><div style={{ color:"#6E6C8A", fontSize:12.5 }}>{f.why}</div>
+          </div>
+        ))}
+      </>}
+      <div style={head}>Vocabulary check {v.level && <span style={{ fontSize:12, color:"#4F41B8", background:"#ECE9FB", borderRadius:999, padding:"2px 9px", marginLeft:4 }}>{v.level}</span>}</div>
+      {v.wrong_words?.map((w,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}><span style={{ color:"#B23A3A" }}>✗ {w.original}</span> <span style={{ color:"#2F7D4A" }}>✓ {w.correct}</span></div>)}
+      {v.upgrades?.map((u,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}>{u.original} <span aria-hidden="true">→</span> <b style={{ color:"#4F41B8" }}>{u.better}</b></div>)}
+      {v.repeated?.map((r,i) => <div key={i} style={{ fontSize:13.5, marginBottom:3 }}>Repeated: <b>{r.word}</b>. Try {r.alternatives.join(", ")}.</div>)}
+      {ai.strengths?.length > 0 && <>
+        <div style={head}>What you did well</div>
+        <ul style={{ margin:0, paddingLeft:18, fontSize:13.5, lineHeight:1.6 }}>{ai.strengths.map((s,i) => <li key={i}>{s}</li>)}</ul>
+      </>}
+    </div>
+  );
+}
+
+// Listening and Reading homework: answer the questions, Submit once, then see the score and review.
+function HomeworkPage({ lesson, session, setPage, isAdmin, practice, onExit, onDone }) {
+  const hw = practice || HOMEWORK[lesson.id];
+  const label = practice ? (practice.label || "Practice") : "Homework";
+  const exit = onExit || (() => setPage("lesson"));
+  const script = hw.lines ? hw.lines.join(" ") : hw.script;
+  const qs = hw.questions;
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [plays, setPlays] = useState(0);
+  const [speaking, setSpeaking] = useState(false);
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+  useEffect(() => () => { if (canSpeak) window.speechSynthesis.cancel(); }, [canSpeak]);
+
+  const play = () => {
+    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+    voices.sort((x, y) => (y.lang === "en-GB") - (x.lang === "en-GB"));
+    const parts = hw.lines || [hw.script];
+    window.speechSynthesis.cancel();
+    parts.forEach((line, i) => {
+      const u = new SpeechSynthesisUtterance(line);
+      const voice = voices[i % 2] || voices[0];
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang || "en-GB";
+      u.rate = 0.92;
+      // With only one English voice, a lower pitch marks the second speaker.
+      if (i % 2 && voices.length < 2) u.pitch = 0.7;
+      if (i === parts.length - 1) u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      window.speechSynthesis.speak(u);
+    });
+    setSpeaking(true); setPlays(p => p + 1);
+  };
+
+  const answered = qs.filter((q,i) => isAnswered(q, answers[i])).length;
+  const submit = async () => {
+    const correct = qs.filter((q,i) => isCorrect(q, answers[i]));
+    const score = correct.reduce((s,q) => s + (q.points||10), 0);
+    const total = qs.reduce((s,q) => s + (q.points||10), 0);
+    setSaving(true);
+    try {
+      if (!isAdmin && !practice) {
+        await FB.setSubmission(session.email, lesson.id, { type:hw.kind, score, total, correct:correct.length, count:qs.length, submittedAt:new Date().toISOString() });
+        const cur = await FB.getProgress(session.email);
+        const prev = cur[lesson.id] || {};
+        await FB.setProgress(session.email, { [lesson.id]: { ...prev, assignmentDone:true, points:(prev.points||0) + (prev.assignmentDone ? 0 : 20) } });
+      }
+      setResult({ score, total, correct:correct.length });
+      if (onDone) onDone(Math.round(score / total * 100));
+      if (canSpeak) window.speechSynthesis.cancel();
+      window.scrollTo(0,0);
+    } catch (e) { alert("Could not submit: " + e.message); }
+    setSaving(false);
+  };
+  const retake = () => { setAnswers({}); setResult(null); setPlays(0); window.scrollTo(0,0); };
+  const showScript = hw.kind === "listening" && (result || !canSpeak);
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#F7F7FB" }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:"white", borderBottom:"1px solid #ECEBF3", padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={exit} style={{ padding:"7px 14px", borderRadius:999, border:"1px solid #E7E6F0", background:"white", cursor:"pointer", fontWeight:700, fontSize:13 }}>← Exit</button>
+        <div style={{ flex:1, minWidth:0, fontWeight:800, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{label}: {hw.title}</div>
+        {!result && <div style={{ fontSize:13, fontWeight:700, color:"#6E6C8A", flexShrink:0 }}>{answered}/{qs.length}</div>}
+      </div>
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"18px 16px 60px" }}>
+        {result && (
+          <div style={{ background:"#6A5BD6", color:"white", borderRadius:20, padding:"20px 24px", marginBottom:14 }}>
+            <div style={{ fontSize:13, fontWeight:700, opacity:.9 }}>{label} submitted</div>
+            <div style={{ fontSize:36, fontWeight:800, margin:"2px 0" }}>{Math.round(result.score/result.total*100)}%</div>
+            <div style={{ fontSize:14 }}>{result.correct} of {qs.length} correct</div>
+            <div style={{ display:"flex", gap:10, marginTop:12, flexWrap:"wrap" }}>
+              <button onClick={exit} style={{ padding:"10px 18px", borderRadius:12, border:"none", background:"white", color:"#14123F", fontWeight:800, cursor:"pointer" }}>{onExit ? "Back to the map" : "Back to lesson"} →</button>
+              <button onClick={retake} style={{ padding:"10px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,.6)", background:"transparent", color:"white", fontWeight:700, cursor:"pointer" }}>Try again</button>
+            </div>
+          </div>
+        )}
+        <div style={{ background:"white", borderRadius:16, border:"1px solid #ECEBF3", padding:"16px 18px", marginBottom:12 }}>
+          <div style={{ fontSize:12, fontWeight:800, color:"#5F4FD9", textTransform:"uppercase", letterSpacing:".04em", marginBottom:4 }}>{hw.kind}</div>
+          <div style={{ fontSize:14, lineHeight:1.55, marginBottom:10 }}>{hw.intro}</div>
+          {hw.figure && <div style={{ marginBottom:10 }}>{hw.figure}</div>}
+          {hw.passage && <div style={{ fontSize:14.5, lineHeight:1.75, whiteSpace:"pre-line" }}>{hw.passage}</div>}
+          {hw.kind === "listening" && canSpeak && !result && (
+            <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+              <SubmitBtn disabled={speaking || plays >= 2} onClick={play}>{speaking ? "Playing..." : plays === 0 ? "▶ Play the recording" : plays === 1 ? "▶ Play again" : "No plays left"}</SubmitBtn>
+              <span style={{ fontSize:12.5, color:"#6E6C8A" }}>{2 - plays} of 2 plays left. The real test plays once.</span>
+            </div>
+          )}
+          {showScript && <div style={{ fontSize:13.5, lineHeight:1.7, color:"#55536F", background:"#F7F7FB", borderRadius:12, padding:"10px 14px", marginTop:6 }}><b>Script:</b> {script}</div>}
+        </div>
+        {qs.map((q,i) => (
+          <div key={i} style={{ background:"white", borderRadius:16, padding:"15px 18px", marginBottom:10, border:"1px solid #ECEBF3" }}>
+            <div style={{ fontSize:14.5, fontWeight:700, lineHeight:1.45, marginBottom:10 }}>{i+1}. {q.q}</div>
+            <QuestionInput q={q} value={answers[i]} reviewed={!!result} onChange={v => setAnswers(a => ({ ...a, [i]: v }))} />
+          </div>
+        ))}
+        {!result && <button onClick={submit} disabled={saving || answered < qs.length} style={{ width:"100%", padding:14, borderRadius:14, border:"none", fontWeight:800, fontSize:15, background:answered<qs.length?"#E7E6F0":"#5F4FD9", color:answered<qs.length?"#8B8AA6":"white", cursor:answered<qs.length?"not-allowed":"pointer" }}>
+          {saving ? "Submitting..." : answered < qs.length ? `Answer all questions to submit (${qs.length-answered} left)` : `Submit ${label.toLowerCase()}`}
+        </button>}
+      </div>
+    </div>
+  );
+}
+
 // One row per lesson with the result of each submitted step. Used on Grades and in the admin panel.
 function ResultsTable({ modules, progress, submissions }) {
   const cell = { padding:"10px 8px", fontSize:12.5, borderTop:"1px solid #F0EFF6", textAlign:"center", whiteSpace:"nowrap" };
@@ -1193,10 +1809,10 @@ function ResultsTable({ modules, progress, submissions }) {
   return (modules||[]).map(m => (
     <div key={m.id} style={{ background:"white", borderRadius:16, border:"1px solid #ECEBF3", marginBottom:12, overflowX:"auto" }}>
       <div style={{ fontWeight:800, fontSize:13.5, padding:"12px 14px" }}>{m.title}</div>
-      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:520 }}>
+      <table style={{ width:"100%", borderCollapse:"collapse", minWidth:580 }}>
         <thead><tr style={{ color:"#8B8AA6", fontSize:11, textTransform:"uppercase", letterSpacing:".04em" }}>
           <th style={{ textAlign:"left", padding:"0 14px 8px", fontWeight:700 }}>Lesson</th>
-          {["Video","Slides","Test","Task","Points"].map(h => <th key={h} style={{ padding:"0 8px 8px", fontWeight:700 }}>{h}</th>)}
+          {["Video","Slides","Test","Task","Words","Points"].map(h => <th key={h} style={{ padding:"0 8px 8px", fontWeight:700 }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {m.lessons.map(l => {
@@ -1209,7 +1825,8 @@ function ResultsTable({ modules, progress, submissions }) {
                 <td style={cell}>{st.video ? (st.video.count ? `${st.video.correct}/${st.video.count}` : yes) : none}</td>
                 <td style={cell}>{st.slides ? yes : none}</td>
                 <td style={cell}>{st.test ? <b>{Math.round(st.test.best/st.test.total*100)}%</b> : lp.quizScore!=null ? `${lp.quizScore} pts` : none}</td>
-                <td style={cell}>{sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
+                <td style={cell}>{sub?.ai ? <b>Band {sub.ai.overall}</b> : sub?.score != null ? <b>{Math.round(sub.score/sub.total*100)}%</b> : sub?.rubric?.overall != null ? <b>Band {sub.rubric.overall}</b> : (sub || lp.assignmentDone) ? yes : none}</td>
+                <td style={cell}>{st.words ? <b>{Math.round((st.words.match + st.words.type + st.words.gaps) / 3)}%</b> : none}</td>
                 <td style={{ ...cell, fontWeight:700 }}>{lp.points || 0}</td>
               </tr>
             );
@@ -1262,14 +1879,14 @@ function AssignmentsPage({ session, modules, setPage, setCurrentLesson }) {
       <h2 style={{ fontSize:24, fontWeight:800, margin:"0 0 14px" }}>Assignments</h2>
       {list.map(l => {
         const d = assignmentDone(l, myP[l.id]||{}, subs[l.id]);
-        const band = subs[l.id]?.rubric?.overall;
+        const band = subs[l.id]?.ai?.overall ?? subs[l.id]?.rubric?.overall;
         return (
           <button key={l.id} onClick={() => { setCurrentLesson(l); setPage("assignment"); }}
             style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F7F7FB", border:"none", borderRadius:16, padding:"13px 16px", marginBottom:10, cursor:"pointer", fontFamily:"inherit", color:"inherit" }}>
             <span style={{ width:36, height:36, borderRadius:12, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:d?"#E2F2E6":"white", color:d?"#3F9C5B":"#8B8AA6", fontWeight:800 }}>{d?"✓":"✎"}</span>
             <span style={{ flex:1, minWidth:0 }}>
               <span style={{ display:"block", fontWeight:700, fontSize:14 }}>{cleanTitle(l.title)}</span>
-              <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:2, textTransform:"capitalize" }}>{l.assignment.type}{d?" · submitted":" · not submitted"}{band!=null?` · Band ${band}`:""}</span>
+              <span style={{ display:"block", fontSize:12, color:"#8B8AA6", marginTop:2, textTransform:"capitalize" }}>{HOMEWORK[l.id]?.kind || l.assignment.type}{d?" · submitted":" · not submitted"}{band!=null?` · Band ${band}`:""}{subs[l.id]?.score!=null?` · ${Math.round(subs[l.id].score/subs[l.id].total*100)}%`:""}</span>
             </span>
             <span aria-hidden="true" style={{ color:"#8B8AA6", fontSize:18 }}>›</span>
           </button>
@@ -1659,6 +2276,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [resultFor, setResultFor] = useState(null); // email whose IELTS-result panel is open
   const [lessonsFor, setLessonsFor] = useState(null); // email whose lesson results are open
   const [lessonsSubs, setLessonsSubs] = useState({});
+  const [workbookFor, setWorkbookFor] = useState(null); // email whose workbook is open
+  const [workbookData, setWorkbookData] = useState(null);
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -1691,6 +2310,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
     refresh();
   };
 
+  const toggleMasterclass = async (email, on) => {
+    await FB.updateStudent(email, { plan: on ? null : "masterclass" });
+    refresh();
+  };
+
   const toggleSpeaking = async (email, on) => {
     await FB.updateStudent(email, { speaking: !on });
     refresh();
@@ -1708,6 +2332,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (lessonsFor === email) { setLessonsFor(null); return; }
     setLessonsSubs({}); setLessonsFor(email);
     setLessonsSubs(await FB.getSubmissions(email));
+  };
+
+  const toggleWorkbook = async (email) => {
+    if (workbookFor === email) { setWorkbookFor(null); return; }
+    setWorkbookData(null); setWorkbookFor(email);
+    setWorkbookData((await FB.getWorkbook(email)) || { answers: "" });
   };
 
   const remove = async (email) => {
@@ -1775,6 +2405,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
           {msg && <div style={{ marginTop:8, fontSize:12, color:"#0a0a0a" }}>{msg}</div>}
         </div>
 
+        <LessonVideosPanel modules={mods} />
+
         <div style={{ background:"white", borderRadius:10, border:"1px solid #e5e5e5", overflow:"hidden" }}>
           <div style={{ padding:"10px 14px", borderBottom:"1px solid #e5e5e5", fontWeight:700, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666" }}>Students ({list.length})</div>
           {loadingStudents && <div style={{ padding:24, textAlign:"center", color:"#888", fontSize:13 }}>Loading…</div>}
@@ -1807,6 +2439,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>setResultFor(resultOpen?null:email)} title="Set IELTS band & upload certificate" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${ieltsBand!=null?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:ieltsBand!=null?"#e8f3ec":"white", color:ieltsBand!=null?"#155e37":"#666" }}>
                   🎓 Result {resultOpen?"▲":"▼"}
                 </button>
+                <button onClick={()=>toggleWorkbook(email)} title="Writing Workbook answers and progress" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${workbookFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  📓 Workbook {workbookFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -1816,6 +2451,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>toggleSpeaking(email, !!info.speaking)} title="Paid Speaking World access" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${info.speaking?"#B8860B":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:info.speaking?"#fff7e0":"white", color:info.speaking?"#8a5a12":"#666" }}>
                   {info.speaking?"🎤 Speaking ✓":"🎤 Open"}
                 </button>
+                <button aria-pressed={info.plan==="masterclass"} onClick={()=>toggleMasterclass(email, info.plan==="masterclass")} title="Give this student access to the Masterclass only" style={{ padding:"5px 11px", borderRadius:999, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background:info.plan==="masterclass"?"#C9973A":"#F1EFFC", color:info.plan==="masterclass"?"#15225A":"#2A2680" }}>
+                  {info.plan==="masterclass"?"✓ Masterclass only":"Masterclass only"}
+                </button>
                 <button onClick={()=>toggle(email,info.status)} style={{ padding:"5px 11px", borderRadius:999, border:"1px solid #e5e5e5", cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   {active?"Revoke":"Restore"}
                 </button>
@@ -1824,6 +2462,15 @@ function AdminPanel({ session, logout, setPage, modules }) {
               {lessonsFor===email && (
                 <div style={{ padding:"10px 14px 6px", background:"#F7F7FB" }}>
                   <ResultsTable modules={mods} progress={allProgress[email]||{}} submissions={lessonsSubs} />
+                </div>
+              )}
+              {workbookFor===email && (
+                <div style={{ padding:"12px 14px 16px", background:"#F7F7FB" }}>
+                  {workbookData === null
+                    ? <div style={{ fontSize:12, color:"#888" }}>Loading...</div>
+                    : !workbookData.answers
+                      ? <div style={{ fontSize:13, color:"#666" }}>{info.name} has not started the workbook yet.</div>
+                      : <WorkbookPage key={email} readOnly email={email} name={info.name} initial={workbookData} />}
                 </div>
               )}
               {resultOpen && (
@@ -1923,6 +2570,7 @@ const ICONS = {
   mic:<><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></>,
   globe:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></>,
   leaf:<path d="M5 19C4 10 10 4 20 4c0 10-6 16-15 15zM5 19l8-8"/>,
+  sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
   pen:<path d="M4 20l1-5L16 4l4 4L9 19z"/>,
   check:<><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></>,
   admin:<><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></>,
@@ -1959,11 +2607,15 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         <button className="lms-logo" onClick={() => go("course")}>IELTS<span>8</span></button>
         <div className="lms-group">Main menu</div>
         {item("course","Dashboard","home")}
+        {item("daily","Daily English","sun")}
         {item("courses","My Courses","courses")}
         {item("assignments","Assignments","tasks")}
         {item("dashboard","Grades","grades")}
         {item("leaderboard","Leaderboard","board")}
         <div className="lms-group">Practice</div>
+        {item("skeletons","Essay Skeletons","pen")}
+        {item("workbook","Writing Workbook","pen")}
+        {item("discussion","Discussion American Style","mic")}
         {item("speaking","Speaking","mic")}
         {link("/skyielts-writing.html","Writing Bands","pen")}
         {link("/essay-checker.html","Essay Checker","check")}
@@ -2164,6 +2816,11 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
                 </div>
               </div>
 
+              <div style={{ margin:"26px 0 0" }}>
+                {sectionHead("Today", viewAll("daily"))}
+                <DailyStrip onOpen={() => setPage("daily")} />
+              </div>
+
               <div style={{ margin:"26px 0" }}>
                 {sectionHead("Courses Enrolled", viewAll("courses"))}
                 <div style={{ background:"#F7F7FB", borderRadius:20, padding:"16px 20px" }}>
@@ -2245,9 +2902,18 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
         {view === "courses" && (
         <div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <h2 style={{ margin:0, fontSize:24, fontWeight:800 }}>My Courses</h2>
-            <div style={{ fontSize:13, fontWeight:700, color:"#5F4FD9" }}>{doneCount}/{allLessons.length} lessons</div>
+            <h2 style={{ margin:0, fontSize:24, fontWeight:800, color:"#15225A" }}>My Courses</h2>
+            <div style={{ fontSize:13, fontWeight:700, color:"#2A2680" }}>{doneCount}/{allLessons.length} lessons</div>
           </div>
+
+          <button onClick={() => setPage("masterclass")} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", textAlign:"left", background:"linear-gradient(135deg,#2A2680,#15225A)", border:"none", borderRadius:16, padding:"16px 18px", marginBottom:14, cursor:"pointer", fontFamily:"inherit", color:"white" }}>
+            <span aria-hidden="true" style={{ fontSize:30 }}>🏆</span>
+            <span style={{ flex:1, minWidth:0 }}>
+              <span style={{ display:"block", fontWeight:800, fontSize:16, color:"#E4BF6C" }}>Masterclass</span>
+              <span style={{ display:"block", fontSize:13, lineHeight:1.4, opacity:.9, marginTop:2 }}>Six levels: phrases, Listening and Reading Part 1, Speaking and a pie chart</span>
+            </span>
+            <span aria-hidden="true" style={{ color:"#E4BF6C", fontSize:20 }}>›</span>
+          </button>
 
           <div>
         {mods.map((m, i) => {
@@ -2257,15 +2923,15 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
           const lessonsDone = m.lessons.filter(l => myProgress[l.id]?.quizDone).length;
           const prev = i > 0 ? mods[i-1] : null;
           const canUnlockHere = !unlocked && prev && moduleComplete(prev) && !hasReflection(prev);
-          const accent = complete ? "#1E7A4F" : unlocked ? "#5F4FD9" : "#94a3b8";
+          const accent = complete ? "#C9973A" : unlocked ? "#2A2680" : "#A9A3DA";
           return (
-            <div key={m.id} style={{ background:"white", border:"1px solid #e5e7eb", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
+            <div key={m.id} style={{ background:"white", border:"1px solid #E4E1F8", borderRadius:12, overflow:"hidden", marginBottom:12, boxShadow:"0 1px 2px rgba(0,0,0,.04)", opacity: unlocked?1:0.9 }}>
               {/* unit header */}
-              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderLeft:`4px solid ${accent}`, background:"#f8fafc" }}>
-                <div style={{ width:30, height:30, borderRadius:8, background:accent, color:"white", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{complete?"✓":unlocked?(i+1):"🔒"}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderLeft:`4px solid ${accent}`, background:"#F1EFFC" }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:accent, color:complete?"#15225A":"white", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{complete?"✓":unlocked?(i+1):"🔒"}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:800, fontSize:14, color:"#111827", lineHeight:1.3 }}>{m.title}</div>
-                  <div style={{ fontSize:11.5, color: complete?"#1E7A4F":"#6b7280", marginTop:2, fontWeight:600 }}>
+                  <div style={{ fontWeight:800, fontSize:14, color:"#15225A", lineHeight:1.3 }}>{m.title}</div>
+                  <div style={{ fontSize:11.5, color: complete?"#8A6414":"#5D5A8C", marginTop:2, fontWeight:600 }}>
                     {unlocked ? `${lessonsDone}/${m.lessons.length} Completed`
                       : canUnlockHere ? "🔓 Открой mock-тестом предыдущего модуля"
                       : "🔒 Заблокировано"}
@@ -2280,31 +2946,31 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
                 const ld = !!lp.quizDone;
                 return (
                   <div key={l.id} onClick={() => { setCurrentLesson(l); setPage("lesson"); }}
-                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #f1f3f5", cursor:"pointer" }}>
-                    <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#1E7A4F":"#c0c7d0" }}>{ld ? "✓" : "📄"}</span>
+                    style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 16px 11px 18px", borderTop:"1px solid #E4E1F8", cursor:"pointer" }}>
+                    <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:"center", color: ld?"#C9973A":"#A9A3DA" }}>{ld ? "✓" : "📄"}</span>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:600, fontSize:13.5, color:"#111827", lineHeight:1.35 }}>{l.n ? `Lesson ${l.n}: ` : ""}{cleanTitle(l.title)}</div>
-                      <div style={{ fontSize:11, color: ld?"#1E7A4F":"#9aa3b2", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
+                      <div style={{ fontWeight:600, fontSize:13.5, color:"#15225A", lineHeight:1.35 }}>{l.n ? `Lesson ${l.n}: ` : ""}{cleanTitle(l.title)}</div>
+                      <div style={{ fontSize:11, color: ld?"#8A6414":"#5D5A8C", marginTop:2, fontWeight: ld?600:400 }}>{ld ? "Completed" : "Not started"}{lp.points?` · ${lp.points} pts`:""}</div>
                     </div>
-                    <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:TC[l.tag]||"#94a3b8", color:TT(l.tag), fontWeight:700, flexShrink:0 }}>{l.tag}</span>
+                    <span style={{ fontSize:10, padding:"3px 9px", borderRadius:999, background:l.tag==="Mock"||l.tag==="Final"?"#C9973A":"#2A2680", color:l.tag==="Mock"||l.tag==="Final"?"#15225A":"white", fontWeight:700, flexShrink:0 }}>{l.tag}</span>
                   </div>
                 );
               })}
 
               {/* unlock CTA for the next module */}
               {!unlocked && canUnlockHere && (
-                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5" }}>
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #E4E1F8" }}>
                   <button onClick={() => { setReflectMod(prev); setRBand(reflections[prev.id]?.band || 6.5); }}
-                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Пройти mock-тест и открыть</button>
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#C9973A", color:"#15225A", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Пройти mock-тест и открыть</button>
                 </div>
               )}
 
               {/* reflection gate */}
               {unlocked && complete && !reflected && (
-                <div style={{ padding:"12px 16px", borderTop:"1px solid #f1f3f5", background:"#fff8ec" }}>
-                  <div style={{ fontSize:12.5, color:"#8a5a12", fontWeight:600, marginBottom:8 }}>🛬 Модуль пройден! Запиши mock-балл + короткий отзыв, чтобы открыть следующий.</div>
+                <div style={{ padding:"12px 16px", borderTop:"1px solid #E4E1F8", background:"#FBF5E6" }}>
+                  <div style={{ fontSize:12.5, color:"#6F5010", fontWeight:600, marginBottom:8 }}>🛬 Модуль пройден! Запиши mock-балл + короткий отзыв, чтобы открыть следующий.</div>
                   <button onClick={() => { setReflectMod(m); setRBand(reflections[m.id]?.band || 6.5); }}
-                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#B8620A", color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Добавить балл и отзыв</button>
+                    style={{ padding:"9px 16px", borderRadius:9, border:"none", background:"#C9973A", color:"#15225A", fontWeight:700, fontSize:13, cursor:"pointer" }}>✍️ Добавить балл и отзыв</button>
                 </div>
               )}
             </div>
@@ -2314,12 +2980,12 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
         {/* ── FINISH / REWARD cloud ── */}
         <div style={{ display:"flex", gap:14, alignItems:"stretch" }}>
           <div style={{ width:42, display:"flex", justifyContent:"center" }}>
-            <div style={{ width:42, height:42, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, background: allDone?"#B8860B":"#94a3b8", boxShadow:`0 4px 12px ${(allDone?"#B8860B":"#94a3b8")}55`, border:"3px solid white" }}>🏆</div>
+            <div style={{ width:42, height:42, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, background: allDone?"#C9973A":"#A9A3DA", boxShadow:`0 4px 12px ${(allDone?"#C9973A":"#A9A3DA")}55`, border:"3px solid white" }}>🏆</div>
           </div>
           <div onClick={() => allDone && setRewardOpen(true)}
             style={{ flex:1, borderRadius:22, padding:"16px 18px", cursor: allDone?"pointer":"default",
-              background: allDone ? "linear-gradient(135deg,#5F4FD9,#0d2540)" : "#f1f5f9", color: allDone?"white":"#64748b",
-              boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #cbd5e1" }}>
+              background: allDone ? "linear-gradient(135deg,#2A2680,#15225A)" : "#F1EFFC", color: allDone?"white":"#5D5A8C",
+              boxShadow: allDone?cloudShadow:"none", border: allDone?"none":"1px dashed #B6AFF0" }}>
             <div style={{ fontWeight:800, fontSize:15 }}>{cert ? "🎓 Certificate received!" : "🏆 Finish line — your reward"}</div>
             <div style={{ fontSize:12, opacity:0.85, marginTop:4 }}>
               {cert ? `Your IELTS: Band ${fmtBand(cert.band)} · target was Band ${fmtBand(meta.goal)}. Tap to see admissions →`
@@ -2447,6 +3113,74 @@ function embedSrc(url) {
   return u; // direct PDF or any framable page
 }
 
+// Teacher tool: one row per lesson for its video link. A lesson's first video is step 1 on the platform.
+function LessonVideosPanel({ modules }) {
+  const lessons = (modules || []).flatMap(m => m.lessons).filter(l => !isMock(l));
+  const initial = (l) => ((l.materials || []).find(m => m.type === "video") || {}).url || "";
+  const [open, setOpen] = useState(false);
+  const [edits, setEdits] = useState({});
+  const [stored, setStored] = useState({});
+  const [busy, setBusy] = useState(null);
+  const [note, setNote] = useState({});
+  const current = (l) => stored[l.id] ?? initial(l);
+  const shown = (l) => edits[l.id] ?? current(l);
+  const withVideo = lessons.filter(l => current(l)).length;
+
+  const save = async (l) => {
+    const url = shown(l).trim();
+    if (url && !/^https?:\/\//i.test(url)) { setNote(n => ({ ...n, [l.id]: "Paste the full link, starting with https://" })); return; }
+    setBusy(l.id);
+    try {
+      const mats = (await FB.getLessonMaterials(l.id)) || [];
+      const i = mats.findIndex(m => m.type === "video");
+      const old = i >= 0 ? mats[i] : null;
+      let next;
+      if (!url) next = mats.filter((_, k) => k !== i);
+      else if (old) next = mats.map((m, k) => { if (k !== i) return m; const { storagePath, ...rest } = m; return { ...rest, url }; });
+      else next = [{ type:"video", section:"topic", url, title:"Lesson video", text:"", id:Date.now() }, ...mats];
+      await FB.setLessonMaterials(l.id, next);
+      if (old && old.storagePath) await FB.deleteLessonFile(old.storagePath).catch(() => {});
+      setStored(st => ({ ...st, [l.id]: url }));
+      setEdits(ed => { const { [l.id]: gone, ...rest } = ed; return rest; });
+      setNote(n => ({ ...n, [l.id]: !url ? "Removed." : youtubeId(url) ? "Saved. YouTube video." : "Saved. This is not a YouTube link, so the questions will show under the video." }));
+    } catch (e) { setNote(n => ({ ...n, [l.id]: "Could not save: " + e.message })); }
+    setBusy(null);
+  };
+
+  return (
+    <div style={{ background:"white", borderRadius:10, border:"1px solid #e5e5e5", overflow:"hidden", marginBottom:14 }}>
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open} style={{ display:"flex", width:"100%", alignItems:"center", gap:10, padding:"12px 14px", border:"none", background:"white", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+        <span style={{ fontWeight:700, fontSize:12, letterSpacing:"0.3px", textTransform:"uppercase", color:"#666", flex:1 }}>🎬 Lesson videos</span>
+        <span style={{ fontSize:12, fontWeight:700, color:withVideo === lessons.length && lessons.length ? "#1E7A4F" : "#666" }}>{withVideo} of {lessons.length} lessons</span>
+        <span aria-hidden="true" style={{ color:"#888" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding:"0 14px 14px", borderTop:"1px solid #e5e5e5" }}>
+          <p style={{ fontSize:12.5, color:"#666", lineHeight:1.5, margin:"10px 0 12px" }}>Paste the YouTube link for each lesson. The video becomes step 1, and it stops for three questions. In YouTube Studio set the video to <b>Unlisted</b> or <b>Public</b> and keep <b>Allow embedding</b> turned on. Clear the box and press Save to remove a video.</p>
+          {lessons.map(l => {
+            const has = !!current(l);
+            const dirty = shown(l).trim() !== current(l);
+            return (
+              <div key={l.id} style={{ padding:"8px 0", borderTop:"1px solid #f1f3f5" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"#111827", marginBottom:5 }}>
+                  <span aria-hidden="true" style={{ color:has ? "#1E7A4F" : "#c0c7d0" }}>{has ? "✓ " : "○ "}</span>
+                  Lesson {l.n}: {cleanTitle(l.title)}
+                </div>
+                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                  <input value={shown(l)} onChange={e => setEdits(ed => ({ ...ed, [l.id]: e.target.value }))} placeholder="https://youtu.be/..." aria-label={`Video link for lesson ${l.n}`}
+                    style={{ flex:1, minWidth:200, padding:"8px 10px", borderRadius:8, border:"1px solid #e5e5e5", fontSize:13, outline:"none" }} />
+                  <button onClick={() => save(l)} disabled={busy === l.id || !dirty} style={{ padding:"8px 16px", borderRadius:8, border:"none", fontWeight:700, fontSize:13, background:dirty ? "#5F4FD9" : "#E7E6F0", color:dirty ? "white" : "#8B8AA6", cursor:dirty ? "pointer" : "default" }}>{busy === l.id ? "Saving..." : "Save"}</button>
+                </div>
+                {note[l.id] && <div style={{ fontSize:12, color:note[l.id].startsWith("Could not") || note[l.id].startsWith("Paste") ? "#B3261E" : "#1E7A4F", marginTop:4 }}>{note[l.id]}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const YT_API = { promise: null };
 function loadYouTubeApi() {
   if (YT_API.promise) return YT_API.promise;
@@ -2467,7 +3201,10 @@ const isVideoFile = (mat) => !!mat.storagePath || /\.(mp4|webm|mov|m4v|ogv)(\?|$
 function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
   const yt = youtubeId(mat.url);
   const file = isVideoFile(mat);
-  const controllable = !!(yt || file);
+  // A YouTube video that cannot be embedded (private, embedding turned off, removed) must not trap the student:
+  // its questions then sit under the player, like those of other hosts.
+  const [ytFailed, setYtFailed] = useState(false);
+  const controllable = !!((yt && !ytFailed) || file);
   const [answers, setAnswers] = useState({});
   const [pending, setPending] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -2488,10 +3225,15 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
         play: () => videoRef.current?.play().catch(() => {}),
         seek: (t) => { if (videoRef.current) videoRef.current.currentTime = t; },
       };
-    } else if (yt) {
+    } else if (yt && !ytFailed) {
       loadYouTubeApi().then(YT => {
         if (dead || !ytBox.current) return;
-        const p = new YT.Player(ytBox.current, { videoId: yt, width:"100%", height:"100%", playerVars:{ rel:0, fs:0, modestbranding:1 } });
+        // playsinline keeps the video on the page on iPhone, so the questions can still appear over it.
+        const p = new YT.Player(ytBox.current, {
+          videoId: yt, width:"100%", height:"100%",
+          playerVars:{ rel:0, fs:0, modestbranding:1, playsinline:1 },
+          events:{ onError: (e) => { if (!dead && [2, 100, 101, 150, 153].includes(e.data)) setYtFailed(true); } },
+        });
         player.current = {
           time: () => p.getCurrentTime?.() || 0,
           duration: () => p.getDuration?.() || 0,
@@ -2503,7 +3245,7 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
       });
     }
     return () => { dead = true; player.current = null; };
-  }, [file, yt]);
+  }, [file, yt, ytFailed]);
 
   // Questions sit at even points through the video; skipping ahead returns to the first unanswered one.
   useEffect(() => {
@@ -2533,8 +3275,15 @@ function VideoStep({ mat, questions, saved, canSubmit, onSubmit }) {
     <div>
       <div style={{ position:"relative", aspectRatio:"16 / 9", background:"#100E35", borderRadius:16, overflow:"hidden" }}>
         {file && <video ref={videoRef} src={mat.url} controls controlsList="nofullscreen nodownload" playsInline style={{ width:"100%", height:"100%", display:"block" }} />}
-        {yt && <div style={{ width:"100%", height:"100%" }}><div ref={ytBox} /></div>}
-        {!controllable && <iframe title={mat.title||"Lesson video"} src={embedSrc(mat.url)} allowFullScreen frameBorder="0" style={{ width:"100%", height:"100%", display:"block" }} />}
+        {yt && !ytFailed && <div style={{ width:"100%", height:"100%" }}><div ref={ytBox} /></div>}
+        {yt && ytFailed && (
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:20, textAlign:"center", color:"white" }}>
+            <div style={{ fontSize:15, fontWeight:700 }}>This video cannot play on this page.</div>
+            <a href={`https://www.youtube.com/watch?v=${yt}`} target="_blank" rel="noreferrer" style={{ background:"#C9973A", color:"#15225A", padding:"10px 18px", borderRadius:12, fontWeight:800, textDecoration:"none" }}>Watch on YouTube</a>
+            <div style={{ fontSize:13, opacity:.85 }}>Then answer the questions below.</div>
+          </div>
+        )}
+        {!controllable && !yt && <iframe title={mat.title||"Lesson video"} src={embedSrc(mat.url)} allowFullScreen frameBorder="0" style={{ width:"100%", height:"100%", display:"block" }} />}
         {open && (
           <div style={{ position:"absolute", inset:0, background:"rgba(16,14,53,.88)", display:"flex", alignItems:"center", justifyContent:"center", padding:14, overflowY:"auto" }}>
             <div style={{ background:"white", borderRadius:16, padding:"16px 18px", width:"100%", maxWidth:520, margin:"auto" }}>
@@ -2603,11 +3352,39 @@ function DeckStep({ lesson, saved, canSubmit, onSubmit }) {
   );
 }
 
+// The author's own decks, shown next to a lesson's main deck. They are optional and do not count towards the step.
+const EXTRA_DECKS = {
+  "1-1": [{ file:"b1-c1-idioms-sentences", title:"B1 to C1: idioms and sentences" }],
+  "1-4": [{ file:"writing-5-to-6", title:"5.0 to 6.0: Task 2 grammar, vocabulary and topics" }],
+  "1-5": [{ file:"b1-c1-phrases-idioms", title:"B1 to C1: phrases, idioms and speaking grammar" }],
+  "3-2": [{ file:"describing-a-person", title:"Describing a person" }],
+};
+
+function ExtraDecks({ decks }) {
+  const [open, setOpen] = useState(null);
+  return (
+    <div style={{ marginTop:18, borderTop:"1px solid #ECEBF3", paddingTop:14 }}>
+      <div style={{ fontWeight:800, fontSize:15, marginBottom:8 }}>Extra presentations</div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        {decks.map(d => (
+          <button key={d.file} aria-pressed={open===d.file} onClick={() => setOpen(open===d.file ? null : d.file)} style={{ padding:"8px 14px", borderRadius:999, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, background:open===d.file?"#5F4FD9":"#F1EFFC", color:open===d.file?"white":"#14123F" }}>{d.title}</button>
+        ))}
+      </div>
+      {open && (
+        <div style={{ marginTop:12 }}>
+          <iframe key={open} title={decks.find(d => d.file===open).title} src={`/decks/extra/${open}.html`} allowFullScreen frameBorder="0" style={{ width:"100%", aspectRatio:"16 / 10", display:"block", borderRadius:16, background:"#100E35" }} />
+          <a href={`/decks/extra/${open}.html`} target="_blank" rel="noreferrer" style={{ display:"inline-block", marginTop:8, fontSize:13, color:"#5F4FD9", fontWeight:700 }}>Open in a new tab</a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SubmitBtn = ({ disabled, onClick, children }) => (
   <button onClick={onClick} disabled={disabled} style={{ padding:"11px 22px", borderRadius:12, border:"none", fontWeight:800, fontSize:14, background:disabled?"#E7E6F0":"#5F4FD9", color:disabled?"#8B8AA6":"white", cursor:disabled?"not-allowed":"pointer" }}>{children}</button>
 );
 
-function LessonPage({ lesson, session, setPage, isAdmin }) {
+function LessonPage({ lesson, session, setPage, isAdmin, openLesson, openPractice }) {
   const [addType, setAddType] = useState("video");
   const [addSection, setAddSection] = useState("topic"); // topic | discussion | hometask
   const [addUrl, setAddUrl] = useState("");
@@ -2644,8 +3421,10 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
     hasDeck(lesson) && { key:"slides", label:"Presentation", done:!!stepsDone.slides },
     { key:"test", label:"Test", done:!!stepsDone.test || lp.quizScore != null },
     hasAssignment && { key:"assignment", label:"Assignment", done:assignmentDone(lesson, lp, submission) },
+    LESSON_WORDS[lesson.id] && { key:"words", label:"Words", done:!!stepsDone.words, optional:true },
   ].filter(Boolean);
-  const firstOpen = steps.findIndex(s => !s.done);
+  // The Words step is optional, so it never holds back the lesson or the next module.
+  const firstOpen = steps.findIndex(s => !s.done && !s.optional);
   const free = isAdmin || !!lp.quizDone;
   const isLocked = (i) => !free && firstOpen !== -1 && i > firstOpen;
   const current = activeStep || (firstOpen === -1 ? steps[0].key : steps[firstOpen].key);
@@ -2676,7 +3455,8 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
     try {
       const updated = await saveStep(session.email, lesson.id, key, { ...data, at:new Date().toISOString() }, gain);
       setMyProgress(prev => ({ ...prev, [lesson.id]: updated }));
-      setActiveStep(null);
+      // Other steps move on to the next open one. The optional Words step stays put so the student sees the saved result.
+      setActiveStep(key === "words" ? "words" : null);
       toast(gain ? `Submitted · +${gain} pts` : "Submitted");
     } catch (e) { alert("Could not submit: " + e.message); }
   };
@@ -2740,8 +3520,6 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
   const renderMat = (mat) => {
     const isYt = mat.type==="video" && youtubeId(mat.url);
     const isFile = mat.type==="video" && isVideoFile(mat);
-    const preview = (mat.type==="presentation" || mat.type==="pdf") ? embedSrc(mat.url) : null;
-    const tall = mat.type==="pdf";
     const opened = isOpened(mat);
     return (
       <div key={mat.id} style={{ background:"white", borderRadius:16, padding:14, marginBottom:12, border:"1px solid #ECEBF3" }}>
@@ -2759,9 +3537,6 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
           <iframe width="100%" height="220" title={mat.title||"Video"} src={`https://www.youtube.com/embed/${youtubeId(mat.url)}`} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12 }} />
         )}
         {isFile && mat!==lessonVideo && <video src={mat.url} controls style={{ width:"100%", display:"block", borderRadius:12, marginTop:12 }} />}
-        {preview && (
-          <iframe width="100%" height={tall?480:320} title={mat.title||"Preview"} src={preview} frameBorder="0" allowFullScreen style={{ display:"block", borderRadius:12, marginTop:12, background:"#F7F7FB" }} />
-        )}
         {mat.text && <div style={{ marginTop:10, fontSize:13.5, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{mat.text}</div>}
       </div>
     );
@@ -2798,7 +3573,7 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
           return (
             <button key={s.key} disabled={locked} aria-current={on ? "step" : undefined} onClick={() => setActiveStep(s.key)}
               style={{ padding:"10px 8px", borderRadius:14, border:`2px solid ${on?"#5F4FD9":"transparent"}`, background:s.done?"#E9F6EC":on?"#F1EFFC":"#F7F7FB", color:locked?"#A9A8BD":"#14123F", cursor:locked?"not-allowed":"pointer", fontWeight:700, fontSize:13, fontFamily:"inherit", minWidth:0 }}>
-              <span style={{ display:"block", fontSize:11.5, color:s.done?"#3F9C5B":locked?"#A9A8BD":"#5F4FD9", fontWeight:800 }}>{s.done?"✓ Submitted":locked?"🔒 Locked":`Step ${i+1}`}</span>
+              <span style={{ display:"block", fontSize:11.5, color:s.done?"#3F9C5B":locked?"#A9A8BD":"#5F4FD9", fontWeight:800 }}>{s.done?"✓ Submitted":locked?"🔒 Locked":s.optional?"Optional":`Step ${i+1}`}</span>
               <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.label}</span>
             </button>
           );
@@ -2812,7 +3587,10 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
             onSubmit={(correct, count) => submitStep("video", { correct, count }, correct * VIDEO_POINTS)} />
         )}
         {loaded && current==="slides" && (
-          <DeckStep lesson={lesson} saved={stepsDone.slides} canSubmit={!isAdmin} onSubmit={() => submitStep("slides", {}, SLIDES_POINTS)} />
+          <>
+            <DeckStep lesson={lesson} saved={stepsDone.slides} canSubmit={!isAdmin} onSubmit={() => submitStep("slides", {}, SLIDES_POINTS)} />
+            {EXTRA_DECKS[lesson.id] && <ExtraDecks decks={EXTRA_DECKS[lesson.id]} />}
+          </>
         )}
         {loaded && current==="test" && (
           <div style={{ padding:"10px 6px" }}>
@@ -2822,20 +3600,57 @@ function LessonPage({ lesson, session, setPage, isAdmin }) {
             <SubmitBtn onClick={() => setPage("quiz")}>{testSaved ? "Retake the test" : isAdmin ? "Preview the test" : "Start the test"}</SubmitBtn>
           </div>
         )}
-        {loaded && current==="assignment" && hasAssignment && (
-          <div style={{ padding:"10px 6px" }}>
-            <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Assignment</h3>
-            <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{lesson.assignment.prompt}</p>
-            {submission?.rubric?.overall != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Self-assessed Band {submission.rubric.overall}</div>}
-            <SubmitBtn onClick={() => setPage("assignment")}>{steps[currentIdx].done ? "Open: review or retry" : "Write and submit"}</SubmitBtn>
-          </div>
-        )}
+        {loaded && current==="words" && LESSON_WORDS[lesson.id] && (() => {
+          // Lessons that have a grammar unit in the Workbook link straight to it.
+          const unit = WORKBOOK_LEVELS.c.grammarUnits.find(g => g.lesson === lesson.n);
+          return (
+            <WordGames key={lesson.id} words={LESSON_WORDS[lesson.id]} saved={stepsDone.words} canSubmit={!isAdmin}
+              onSubmit={(r) => submitStep("words", r, stepsDone.words ? 0 : WORDS_POINTS)}
+              onWorkbook={unit ? () => { try { sessionStorage.setItem("lms_workbook_open", `c|g-${unit.id}`); } catch (e) { /* opens the first unit instead */ } setPage("workbook"); } : null} />
+          );
+        })()}
+        {loaded && current==="assignment" && hasAssignment && (() => {
+          const hw = HOMEWORK[lesson.id];
+          const sk = skeletonOf(lesson);
+          const stepDone = steps[currentIdx].done;
+          return (
+            <div style={{ padding:"10px 6px" }}>
+              <h3 style={{ margin:"0 0 6px", fontSize:18, fontWeight:800 }}>Homework{hw ? `: ${hw.kind}` : ""}</h3>
+              <p style={{ margin:"0 0 14px", fontSize:14, color:"#55536F", lineHeight:1.6, whiteSpace:"pre-line" }}>{hw ? `${hw.title}. ${hw.intro} ${hw.questions.length} questions, marked automatically.` : cleanTitle(lesson.assignment.prompt)}</p>
+              {submission?.score != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Last result: {Math.round(submission.score/submission.total*100)}%</div>}
+              {submission?.ai && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>AI estimate: Band {Number(submission.ai.overall).toFixed(1)}</div>}
+              {!submission?.ai && submission?.rubric?.overall != null && <div style={{ background:"#E9F6EC", color:"#1D5E31", borderRadius:12, padding:"10px 14px", fontWeight:700, fontSize:14, marginBottom:14 }}>Self-assessed Band {submission.rubric.overall}</div>}
+              {sk && <div style={{ marginBottom:16 }}><SkeletonCard sk={sk} /></div>}
+              <SubmitBtn onClick={() => setPage("assignment")}>{stepDone ? "Open: review or retry" : hw ? "Start the homework" : "Write and submit"}</SubmitBtn>
+            </div>
+          );
+        })()}
         {loaded && steps[currentIdx]?.done && currentIdx < steps.length-1 && (
           <div style={{ textAlign:"right", marginTop:12 }}>
             <button onClick={() => setActiveStep(steps[currentIdx+1].key)} style={{ border:"none", background:"none", color:"#5F4FD9", fontWeight:800, fontSize:14, cursor:"pointer", fontFamily:"inherit" }}>Next step: {steps[currentIdx+1].label} →</button>
           </div>
         )}
       </div>
+
+      {PRACTICE[lesson.id] && (
+        <div style={{ background:"white", border:"1px solid #ECEBF3", borderRadius:20, padding:16, marginBottom:20 }}>
+          <div style={{ fontWeight:800, fontSize:16, marginBottom:4 }}>Practice recordings</div>
+          <div style={{ fontSize:13, color:"#6E6C8A", marginBottom:12 }}>Extra listening with 10 questions each, marked automatically. Try them as many times as you like.</div>
+          {PRACTICE[lesson.id].map(p => (
+            <button key={p.title} onClick={() => openPractice(p)} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F7F7FB", border:"none", borderRadius:14, padding:"12px 16px", marginBottom:8, cursor:"pointer", fontFamily:"inherit", color:"#14123F" }}>
+              <span style={{ flex:1, fontWeight:700, fontSize:14 }}>{p.title}</span>
+              <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {lesson.mockLink && (
+        <button onClick={() => openLesson(lesson.mockLink)} style={{ display:"flex", alignItems:"center", gap:12, width:"100%", textAlign:"left", background:"#F1EFFC", border:"none", borderRadius:16, padding:"14px 18px", marginBottom:20, cursor:"pointer", fontFamily:"inherit", color:"#14123F" }}>
+          <span style={{ flex:1, fontWeight:800, fontSize:14.5 }}>Practise under test conditions: Mock Test 1</span>
+          <span aria-hidden="true" style={{ color:"#5F4FD9", fontSize:18 }}>›</span>
+        </button>
+      )}
 
       {isAdmin && (
         <div style={{ background:"#F7F7FB", borderRadius:18, padding:18, marginBottom:20 }}>
@@ -3413,6 +4228,7 @@ export default function App() {
   const [session, setSession] = useState(getSession);
   const [page, setPage] = useState("course");
   const [currentLesson, setCurrentLesson] = useState(null);
+  const [practice, setPractice] = useState(null);
   const [modules, setModules] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
@@ -3422,7 +4238,7 @@ export default function App() {
     const load = async () => {
       try {
         const mods = await FB.getModules();
-        setModules(mods || INITIAL_MODULES);
+        setModules(mods ? withCodeLessons(mods) : INITIAL_MODULES);
       } catch (e) {
         setModules(INITIAL_MODULES);
       }
@@ -3467,9 +4283,15 @@ export default function App() {
 
   const isAdmin = session.email === ADMIN_EMAIL;
 
+  // Masterclass students see nothing else.
+  if (session.masterclassOnly || page === "masterclass") return <MasterclassPage session={session} onBack={session.masterclassOnly ? null : () => setPage("courses")} logout={logout} />;
+
   // Full-screen pages, without the sidebar
   if (page === "quiz" && currentLesson) return <QuizPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />;
-  if (page === "assignment" && currentLesson) return <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
+  if (page === "practice" && currentLesson && practice) return <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} practice={practice} />;
+  if (page === "assignment" && currentLesson) return HOMEWORK[currentLesson.id]
+    ? <HomeworkPage lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} />
+    : <AssignmentPage lesson={currentLesson} session={session} setPage={setPage} />;
 
   const body =
     page === "admin" && isAdmin ? <AdminPanel session={session} logout={logout} setPage={setPage} modules={modules} /> :
@@ -3478,8 +4300,12 @@ export default function App() {
     page === "speaking" ? <SpeakingWorld session={session} logout={logout} setPage={setPage} isAdmin={isAdmin} /> :
     page === "leaderboard" ? <Leaderboard session={session} setPage={setPage} /> :
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
+    page === "skeletons" ? <SkeletonsPage /> :
+    page === "daily" ? <DailyPage /> :
+    page === "workbook" ? <WorkbookPage key={session.email} email={session.email} name={session.name} store={{ load: () => FB.getWorkbook(session.email), save: (w) => FB.setWorkbook(session.email, w) }} /> :
+    page === "discussion" ? <DiscussionPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
-    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} /> :
+    page === "lesson" && currentLesson ? <LessonPage key={currentLesson.id} lesson={currentLesson} session={session} setPage={setPage} isAdmin={isAdmin} openLesson={(id) => setCurrentLesson(modules.flatMap(m => m.lessons).find(l => l.id === id))} openPractice={(p) => { setPractice(p); setPage("practice"); }} /> :
     <CoursePage key={page==="courses"?"courses":"dashboard"} view={page==="courses"?"courses":"dashboard"} session={session} setPage={setPage} setCurrentLesson={setCurrentLesson} isAdmin={isAdmin} modules={modules} />;
 
   return (
