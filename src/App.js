@@ -8,6 +8,7 @@ import { DISCUSSION_TOPICS } from "./discussion";
 import WorkbookPage from "./WorkbookPage";
 import DailyPage, { DailyStrip } from "./DailyPage";
 import WordGames from "./WordGames";
+import LoginScene from "./LoginScene";
 import { LESSON_WORDS } from "./lessonWords";
 import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
 import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
@@ -2534,15 +2535,10 @@ function Login({ authError }) {
   const shown = err || authError;
 
   return (
-    <div style={{ minHeight:"100vh", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit", padding:16 }}>
-      <div style={{ background:"white", borderRadius:14, padding:32, width:"100%", maxWidth:360, boxShadow:"0 12px 48px rgba(0,0,0,0.35)" }}>
-        <div style={{ textAlign:"center", marginBottom:24, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
-          <BrandLogo size={44} />
-          <h2 style={{ margin:0, color:"#0a0a0a", fontSize:20, letterSpacing:"-0.3px" }}>IELTS<span>8</span></h2>
-          <p style={{ color:"#666", margin:0, fontSize:13 }}>Sign in with your Google account</p>
-        </div>
-        {shown && <p style={{ color:"#0a0a0a", fontSize:12, margin:"0 0 12px", textAlign:"center" }}>{shown}</p>}
-        <button onClick={go} disabled={loading} style={{ width:"100%", padding:12, borderRadius:10, border:"1.5px solid #e5e5e5", background:"white", color:"#0a0a0a", fontSize:14, fontWeight:700, cursor:"pointer", opacity: loading ? 0.6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+    <LoginScene>
+      <div className="ls-card">
+        {shown && <p className="ls-err" role="alert">{shown}</p>}
+        <button className="ls-google" onClick={go} disabled={loading}>
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -2551,8 +2547,9 @@ function Login({ authError }) {
           </svg>
           {loading ? "Signing in…" : "Continue with Google"}
         </button>
+        <p className="ls-note">Sign in with the Google account your teacher added to the course.</p>
       </div>
-    </div>
+    </LoginScene>
   );
 }
 

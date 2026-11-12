@@ -1,0 +1,354 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>IELTS8 Reading Mock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Layout: a computer-based exam screen. Passage on the left, questions on the right, an indigo bar with the clock. One fixed look in the IELTS8 palette. */
+:root{
+  --indigo:#2A2680; --navy:#15225A; --gold:#C9973A; --gold-soft:#FBF5E6; --gold-ink:#6F5010;
+  --lav:#F1EFFC; --line:#DAD7F0; --muted:#5D5A8C; --paper:#FFFFFF; --ground:#F6F5FC; --mark:#FBE7A6;
+  --good:#1D6B3A; --good-bg:#E8F5EC; --bad:#A92C2C; --bad-bg:#FBEAEA;
+  --font:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--navy);font-family:var(--font);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--indigo)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding-block:16px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.narrow{max-width:860px;margin:0 auto}
+.brand{font-weight:800;letter-spacing:.02em}.brand span{color:var(--gold)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--indigo);color:#fff;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.status{flex:1;min-width:140px;font-size:13.5px;font-weight:600;color:#E4E1F8}
+.clock{font-weight:800;font-variant-numeric:tabular-nums;color:#E4BF6C;font-size:17px}
+.clock.low{color:#FFB4B4}
+.btn{border:none;border-radius:10px;padding:11px 20px;font-weight:800;background:var(--gold);color:var(--navy)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--navy)}
+.bar .btn{padding:7px 14px;font-size:13.5px}
+.bar .btn.ghost{color:#fff;border-color:rgba(255,255,255,.4)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.tab{border:1.5px solid var(--line);background:var(--paper);border-radius:10px;padding:7px 14px;font-weight:700;font-size:14px}
+.tab[aria-pressed=true]{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:4px;margin-bottom:12px}
+.strip button{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;padding:0}
+.strip button.on{background:var(--lav);border-color:var(--indigo);color:var(--indigo)}
+.split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px;align-items:start}
+.pane{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;max-height:calc(100vh - 190px);overflow:auto}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}.pane{max-height:none}}
+.passage{font-family:var(--serif);font-size:17px;line-height:1.75}
+.passage h2{font-family:var(--font);font-size:22px;line-height:1.25;margin:4px 0 4px}
+.passage .sub{font-family:var(--font);font-size:13.5px;color:var(--muted);margin:0 0 14px}
+.passage p{margin:0 0 14px}
+.passage .lbl{font-family:var(--font);font-weight:800;color:var(--indigo);margin-right:6px}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.15;margin:0 0 10px;text-wrap:balance}
+.instr{background:var(--lav);border-radius:10px;padding:10px 14px;font-size:14.5px;margin:18px 0 12px}
+.instr:first-child{margin-top:0}
+.instr b{color:var(--indigo)}
+.box{border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:14.5px}
+.box div{padding:2px 0}
+.box .ttl{font-weight:800;text-align:center;margin-bottom:4px}
+.q{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #EEECF8}
+.num{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px;border-radius:6px;background:var(--navy);color:#fff;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.qt{flex:1;min-width:180px}
+.qt input{width:140px;max-width:100%;padding:4px 8px;border:1.5px solid var(--line);border-radius:6px;background:#fff;margin:2px 4px}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%;padding-left:38px}
+.opts label{display:inline-flex;align-items:baseline;gap:6px;border:1.5px solid var(--line);border-radius:8px;padding:5px 10px;font-size:14px;cursor:pointer;background:#fff}
+.opts label:has(input:checked){border-color:var(--indigo);background:var(--lav)}
+.opts.stack{flex-direction:column}
+select{padding:5px 8px;border:1.5px solid var(--line);border-radius:6px;background:#fff;max-width:100%}
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px}
+.note{font-size:13.5px;color:var(--muted)}
+.field{display:block;font-weight:700;font-size:14px;margin:16px 0 6px}
+#name{width:100%;max-width:340px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.fact{background:var(--lav);border-radius:10px;padding:10px 14px}.fact b{display:block;font-size:20px;color:var(--indigo)}.fact span{font-size:13px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.warn{background:var(--gold-soft);color:var(--gold-ink);border-radius:10px;padding:10px 14px;font-size:14.5px;margin-top:14px}
+.band{font-size:64px;font-weight:800;color:var(--indigo);line-height:1}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{padding:7px 8px;border-bottom:1px solid #EEECF8;text-align:left;vertical-align:top}
+.tbl{overflow-x:auto}
+.ok{background:var(--good-bg);color:var(--good);font-weight:700;border-radius:6px;padding:1px 7px}
+.no{background:var(--bad-bg);color:var(--bad);font-weight:700;border-radius:6px;padding:1px 7px}
+footer{font-size:12.5px;color:var(--muted);margin-top:18px;text-align:center}
+.confirm{margin:0 0 12px;background:var(--gold-soft);border-radius:10px;padding:12px 14px}
+</style></head><body>
+
+<div class="bar" id="bar" hidden><div class="bar-in">
+  <span class="brand">IELTS<span>8</span></span>
+  <span class="status" id="status" aria-live="polite">Reading</span>
+  <span class="clock" id="clock" aria-label="Time left"></span>
+  <button class="btn ghost" id="clearMarks" type="button">Clear highlights</button>
+  <button class="btn" id="submitTop" type="button">Submit</button>
+</div></div>
+
+<div class="wrap">
+  <section class="sheet narrow" id="start">
+    <div class="brand" style="font-size:20px;margin-bottom:14px">IELTS<span>8</span></div>
+    <h1>Reading Mock Test</h1>
+    <p>A complete Academic Reading practice test in the IELTS format: three passages that get harder, and forty questions. Your answers save as you go.</p>
+    <div class="facts">
+      <div class="fact"><b>3</b><span>passages</span></div>
+      <div class="fact"><b>40</b><span>questions, 1 mark each</span></div>
+      <div class="fact"><b>60 min</b><span>no extra time to transfer answers</span></div>
+      <div class="fact"><b>About 20 min</b><span>for each passage</span></div>
+    </div>
+    <label class="field" for="name">Your name</label>
+    <input id="name" type="text" autocomplete="name" placeholder="First and last name">
+    <div class="row" style="margin-top:16px"><button class="btn" id="begin" type="button">Start the test</button></div>
+    <div class="warn" id="startMsg">The clock starts when you press Start and keeps running if you close the page. Select words in a passage to highlight them. Spelling counts.</div>
+  </section>
+
+  <section id="test" hidden>
+    <div class="confirm" id="confirm" hidden>
+      <p style="margin:0 0 10px;font-weight:700" id="confirmText"></p>
+      <div class="row"><button class="btn" id="confirmYes" type="button">Yes, submit</button><button class="btn ghost" id="confirmNo" type="button">Keep working</button></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="strip" id="strip" aria-label="Question navigator"></div>
+    <div id="panes"></div>
+  </section>
+
+  <section class="narrow" id="result" hidden></section>
+  <footer>Practice test written by IELTS8. The passages are written for practice and some details are illustrative. It is not an official IELTS test, and the band is an estimate.</footer>
+</div>
+
+<script>
+const TF = ["TRUE", "FALSE", "NOT GIVEN"], YN = ["YES", "NO", "NOT GIVEN"];
+const choice = (n, q, options, answer) => ({ n, type:"choice", q, options, answer });
+const gap = (n, before, after, answer, alt) => ({ n, type:"gap", before, after, answer, alt:alt || [] });
+const pick = (n, label, choices, answer) => ({ n, type:"pick", label, choices, answer });
+const LETTERS7 = "ABCDEFG".split("");
+const ROMAN = ["i","ii","iii","iv","v","vi","vii","viii"];
+
+const PASSAGES = [
+  { title:"Bicycles for Everyone", sub:"You should spend about 20 minutes on Questions 1–13, which are based on Reading Passage 1.",
+    paras:[
+      "In the summer of 1965, a group of young activists in Amsterdam painted around fifty bicycles white and left them unlocked around the city. Anyone could take one, ride it to their destination and leave it there for the next person. The ‘White Bicycle Plan’, as it became known, was intended as a protest against the growing number of cars in the city centre. It did not last long. Many of the bicycles were stolen or thrown into the canals, and the police removed others because leaving a bicycle unlocked was against local rules at the time. Nevertheless, the idea that a city could share a fleet of bicycles had been born.",
+      "For almost thirty years, little happened. Then, in 1995, Copenhagen introduced a scheme with a simple but important improvement. Its bicycles could be released from special racks by inserting a coin, much like a supermarket trolley, and the coin was returned when the bicycle was put back. The bicycles were sturdy and deliberately unattractive, with solid tyres and unusual parts that could not easily be fitted to ordinary bicycles, which made them less tempting to thieves. Even so, users could remain anonymous, and many bicycles still disappeared.",
+      "The breakthrough came with technology. In 2005, the French city of Lyon launched a system in which riders identified themselves with a smart card before unlocking a bicycle from a computerised docking station. Because every journey was linked to a registered user, bicycles were far more likely to be returned. Two years later, Paris introduced a much larger version of the same model, with thousands of bicycles and hundreds of stations. Its success attracted attention around the world, and within a few years similar systems had opened in cities from London to Mexico City and Hangzhou.",
+      "Docked systems, however, have a weakness: they are expensive. Each station requires a site, construction work and an electricity supply, and someone has to move bicycles from full stations to empty ones, usually by van. Around 2016, a new model appeared in China that removed the need for stations altogether. In these ‘dockless’ schemes, each bicycle carries its own lock, which riders open by scanning a code with a smartphone app, and the bicycle can be left almost anywhere. Private companies, supported by large investments, filled cities with millions of brightly coloured bicycles in a very short time.",
+      "The results were mixed. Dockless bicycles made short trips easy and cheap, but in many cities the supply quickly exceeded demand. Pavements became blocked, and photographs of huge piles of abandoned bicycles, sometimes called bicycle graveyards, were widely shared online. Several of the companies ran out of money, and local governments began to introduce rules limiting the number of bicycles each operator could place on the streets and requiring them to be parked in marked areas.",
+      "The most recent change has been the arrival of electric bicycles. A motor makes hills and longer distances manageable for people who would not otherwise cycle, including older riders and commuters who do not want to arrive at work hot and tired. Electric bicycles are more costly to buy and maintain, and their batteries must be charged or exchanged regularly, but figures from several cities suggest that each electric bicycle is used for more trips per day than a standard one.",
+      "Supporters argue that bike-sharing is most valuable as part of a wider transport network. A rider can cycle the ‘last mile’ between a railway station and an office, for example, rather than taking a car for the whole journey. Critics reply that many shared bicycle trips replace walking or public transport rather than car journeys, so the environmental benefit may be smaller than is often claimed. What seems clear is that the idea first tested on the streets of Amsterdam has finally found a place in city life, even if its final form is still being decided.",
+    ],
+    groups:[
+      { instr:"Questions 1–6. Do the following statements agree with the information given in Reading Passage 1? Choose <b>TRUE</b> if the statement agrees with the information, <b>FALSE</b> if the statement contradicts the information, or <b>NOT GIVEN</b> if there is no information on this.",
+        items:[
+          choice(1, "The White Bicycle Plan was a protest against cars in the city centre.", TF, "TRUE"),
+          choice(2, "The police removed the Amsterdam bicycles because they had been damaged.", TF, "FALSE"),
+          choice(3, "The Copenhagen bicycles were designed to look attractive.", TF, "FALSE"),
+          choice(4, "The Copenhagen scheme was paid for by advertising.", TF, "NOT GIVEN"),
+          choice(5, "In Lyon, riders had to identify themselves before taking a bicycle.", TF, "TRUE"),
+          choice(6, "The Paris scheme was more popular with tourists than with local residents.", TF, "NOT GIVEN"),
+        ]},
+      { instr:"Questions 7–13. Complete the notes below. Choose <b>ONE WORD ONLY</b> from the passage for each answer.", title:"Dockless and electric bicycles",
+        items:[
+          gap(7, "Dockless schemes began in", "around 2016.", "China"),
+          gap(8, "Each bicycle has its own", ", opened with a smartphone app.", "lock"),
+          gap(9, "Problem: too many bicycles blocked", ".", "pavements"),
+          gap(10, "Piles of abandoned bicycles were called bicycle", ".", "graveyards"),
+          gap(11, "New rules: bicycles must be parked in marked", ".", "areas"),
+          gap(12, "Electric bicycles make hills and longer", "manageable.", "distances"),
+          gap(13, "Electric bicycles need their", "charged or exchanged regularly.", "batteries"),
+        ]},
+    ]},
+  { title:"Learning from Nature", sub:"You should spend about 20 minutes on Questions 14–26, which are based on Reading Passage 2.", labelled:true,
+    paras:[
+      "Human beings have always looked to nature for ideas, but in recent decades the practice has acquired a name and a method. Biomimicry, from the Greek words for ‘life’ and ‘imitation’, is the deliberate study of how plants and animals solve problems, with the aim of applying the same principles to human design. Its supporters point out that living things have had millions of years of evolution to test their solutions, while most modern technology is barely two centuries old.",
+      "One of the best-known examples began with a walk in the Swiss countryside. In the 1940s, the engineer George de Mestral noticed that the burrs of the burdock plant stuck stubbornly to his clothes and to his dog’s fur. Examining them under a microscope, he saw that each burr was covered in tiny hooks that caught on anything with loops, such as fabric or hair. It took him several years to reproduce the effect with man-made materials, but the result, a fastener made of one strip of hooks and one of loops, became Velcro, now used on everything from children’s shoes to spacecraft.",
+      "Sometimes nature offers a solution to a problem that engineers have struggled with for years. When Japan’s high-speed trains came out of tunnels, the air pushed ahead of them created a loud boom that disturbed people living nearby. One of the engineers working on the problem, Eiji Nakatsu, was a keen birdwatcher, and he thought of the kingfisher, a bird that dives from the air into water with hardly a splash. A new train nose modelled on the shape of the kingfisher’s beak reduced the noise, and the trains also used less electricity.",
+      "Buildings, too, have borrowed from the natural world. In Harare, Zimbabwe, the Eastgate Centre, an office and shopping complex completed in 1996, was designed by the architect Mick Pearce, who studied termite mounds. Termites were believed to keep the inside of their mounds at a fairly steady temperature by allowing air to circulate through a network of tunnels. Using a similar system of openings and chimneys, the building is cooled largely without conventional air conditioning and uses far less energy than similar buildings of its size. Some biologists have since questioned whether termite mounds actually work in the way the designers assumed, but the building’s performance has not been in doubt.",
+      "Not every attempt at imitation succeeds. Researchers have long been fascinated by the gecko, a lizard that can run up walls and across ceilings. Its feet are covered in millions of microscopic hairs, each of which is weakly attracted to almost any surface, and together they produce a remarkably strong grip that can be released instantly. Laboratories have produced adhesives based on the same principle, but making them cheaply, in large quantities and durable enough for everyday use has proved difficult, and few have reached ordinary shops.",
+      "Critics of biomimicry warn against seeing nature as a perfect designer. Evolution produces solutions that are good enough for an organism to survive, not necessarily the best possible ones, and a feature that works for a small animal may not work at the scale of a building or a machine. Supporters accept these limits but argue that the main value of biomimicry lies less in copying particular features than in a way of thinking: asking, before designing anything, how the same challenge has already been met in the natural world. Seen in this light, nature is not so much a catalogue of answers as a source of better questions.",
+    ],
+    groups:[
+      { instr:"Questions 14–19. Reading Passage 2 has six paragraphs, <b>A–F</b>. Choose the correct heading for each paragraph from the list of headings below.",
+        box:{ title:"List of Headings", lines:["i&nbsp;&nbsp; A failure to copy nature at a practical price","ii&nbsp; Turning an annoying experience into a useful product","iii Why nature’s designs may not be the best model","iv&nbsp; Defining an approach to design","v&nbsp;&nbsp; Using an animal’s method to control temperature","vi&nbsp; The high cost of building with natural materials","vii A hobby that helped to solve a noise problem","viii How animals adapt to life in cities"] },
+        items:[pick(14,"Paragraph A",ROMAN,"iv"),pick(15,"Paragraph B",ROMAN,"ii"),pick(16,"Paragraph C",ROMAN,"vii"),pick(17,"Paragraph D",ROMAN,"v"),pick(18,"Paragraph E",ROMAN,"i"),pick(19,"Paragraph F",ROMAN,"iii")]},
+      { instr:"Questions 20–23. Choose the correct letter, <b>A, B, C or D</b>.",
+        items:[
+          choice(20, "According to paragraph A, supporters of biomimicry value nature’s solutions because they", ["A  are cheaper than modern technology.","B  have been tested over a very long time.","C  are easier to understand.","D  come from ancient Greek ideas."], "B"),
+          choice(21, "What did George de Mestral see when he examined the burrs?", ["A  They contained a natural glue.","B  They only stuck to animal fur.","C  They were covered in tiny hooks.","D  They were easy to copy."], "C"),
+          choice(22, "The new nose for the Japanese trains", ["A  was first tested on a bird.","B  made the trains more expensive to run.","C  was designed by a team of biologists.","D  reduced both noise and energy use."], "D"),
+          choice(23, "What does the writer say about the Eastgate Centre?", ["A  Its design may rest on an incorrect idea, but the building works well.","B  It relies on air conditioning during the summer.","C  It was the first building in Africa to use solar power.","D  It is now used mainly for shopping."], "A"),
+        ]},
+      { instr:"Questions 24–26. Complete the summary using the list of words, <b>A–H</b>, below.",
+        box:{ title:"Gecko adhesives", lines:["The feet of a gecko are covered in millions of tiny <b>(24)</b> ________, each weakly attracted to almost any surface. Together these produce a strong <b>(25)</b> ________ that the animal can release immediately. Scientists have made adhesives based on the same idea, but few of them have appeared in <b>(26)</b> ________, because they are hard to make cheaply and to keep durable.","<br><b>A</b> hairs &nbsp; <b>B</b> hooks &nbsp; <b>C</b> grip &nbsp; <b>D</b> glue &nbsp; <b>E</b> shops &nbsp; <b>F</b> laboratories &nbsp; <b>G</b> scales &nbsp; <b>H</b> tunnels"] },
+        items:[pick(24,"Gap 24","ABCDEFGH".split(""),"A"),pick(25,"Gap 25","ABCDEFGH".split(""),"C"),pick(26,"Gap 26","ABCDEFGH".split(""),"E")]},
+    ]},
+  { title:"The Uses of Boredom", sub:"You should spend about 20 minutes on Questions 27–40, which are based on Reading Passage 3.", labelled:true,
+    paras:[
+      "Few emotions have such a poor reputation as boredom. We complain about it, try to avoid it and often treat it as a sign of a dull mind. Yet psychologists who study the experience have begun to argue that boredom, like pain or hunger, is a signal worth listening to. It tells us, they suggest, that what we are doing is no longer satisfying and that we should look for something else.",
+      "Defining boredom has proved surprisingly difficult. It is not the same as having nothing to do: a person can feel bored at a busy party, while another can sit alone without any distraction and feel perfectly content. Many researchers now describe it as a state in which we want to be engaged in a satisfying activity but cannot become so, either because the task in front of us is too easy or too hard, or because it seems to have no purpose.",
+      "Some of the most striking evidence about boredom comes from an experiment published in 2014. Participants were asked to sit alone in a plain room for between six and fifteen minutes with nothing to do but think. Earlier, they had been given a mild electric shock, and many had said they would pay money to avoid receiving one again. Yet when left alone with their thoughts, a considerable number of them, particularly the men, chose to give themselves a shock rather than simply sit and think. The researchers concluded that many people find their own unoccupied minds remarkably uncomfortable.",
+      "If boredom is so unpleasant, why might it be useful? One answer is that it pushes people to change what they are doing. Another is that it may encourage creativity. In a widely reported study, one group of participants spent fifteen minutes copying numbers from a telephone directory, a deliberately dull task, while another group went straight to the next stage. Both groups were then asked to think of as many uses as possible for a pair of polystyrene cups. Those who had first done the boring task came up with more ideas. The researchers suggested that boredom had allowed the participants’ minds to wander, and that daydreaming had helped them make unusual connections.",
+      "Not everyone is convinced. Other teams have tried to repeat such experiments and found smaller effects, or none at all, and critics note that the creative tasks used in laboratories bear little resemblance to the kind of creativity that matters in art, science or business. There is also a darker side to boredom. People who report being bored frequently are more likely to eat unhealthily, take risks and feel low, although it is not clear whether boredom causes these problems or is simply another symptom of them.",
+      "Technology has changed our relationship with boredom more than anything else. Most people now carry a device that can fill any empty moment, whether in a queue, on a bus or during a pause in conversation. Some researchers worry that by constantly escaping the feeling, we lose the chance to learn from it, and that the brief relief provided by a phone may even leave us more restless afterwards. Others argue that much of what people find on their phones is educational or social, and that it is the quality of how time is spent, not the device, that matters.",
+      "What, then, should we do when boredom strikes? Psychologists rarely recommend seeking it out for its own sake. Instead, they suggest treating it as information. If a task is too simple, it may help to set a more demanding goal; if it is too difficult, to break it into smaller steps; and if it seems pointless, to find a reason to care about it or to stop doing it altogether. Used in this way, boredom becomes less an enemy to be defeated than a guide that points towards a more meaningful use of our time.",
+    ],
+    groups:[
+      { instr:"Questions 27–31. Reading Passage 3 has seven paragraphs, <b>A–G</b>. Which paragraph contains the following information? You may use any letter more than once.",
+        items:[
+          pick(27, "a description of a task that was chosen because it was dull", LETTERS7, "D"),
+          pick(28, "a reason why boredom is hard to define", LETTERS7, "B"),
+          pick(29, "an example of people preferring physical discomfort to doing nothing", LETTERS7, "C"),
+          pick(30, "practical advice on how to respond to boredom", LETTERS7, "G"),
+          pick(31, "a reference to problems linked with frequent boredom", LETTERS7, "E"),
+        ]},
+      { instr:"Questions 32–36. Do the following statements agree with the claims of the writer in Reading Passage 3? Choose <b>YES</b> if the statement agrees with the claims of the writer, <b>NO</b> if the statement contradicts the claims of the writer, or <b>NOT GIVEN</b> if it is impossible to say what the writer thinks about this.",
+        items:[
+          choice(32, "Boredom has traditionally been seen in a negative way.", YN, "YES"),
+          choice(33, "Having nothing to do always leads to boredom.", YN, "NO"),
+          choice(34, "In the 2014 experiment, women were more willing than men to give themselves a shock.", YN, "NO"),
+          choice(35, "All the participants in the creativity study were university students.", YN, "NOT GIVEN"),
+          choice(36, "Boredom can guide people towards better choices about how they spend their time.", YN, "YES"),
+        ]},
+      { instr:"Questions 37–40. Complete each sentence with the correct ending, <b>A–G</b>, below.",
+        box:{ title:"", lines:["<b>A</b> &nbsp;laboratory tasks are very different from creativity in real life.","<b>B</b> &nbsp;boredom is caused mainly by a lack of sleep.","<b>C</b> &nbsp;people want to do something satisfying but are unable to.","<b>D</b> &nbsp;the brain stops working when there is nothing to do.","<b>E</b> &nbsp;many people find it unpleasant to be alone with their thoughts.","<b>F</b> &nbsp;it may stop people from learning anything from the feeling.","<b>G</b> &nbsp;phones make conversations more meaningful."] },
+        items:[
+          pick(37, "According to many researchers, boredom happens when", LETTERS7, "C"),
+          pick(38, "The researchers in the 2014 experiment concluded that", LETTERS7, "E"),
+          pick(39, "Critics of the creativity research point out that", LETTERS7, "A"),
+          pick(40, "Some researchers worry about constantly using phones because", LETTERS7, "F"),
+        ]},
+    ]},
+];
+
+const ALL = PASSAGES.flatMap(p => p.groups.flatMap(g => g.items));
+const BAND = [[39,9],[37,8.5],[35,8],[33,7.5],[30,7],[27,6.5],[23,6],[19,5.5],[15,5],[13,4.5],[10,4],[8,3.5],[6,3],[4,2.5],[0,"below 2.5"]];
+const bandFor = (raw) => BAND.find(([min]) => raw >= min)[1];
+const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/[.,;:!?]+$/,"").replace(/\s+/g," ");
+const isRight = (it, v) => {
+  if (v == null || v === "") return false;
+  if (it.type === "gap") return [it.answer, ...it.alt].some(a => norm(a) === norm(v));
+  return String(v).toUpperCase() === String(it.answer).toUpperCase();
+};
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const $ = (id) => document.getElementById(id);
+const KEY = "ielts8-reading-mock", END_KEY = KEY + "-end";
+const LIMIT = 60 * 60;
+let answers = {}, current = 0, endAt = 0, ticker = null, finished = false;
+const store = () => { try { localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) {} };
+
+function passageHtml(p, k) {
+  const paras = p.paras.map((t, i) => `<p>${p.labelled ? `<span class="lbl">${LETTERS7[i]}</span>` : ""}${esc(t)}</p>`).join("");
+  return `<p class="hint">Select words to highlight them.</p><h2>Reading Passage ${k + 1}: ${esc(p.title)}</h2><p class="sub">${esc(p.sub)}</p>${paras}`;
+}
+function itemHtml(it) {
+  if (it.type === "gap") return `<div class="q" id="q${it.n}"><span class="num">${it.n}</span><span class="qt">${esc(it.before)} <input id="a${it.n}" data-n="${it.n}" aria-label="Question ${it.n}" autocomplete="off" autocapitalize="off" spellcheck="false"> ${esc(it.after)}</span></div>`;
+  if (it.type === "pick") return `<div class="q" id="q${it.n}"><span class="num">${it.n}</span><label class="qt" for="a${it.n}">${esc(it.label)}</label><select id="a${it.n}" data-n="${it.n}"><option value="">Choose</option>${it.choices.map(c => `<option>${c}</option>`).join("")}</select></div>`;
+  const long = it.options.some(o => o.length > 14);
+  return `<div class="q" id="q${it.n}"><span class="num">${it.n}</span><span class="qt">${esc(it.q)}</span><div class="opts${long ? " stack" : ""}" role="radiogroup" aria-label="Question ${it.n}">${it.options.map(o => { const v = long ? o.slice(0, 1) : o; return `<label><input type="radio" name="a${it.n}" data-n="${it.n}" value="${esc(v)}">${esc(o)}</label>`; }).join("")}</div></div>`;
+}
+function questionsHtml(p) {
+  return p.groups.map(g => `<div class="instr">${g.instr}</div>${g.box ? `<div class="box">${g.box.title ? `<div class="ttl">${esc(g.box.title)}</div>` : ""}${g.box.lines.map(l => `<div>${l}</div>`).join("")}</div>` : ""}${g.title ? `<div class="box"><div class="ttl" style="margin:0">${esc(g.title)}</div></div>` : ""}${g.items.map(itemHtml).join("")}`).join("");
+}
+function build() {
+  $("panes").innerHTML = PASSAGES.map((p, k) => `<div class="split" data-pane="${k}" ${k ? "hidden" : ""}><article class="pane passage" id="passage${k}">${passageHtml(p, k)}</article><div class="pane" id="questions${k}">${questionsHtml(p)}</div></div>`).join("");
+  // restore saved answers
+  ALL.forEach(it => {
+    const v = answers[it.n];
+    if (v == null || v === "") return;
+    if (it.type === "choice") { const r = document.querySelector(`input[name="a${it.n}"][value="${CSS.escape(v)}"]`); if (r) r.checked = true; }
+    else $("a" + it.n).value = v;
+  });
+  renderTabs(); renderStrip();
+}
+function renderTabs() {
+  $("tabs").innerHTML = PASSAGES.map((p, k) => `<button class="tab" type="button" data-tab="${k}" aria-pressed="${k === current}">Passage ${k + 1}</button>`).join("");
+  document.querySelectorAll("[data-pane]").forEach(el => { el.hidden = Number(el.dataset.pane) !== current; });
+  $("status").textContent = `Passage ${current + 1} of 3 · Questions ${[1, 14, 27][current]}–${[13, 26, 40][current]}`;
+}
+function renderStrip() {
+  $("strip").innerHTML = ALL.map(it => `<button type="button" data-go="${it.n}" class="${answers[it.n] ? "on" : ""}" aria-label="Question ${it.n}">${it.n}</button>`).join("");
+}
+function go(n) {
+  const k = n <= 13 ? 0 : n <= 26 ? 1 : 2;
+  if (k !== current) { current = k; renderTabs(); }
+  const el = $("q" + n);
+  if (el) { el.scrollIntoView({ block:"center" }); const f = el.querySelector("input,select"); if (f) f.focus({ preventScroll:true }); }
+}
+const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+function tick() {
+  const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+  $("clock").textContent = `${clockText(left)} left`;
+  $("clock").classList.toggle("low", left <= 600);
+  if (left === 600) $("status").textContent = "10 minutes left";
+  if (left <= 0 && !finished) finish();
+}
+function begin() {
+  if (!$("name").value.trim()) { $("startMsg").textContent = "Please enter your name first, so your result shows who it belongs to."; $("name").focus(); return; }
+  try { localStorage.setItem(KEY + "-name", $("name").value.trim()); } catch (e) {}
+  try { answers = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { answers = {}; }
+  try { endAt = Number(localStorage.getItem(END_KEY)) || 0; } catch (e) { endAt = 0; }
+  if (!endAt || endAt < Date.now() - 1000 * 60 * 60 * 6) { endAt = Date.now() + LIMIT * 1000; try { localStorage.setItem(END_KEY, String(endAt)); } catch (e) {} }
+  $("start").hidden = true; $("test").hidden = false; $("bar").hidden = false;
+  build(); tick(); ticker = setInterval(tick, 1000); window.scrollTo(0, 0);
+}
+function finish() {
+  finished = true; clearInterval(ticker);
+  $("bar").hidden = true; $("test").hidden = true;
+  const right = Object.fromEntries(ALL.map(it => [it.n, isRight(it, answers[it.n])]));
+  const raw = ALL.filter(it => right[it.n]).length, band = bandFor(raw);
+  const name = $("name").value.trim() || "Student";
+  const per = [[1,13],[14,26],[27,40]].map(([a, b], k) => [`Passage ${k + 1}`, ALL.filter(it => it.n >= a && it.n <= b && right[it.n]).length, b - a + 1]);
+  const usedMin = Math.min(60, Math.ceil((LIMIT * 1000 - Math.max(0, endAt - Date.now())) / 60000));
+  const summary = `IELTS8 Reading Mock\n${name}: ${raw}/40, estimated band ${band}, time used ${usedMin} min\n${per.map(([t, c, n]) => `${t}: ${c}/${n}`).join(", ")}\nWrong: ${ALL.filter(it => !right[it.n]).map(it => it.n).join(", ") || "none"}`;
+  $("result").hidden = false;
+  $("result").innerHTML = `<div class="sheet">
+    <div class="brand" style="margin-bottom:10px">IELTS<span>8</span></div>
+    <div class="note">${esc(name)}, your estimated Academic Reading band</div>
+    <div class="band">${band}</div>
+    <p style="font-weight:700;margin:8px 0 0">${raw} of 40 correct · ${usedMin} minutes used</p>
+    <div class="facts">${per.map(([t, c, n]) => `<div class="fact"><b>${c}/${n}</b><span>${t}</span></div>`).join("")}</div>
+    <div class="row"><button class="btn" id="copy" type="button">Copy result for your teacher</button><span class="note" id="copied" aria-live="polite"></span></div>
+    <h2 style="margin-top:22px">Answers</h2>
+    <div class="tbl"><table><thead><tr><th>Q</th><th>Your answer</th><th>Correct answer</th><th></th></tr></thead><tbody>
+    ${ALL.map(it => `<tr><td>${it.n}</td><td>${esc(answers[it.n] || "blank")}</td><td>${esc(it.answer)}</td><td><span class="${right[it.n] ? "ok" : "no"}">${right[it.n] ? "Correct" : "Wrong"}</span></td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note" style="margin-top:14px">To take the test again, clear this site's data in your browser or use another browser.</p>
+  </div>`;
+  $("copy").addEventListener("click", () => {
+    const done = (t) => { $("copied").textContent = t; };
+    if (navigator.clipboard) navigator.clipboard.writeText(summary).then(() => done("Copied."), () => done(summary)); else done(summary);
+  });
+  try { localStorage.setItem(KEY + "-done", summary); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+
+$("begin").addEventListener("click", begin);
+$("tabs").addEventListener("click", e => { const t = e.target.closest("[data-tab]"); if (t) { current = Number(t.dataset.tab); renderTabs(); window.scrollTo(0, 0); } });
+$("strip").addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) go(Number(b.dataset.go)); });
+const onAnswer = (e) => { const n = e.target.dataset.n; if (!n) return; answers[n] = e.target.value; store(); renderStrip(); };
+$("panes").addEventListener("input", onAnswer);
+$("panes").addEventListener("change", onAnswer);
+// Highlighting: select words inside a passage and they are marked, as on the computer-based test.
+$("panes").addEventListener("mouseup", () => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return;
+  const pane = sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest(".passage");
+  if (!pane || !pane.contains(sel.focusNode)) return;
+  try { const m = document.createElement("mark"); sel.getRangeAt(0).surroundContents(m); } catch (err) { /* selections across paragraphs are skipped */ }
+  sel.removeAllRanges();
+});
+$("clearMarks").addEventListener("click", () => {
+  document.querySelectorAll(".passage mark").forEach(m => { m.replaceWith(...m.childNodes); });
+  document.querySelectorAll(".passage p").forEach(p => p.normalize());
+});
+$("submitTop").addEventListener("click", () => {
+  const blank = ALL.filter(it => !answers[it.n]).length;
+  $("confirmText").textContent = `${blank ? `${blank} questions are blank. ` : ""}Submit your answers now?`;
+  $("confirm").hidden = false; window.scrollTo(0, 0);
+});
+$("confirmNo").addEventListener("click", () => { $("confirm").hidden = true; });
+$("confirmYes").addEventListener("click", finish);
+try { const nm = localStorage.getItem(KEY + "-name"); if (nm) $("name").value = nm; } catch (e) {}
+</script>
+</body></html>
