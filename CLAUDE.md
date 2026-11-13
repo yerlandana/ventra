@@ -61,3 +61,5 @@ Daily English (слово, подкаст и текст дня): данные в
 Скелеты эссе лежат в `src/skeletons.js`, домашка Listening и Reading с автопроверкой в `src/homework.js`.
 
 Страница входа: сцена в стиле промо-ролика в `src/LoginScene.js` (ноутбук с экранами платформы, свет лампы, пылинки). Скриншоты экранов лежат в `public/login/*.jpg` (1280x800), список и подписи в `SHOTS`. При включённом «уменьшении движения» анимация отключается. Mock-тесты для отправки по ссылке: `public/listening-mock.html`, `listening-mock-2.html`, `reading-mock.html`, `speaking-mock.html`.
+
+Mock Tests (хаб): список тестов в `src/mockTests.js`, экран и ряд на дашборде в `src/MockHub.js`, пункт меню «Mock Tests». Каждая страница теста в конце вызывает `saveMockResult(...)` и кладёт результат в `localStorage` (`ielts8-mock-results`), хаб при открытии и при возврате на вкладку переносит его в `submissions/{email}.mocks`. Записи помечаются владельцем, чтобы на общем компьютере результаты не смешивались. Учитель видит их в админке, кнопка «Mocks» у ученика. Новый тест: страница в `public/`, вызов `saveMockResult` с новым `id`, строка в `MOCKS`.

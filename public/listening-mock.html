@@ -116,6 +116,16 @@ footer{font-size:12.5px;color:var(--muted);margin-top:18px;text-align:center}
 </div>
 
 <script>
+// The result is kept in this browser too, so the IELTS8 platform can show it in Mock Tests and save it to the student's account.
+const RUN = Date.now();
+function saveMockResult(r) {
+  try {
+    const K = "ielts8-mock-results";
+    const all = JSON.parse(localStorage.getItem(K) || "[]").filter(x => !(x.id === r.id && x.run === RUN));
+    all.push({ ...r, run:RUN, at:new Date().toISOString() });
+    localStorage.setItem(K, JSON.stringify(all.slice(-60)));
+  } catch (e) {}
+}
 const gap = (n, before, after, answer, alt) => ({ n, type:"gap", before, after, answer, alt:alt || [] });
 const mcq = (n, q, options, answer) => ({ n, type:"mcq", q, options, answer });
 const pick = (n, label, answer) => ({ n, type:"pick", label, answer });
@@ -391,6 +401,7 @@ function finishTest() {
   const right = scoreAll(answers);
   const raw = ALL.filter(i => right[i.n]).length;
   const band = bandFor(raw);
+  saveMockResult({ id:"listening-1", skill:"Listening", raw, total:40, band });
   const name = $("name").value.trim() || "Student";
   const perPart = PARTS.map((p,k) => [p.title, ALL.filter(i => Math.floor((i.n-1)/10)===k && right[i.n]).length]);
   const summary = `IELTS8 Listening Mock\n${name}: ${raw}/40, estimated band ${band}\n${perPart.map(([t,c]) => `${t}: ${c}/10`).join(", ")}\nWrong: ${ALL.filter(i => !right[i.n]).map(i => i.n).join(", ") || "none"}`;

@@ -9,6 +9,8 @@ import WorkbookPage from "./WorkbookPage";
 import DailyPage, { DailyStrip } from "./DailyPage";
 import WordGames from "./WordGames";
 import LoginScene from "./LoginScene";
+import MockHub, { MockStrip } from "./MockHub";
+import { MOCKS } from "./mockTests";
 import { LESSON_WORDS } from "./lessonWords";
 import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
 import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
@@ -112,6 +114,14 @@ const FB = {
   },
   setWorkbook: async (email, workbook) => {
     await setDoc(doc(db, "submissions", email), { workbook }, { merge: true });
+  },
+  // Mock test results (Listening, Reading, Speaking pages in public/), next to the workbook in the same document.
+  getMocks: async (email) => {
+    const snap = await getDoc(doc(db, "submissions", email));
+    return snap.exists() ? (snap.data().mocks || []) : [];
+  },
+  setMocks: async (email, mocks) => {
+    await setDoc(doc(db, "submissions", email), { mocks }, { merge: true });
   },
   // Modules — каждый урок хранится отдельно
   getModules: async () => {
@@ -2279,6 +2289,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [lessonsSubs, setLessonsSubs] = useState({});
   const [workbookFor, setWorkbookFor] = useState(null); // email whose workbook is open
   const [workbookData, setWorkbookData] = useState(null);
+  const [mocksFor, setMocksFor] = useState(null); // email whose mock test results are open
+  const [mocksData, setMocksData] = useState(null);
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -2333,6 +2345,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (lessonsFor === email) { setLessonsFor(null); return; }
     setLessonsSubs({}); setLessonsFor(email);
     setLessonsSubs(await FB.getSubmissions(email));
+  };
+
+  const toggleMocks = async (email) => {
+    if (mocksFor === email) { setMocksFor(null); return; }
+    setMocksData(null); setMocksFor(email);
+    setMocksData(await FB.getMocks(email).catch(() => []));
   };
 
   const toggleWorkbook = async (email) => {
@@ -2443,6 +2461,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>toggleWorkbook(email)} title="Writing Workbook answers and progress" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${workbookFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   📓 Workbook {workbookFor===email?"▲":"▼"}
                 </button>
+                <button onClick={()=>toggleMocks(email)} title="Mock test results" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${mocksFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  ⏱ Mocks {mocksFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -2463,6 +2484,22 @@ function AdminPanel({ session, logout, setPage, modules }) {
               {lessonsFor===email && (
                 <div style={{ padding:"10px 14px 6px", background:"#F7F7FB" }}>
                   <ResultsTable modules={mods} progress={allProgress[email]||{}} submissions={lessonsSubs} />
+                </div>
+              )}
+              {mocksFor===email && (
+                <div style={{ padding:"12px 14px 16px", background:"#F7F7FB", fontSize:13 }}>
+                  {mocksData === null ? <div style={{ fontSize:12, color:"#888" }}>Loading...</div>
+                    : mocksData.length === 0 ? <div style={{ color:"#666" }}>{info.name} has not finished a mock test yet. Results appear after the student opens Mock Tests or the dashboard.</div>
+                    : <table style={{ borderCollapse:"collapse", width:"100%" }}><tbody>
+                        {mocksData.map(r => (
+                          <tr key={`${r.id}-${r.run}`} style={{ borderTop:"1px solid #ECEAF8" }}>
+                            <td style={{ padding:"6px 8px", fontWeight:700 }}>{(MOCKS.find(m => m.id === r.id) || {}).title || r.id}</td>
+                            <td style={{ padding:"6px 8px", color:"#5D5A8C" }}>{r.raw != null ? `${r.raw}/${r.total}` : r.answered != null ? `${r.answered}/${r.total} recorded` : ""}{r.minutes ? ` · ${r.minutes} min` : ""}</td>
+                            <td style={{ padding:"6px 8px", fontWeight:800, color:"#2A2680" }}>{r.band != null ? `Band ${r.band}${r.self ? " (self)" : ""}` : "-"}</td>
+                            <td style={{ padding:"6px 8px", color:"#888" }}>{new Date(r.at).toLocaleString("ru-RU",{ dateStyle:"short", timeStyle:"short" })}</td>
+                          </tr>
+                        ))}
+                      </tbody></table>}
                 </div>
               )}
               {workbookFor===email && (
@@ -2570,6 +2607,7 @@ const ICONS = {
   sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></>,
   pen:<path d="M4 20l1-5L16 4l4 4L9 19z"/>,
   check:<><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></>,
+  timer:<><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></>,
   admin:<><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></>,
   logout:<path d="M10 4H5a1 1 0 00-1 1v14a1 1 0 001 1h5M15 8l4 4-4 4M19 12H9"/>,
   search:<><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></>,
@@ -2606,6 +2644,7 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         {item("course","Dashboard","home")}
         {item("daily","Daily English","sun")}
         {item("courses","My Courses","courses")}
+        {item("mocks","Mock Tests","timer")}
         {item("assignments","Assignments","tasks")}
         {item("dashboard","Grades","grades")}
         {item("leaderboard","Leaderboard","board")}
@@ -2816,6 +2855,11 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
               <div style={{ margin:"26px 0 0" }}>
                 {sectionHead("Today", viewAll("daily"))}
                 <DailyStrip onOpen={() => setPage("daily")} />
+              </div>
+
+              <div style={{ margin:"26px 0 0" }}>
+                {sectionHead("Mock Tests", viewAll("mocks"))}
+                <MockStrip email={session.email} store={{ load: () => FB.getMocks(session.email), save: (m) => FB.setMocks(session.email, m) }} />
               </div>
 
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", gap:26, marginTop:26 }}>
@@ -4270,6 +4314,7 @@ export default function App() {
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
     page === "daily" ? <DailyPage /> :
+    page === "mocks" ? <MockHub key={session.email} email={session.email} store={{ load: () => FB.getMocks(session.email), save: (m) => FB.setMocks(session.email, m) }} /> :
     page === "workbook" ? <WorkbookPage key={session.email} email={session.email} name={session.name} store={{ load: () => FB.getWorkbook(session.email), save: (w) => FB.setWorkbook(session.email, w) }} /> :
     page === "discussion" ? <DiscussionPage /> :
     page === "assignments" ? <AssignmentsPage session={session} modules={modules} setPage={setPage} setCurrentLesson={setCurrentLesson} /> :
