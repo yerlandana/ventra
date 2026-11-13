@@ -12,6 +12,7 @@ import LoginScene from "./LoginScene";
 import MockHub, { MockStrip } from "./MockHub";
 import { MOCKS } from "./mockTests";
 import RealEnglishPage, { CourseCatalog, RealEnglishReport } from "./RealEnglishPage";
+import EssayCheckerPage, { EssaysReport } from "./EssayCheckerPage";
 import { LESSON_WORDS } from "./lessonWords";
 import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
 import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
@@ -123,6 +124,14 @@ const FB = {
   },
   setMocks: async (email, mocks) => {
     await setDoc(doc(db, "submissions", email), { mocks }, { merge: true });
+  },
+  // Essays checked in the Essay Checker (last 30, with the AI report), same document.
+  getEssays: async (email) => {
+    const snap = await getDoc(doc(db, "submissions", email));
+    return snap.exists() ? (snap.data().essays || []) : [];
+  },
+  setEssays: async (email, essays) => {
+    await setDoc(doc(db, "submissions", email), { essays }, { merge: true });
   },
   // Real English (B1 -> B2) course progress and writing, same document.
   getRealEnglish: async (email) => {
@@ -2302,6 +2311,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [mocksData, setMocksData] = useState(null);
   const [reFor, setReFor] = useState(null); // email whose Real English progress is open
   const [reData, setReData] = useState(undefined);
+  const [essaysFor, setEssaysFor] = useState(null); // email whose checked essays are open
+  const [essaysData, setEssaysData] = useState(null);
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -2362,6 +2373,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (mocksFor === email) { setMocksFor(null); return; }
     setMocksData(null); setMocksFor(email);
     setMocksData(await FB.getMocks(email).catch(() => []));
+  };
+
+  const toggleEssays = async (email) => {
+    if (essaysFor === email) { setEssaysFor(null); return; }
+    setEssaysData(null); setEssaysFor(email);
+    setEssaysData(await FB.getEssays(email).catch(() => []));
   };
 
   const toggleRealEnglish = async (email) => {
@@ -2484,6 +2501,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>toggleRealEnglish(email)} title="Real English course progress" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${reFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   💬 Real English {reFor===email?"▲":"▼"}
                 </button>
+                <button onClick={()=>toggleEssays(email)} title="Essays checked in the Essay Checker" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${essaysFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  ✍️ Essays {essaysFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -2520,6 +2540,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
                           </tr>
                         ))}
                       </tbody></table>}
+                </div>
+              )}
+              {essaysFor===email && (
+                <div style={{ padding:"12px 14px 16px", background:"#F7F7FB" }}>
+                  {essaysData === null ? <div style={{ fontSize:12, color:"#888" }}>Loading...</div> : <EssaysReport list={essaysData} name={info.name} Report={AiReport} />}
                 </div>
               )}
               {reFor===email && (
@@ -2679,7 +2704,7 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
         {item("discussion","Discussion American Style","mic")}
         {item("speaking","Speaking","mic")}
         {link("/skyielts-writing.html","Writing Bands","pen")}
-        {link("/essay-checker.html","Essay Checker","check")}
+        {item("essays","Essay Checker","check")}
         {item("psych","Mindset","leaf")}
         {item("admissions","Universities","globe")}
         <div style={{ flex:1, minHeight:16 }} />
@@ -4343,6 +4368,7 @@ export default function App() {
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
     page === "daily" ? <DailyPage /> :
+    page === "essays" ? <EssayCheckerPage key={session.email} email={session.email} store={{ load: () => FB.getEssays(session.email), save: (e) => FB.setEssays(session.email, e) }} check={requestAiCheck} Report={AiReport} skeletons={SKELETONS} /> :
     page === "realenglish" ? <RealEnglishPage key={session.email} email={session.email} store={{ load: () => FB.getRealEnglish(session.email), save: (p) => FB.setRealEnglish(session.email, p) }} /> :
     page === "mocks" ? <MockHub key={session.email} email={session.email} store={{ load: () => FB.getMocks(session.email), save: (m) => FB.setMocks(session.email, m) }} /> :
     page === "workbook" ? <WorkbookPage key={session.email} email={session.email} name={session.name} store={{ load: () => FB.getWorkbook(session.email), save: (w) => FB.setWorkbook(session.email, w) }} /> :
