@@ -11,6 +11,7 @@ import WordGames from "./WordGames";
 import LoginScene from "./LoginScene";
 import MockHub, { MockStrip } from "./MockHub";
 import { MOCKS } from "./mockTests";
+import RealEnglishPage, { CourseCatalog, RealEnglishReport } from "./RealEnglishPage";
 import { LESSON_WORDS } from "./lessonWords";
 import { LEVELS as WORKBOOK_LEVELS } from "./workbook";
 import { MC_DECK, MC_GAME, MC_READING, MC_SPEAKING, MC_PIE, MC_WRITING } from "./masterclass";
@@ -122,6 +123,14 @@ const FB = {
   },
   setMocks: async (email, mocks) => {
     await setDoc(doc(db, "submissions", email), { mocks }, { merge: true });
+  },
+  // Real English (B1 -> B2) course progress and writing, same document.
+  getRealEnglish: async (email) => {
+    const snap = await getDoc(doc(db, "submissions", email));
+    return snap.exists() ? (snap.data().realEnglish || null) : null;
+  },
+  setRealEnglish: async (email, realEnglish) => {
+    await setDoc(doc(db, "submissions", email), { realEnglish }, { merge: true });
   },
   // Modules — каждый урок хранится отдельно
   getModules: async () => {
@@ -2291,6 +2300,8 @@ function AdminPanel({ session, logout, setPage, modules }) {
   const [workbookData, setWorkbookData] = useState(null);
   const [mocksFor, setMocksFor] = useState(null); // email whose mock test results are open
   const [mocksData, setMocksData] = useState(null);
+  const [reFor, setReFor] = useState(null); // email whose Real English progress is open
+  const [reData, setReData] = useState(undefined);
   const [newStart, setNewStart] = useState(isoDate(new Date()));
   const [newDays, setNewDays] = useState([1,3,5]);
   const [newTotal, setNewTotal] = useState(COURSE_TOTAL);
@@ -2351,6 +2362,12 @@ function AdminPanel({ session, logout, setPage, modules }) {
     if (mocksFor === email) { setMocksFor(null); return; }
     setMocksData(null); setMocksFor(email);
     setMocksData(await FB.getMocks(email).catch(() => []));
+  };
+
+  const toggleRealEnglish = async (email) => {
+    if (reFor === email) { setReFor(null); return; }
+    setReData(undefined); setReFor(email);
+    setReData(await FB.getRealEnglish(email).catch(() => null));
   };
 
   const toggleWorkbook = async (email) => {
@@ -2464,6 +2481,9 @@ function AdminPanel({ session, logout, setPage, modules }) {
                 <button onClick={()=>toggleMocks(email)} title="Mock test results" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${mocksFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
                   ⏱ Mocks {mocksFor===email?"▲":"▼"}
                 </button>
+                <button onClick={()=>toggleRealEnglish(email)} title="Real English course progress" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${reFor===email?"#5F4FD9":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:600, background:"white", color:"#0a0a0a" }}>
+                  💬 Real English {reFor===email?"▲":"▼"}
+                </button>
                 <button onClick={()=>setScheduleFor(scheduleOpen?null:email)} title="Course schedule & cancellations" style={{ padding:"5px 10px", borderRadius:999, border:`1px solid ${hasSchedule?"#1E7A4F":"#e5e5e5"}`, cursor:"pointer", fontSize:11, fontWeight:700, background:hasSchedule?"#e8f3ec":"white", color:hasSchedule?"#155e37":"#666" }}>
                   📅 Schedule {scheduleOpen?"▲":"▼"}
                 </button>
@@ -2500,6 +2520,11 @@ function AdminPanel({ session, logout, setPage, modules }) {
                           </tr>
                         ))}
                       </tbody></table>}
+                </div>
+              )}
+              {reFor===email && (
+                <div style={{ padding:"12px 14px 16px", background:"#F7F7FB" }}>
+                  {reData === undefined ? <div style={{ fontSize:12, color:"#888" }}>Loading...</div> : <RealEnglishReport data={reData} name={info.name} />}
                 </div>
               )}
               {workbookFor===email && (
@@ -2628,7 +2653,7 @@ function AppShell({ session, page, setPage, logout, isAdmin, modules, setCurrent
   const go = (p) => { setPage(p); setOpen(false); setQuery(""); window.scrollTo(0, 0); };
   const q = query.trim().toLowerCase();
   const hits = q ? (modules||[]).flatMap(m=>m.lessons).filter(l => l.title.toLowerCase().includes(q)).slice(0,6) : [];
-  const active = page === "lesson" ? "courses" : page;
+  const active = page === "lesson" || page === "realenglish" ? "courses" : page;
   const item = (id, label, icon) => (
     <button key={id} className={"lms-item" + (active===id ? " on" : "")} aria-current={active===id ? "page" : undefined} onClick={() => go(id)}><Icon name={icon} />{label}</button>
   );
@@ -2853,6 +2878,12 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
               </div>
 
               <div style={{ margin:"26px 0 0" }}>
+                {sectionHead("My Courses", viewAll("courses"))}
+                <CourseCatalog email={session.email} store={{ load: () => FB.getRealEnglish(session.email), save: (p) => FB.setRealEnglish(session.email, p) }}
+                  ielts={{ done: doneCount, total: allLessons.length }} onOpen={(id) => setPage(id === "ielts" ? "courses" : id === "real-english" ? "realenglish" : "masterclass")} />
+              </div>
+
+              <div style={{ margin:"26px 0 0" }}>
                 {sectionHead("Today", viewAll("daily"))}
                 <DailyStrip onOpen={() => setPage("daily")} />
               </div>
@@ -2918,14 +2949,12 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
             <div style={{ fontSize:13, fontWeight:700, color:"#2A2680" }}>{doneCount}/{allLessons.length} lessons</div>
           </div>
 
-          <button onClick={() => setPage("masterclass")} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", textAlign:"left", background:"linear-gradient(135deg,#2A2680,#15225A)", border:"none", borderRadius:16, padding:"16px 18px", marginBottom:14, cursor:"pointer", fontFamily:"inherit", color:"white" }}>
-            <span aria-hidden="true" style={{ fontSize:30 }}>🏆</span>
-            <span style={{ flex:1, minWidth:0 }}>
-              <span style={{ display:"block", fontWeight:800, fontSize:16, color:"#E4BF6C" }}>Masterclass</span>
-              <span style={{ display:"block", fontSize:13, lineHeight:1.4, opacity:.9, marginTop:2 }}>Six levels: phrases, Listening and Reading Part 1, Speaking and a pie chart</span>
-            </span>
-            <span aria-hidden="true" style={{ color:"#E4BF6C", fontSize:20 }}>›</span>
-          </button>
+          <div style={{ marginBottom:22 }}>
+            <CourseCatalog email={session.email} store={{ load: () => FB.getRealEnglish(session.email), save: (p) => FB.setRealEnglish(session.email, p) }}
+              ielts={{ done: doneCount, total: allLessons.length }}
+              onOpen={(id) => id === "ielts" ? document.getElementById("ielts-modules")?.scrollIntoView({ behavior:"smooth" }) : setPage(id === "real-english" ? "realenglish" : "masterclass")} />
+          </div>
+          <h3 id="ielts-modules" style={{ margin:"0 0 12px", fontSize:18, fontWeight:800, color:"#15225A", scrollMarginTop:80 }}>IELTS Course · B2 → Band 8</h3>
 
           <div>
         {mods.map((m, i) => {
@@ -4314,6 +4343,7 @@ export default function App() {
     page === "dashboard" ? <Dashboard session={session} modules={modules} /> :
     page === "skeletons" ? <SkeletonsPage /> :
     page === "daily" ? <DailyPage /> :
+    page === "realenglish" ? <RealEnglishPage key={session.email} email={session.email} store={{ load: () => FB.getRealEnglish(session.email), save: (p) => FB.setRealEnglish(session.email, p) }} /> :
     page === "mocks" ? <MockHub key={session.email} email={session.email} store={{ load: () => FB.getMocks(session.email), save: (m) => FB.setMocks(session.email, m) }} /> :
     page === "workbook" ? <WorkbookPage key={session.email} email={session.email} name={session.name} store={{ load: () => FB.getWorkbook(session.email), save: (w) => FB.setWorkbook(session.email, w) }} /> :
     page === "discussion" ? <DiscussionPage /> :
