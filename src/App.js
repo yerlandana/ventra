@@ -2818,36 +2818,7 @@ function CoursePage({ session, setPage, setCurrentLesson, isAdmin, modules, view
                 <DailyStrip onOpen={() => setPage("daily")} />
               </div>
 
-              <div style={{ margin:"26px 0" }}>
-                {sectionHead("Courses Enrolled", viewAll("courses"))}
-                <div style={{ background:"#F7F7FB", borderRadius:20, padding:"16px 20px" }}>
-                  <div style={{ display:"flex", gap:20, fontSize:12.5, fontWeight:600, marginBottom:14, flexWrap:"wrap" }}>
-                    <span><span style={{ color:"#EDAE3E" }}>●</span> Tests Submitted</span>
-                    <span><span style={{ color:"#4FAE6A" }}>●</span> Lessons Finished</span>
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"16px 28px" }}>
-                    {mods.map(m => {
-                      const n = m.lessons.length || 1;
-                      const bars = [[count(m.lessons,testDone)/n,"#EDAE3E","#F7EBD0"],[count(m.lessons,l=>myProgress[l.id]?.quizDone)/n,"#4FAE6A","#DDEFE1"]];
-                      return (
-                        <div key={m.id} style={{ display:"grid", gridTemplateColumns:"1fr 1.2fr", gap:12, alignItems:"center" }}>
-                          <div style={{ fontWeight:700, fontSize:13, lineHeight:1.3 }}>{m.title.replace(/^MODULE (\d+):\s*/, (_,n) => `${n}. `)}</div>
-                          <div style={{ display:"grid", gap:6 }}>
-                            {bars.map(([v,c,bg]) => (
-                              <div key={c} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                                <div style={{ flex:1, height:7, background:bg, borderRadius:9, overflow:"hidden" }}><div style={{ width:`${v*100}%`, height:"100%", background:c, borderRadius:9 }} /></div>
-                                <span style={{ fontSize:11, fontWeight:700, width:30, textAlign:"right" }}>{Math.round(v*100)}%</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", gap:26 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", gap:26, marginTop:26 }}>
                 <div>
                   {sectionHead("Continue Learning", viewAll("courses"))}
                   {nextUp.length === 0 && <div className="lms-row" style={{ color:"#8B8AA6", fontSize:14 }}>{left > 0 ? "Open the next module in My Courses." : "All lessons are finished."}</div>}
